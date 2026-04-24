@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from 'date-fns'
-import { CheckCircle2, Circle, Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Flame, Pencil, Trash2, HelpCircle, Maximize2, Minimize2, EyeOff } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Brush } from 'recharts'
+import { CheckCircle2, Circle, Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Flame, Pencil, Trash2, HelpCircle, Maximize2, Minimize2 } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts'
 
 // --- TYPES ---
 export interface Routine {
