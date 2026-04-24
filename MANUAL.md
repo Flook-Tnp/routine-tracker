@@ -1,6 +1,6 @@
-# 📘 Routine Tracker: Complete Operational Manual
+# 📘 Disby: Complete Operational Manual
 
-This document provides a deep dive into the features, interface, and underlying logic of the Routine Tracker system. It is designed to help users and maintainers understand exactly how data is processed and displayed.
+This document provides a deep dive into the features, interface, and underlying logic of the Disby system. It is designed to help users and maintainers understand exactly how data is processed and displayed.
 
 ---
 

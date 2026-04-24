@@ -511,7 +511,7 @@ function App() {
             <div className="flex justify-between items-end">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">ROUTINE_TRACKER</h1>
+                  <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
                   <button 
                     onClick={() => setShowManual(true)}
                     className="text-gray-700 hover:text-cyan-400 transition-colors"
