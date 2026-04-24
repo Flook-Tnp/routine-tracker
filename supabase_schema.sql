@@ -21,3 +21,14 @@ ALTER TABLE routine_completions ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow all access to routines" ON routines FOR ALL USING (true);
 CREATE POLICY "Allow all access to completions" ON routine_completions FOR ALL USING (true);
+
+-- Table for Kanban tasks
+CREATE TABLE tasks (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'todo', -- 'todo', 'in-progress', 'done'
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow all access to tasks" ON tasks FOR ALL USING (true);

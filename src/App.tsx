@@ -19,7 +19,17 @@ export interface RoutineCompletion {
   completed_date: string
 }
 
+export interface Task {
+  id: string
+  title: string
+  status: 'todo' | 'in-progress' | 'done'
+  created_at: string
+}
+
 function App() {
+  const [currentView, setCurrentView] = useState<'tracker' | 'board'>('tracker')
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
   const [completions, setCompletions] = useState<RoutineCompletion[]>([])
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -108,9 +118,55 @@ function App() {
         }
         }
 
+        const fetchTasks = async () => {
+          const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .order('created_at', { ascending: false })
+          if (!error && data) setTasks(data)
+        }
+
         useEffect(() => {
         fetchData()
+        fetchTasks()
         }, [])
+
+        async function addTask(e: React.FormEvent) {
+          e.preventDefault()
+          if (!newTaskTitle.trim()) return
+
+          const { data, error } = await supabase
+            .from('tasks')
+            .insert([{ title: newTaskTitle, status: 'todo' }])
+            .select()
+
+          if (!error && data) {
+            setTasks([data[0], ...tasks])
+            setNewTaskTitle('')
+          }
+        }
+
+        async function moveTask(id: string, newStatus: 'todo' | 'in-progress' | 'done') {
+          const { error } = await supabase
+            .from('tasks')
+            .update({ status: newStatus })
+            .eq('id', id)
+
+          if (!error) {
+            setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t))
+          }
+        }
+
+        async function deleteTask(id: string) {
+          const { error } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('id', id)
+
+          if (!error) {
+            setTasks(tasks.filter(t => t.id !== id))
+          }
+        }
 
         async function updateRoutineTitle(id: string) {
         if (!editingRoutineTitle.trim()) {
@@ -519,6 +575,21 @@ function App() {
                   >
                     <HelpCircle size={16} />
                   </button>
+
+                  <div className="ml-4 flex gap-1 bg-gray-900/50 p-1 border border-gray-800">
+                    <button
+                      onClick={() => setCurrentView('tracker')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'tracker' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Tracker
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('board')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'board' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Board
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <button 
@@ -646,9 +717,10 @@ function App() {
       </div>
 
       <div className="max-w-2xl mx-auto p-4 md:p-8 pt-4 space-y-8">
-
-        {/* Category Switcher */}
-        <section className="space-y-4">
+        {currentView === 'tracker' ? (
+          <>
+            {/* Category Switcher */}
+            <section className="space-y-4">
           <div className="flex flex-wrap gap-2 items-center">
             {categories.map(cat => (
               <div key={cat} className="flex">
@@ -1034,7 +1106,94 @@ function App() {
             })}
           </div>
         </section>
+      </>
+    ) : (
+      <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Board Header / Add Task */}
+            <section className="space-y-4">
+              <div className="flex justify-between items-end">
+                <div className="space-y-1">
+                  <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">SYSTEM_TASK_BOARD</h2>
+                  <p className="text-[8px] text-gray-600 uppercase tracking-widest">Protocol: Direct Management</p>
+                </div>
+              </div>
 
+              <form onSubmit={addTask} className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                  placeholder="NEW_TASK_ENTRY..."
+                  className="flex-1 bg-gray-900 border border-gray-800 px-4 py-2 focus:outline-none focus:border-cyan-500 text-sm text-gray-400 font-mono"
+                />
+                <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-cyan-500 hover:text-white transition-all duration-300">
+                  <Plus size={18} />
+                </button>
+              </form>
+            </section>
+
+            {/* Kanban Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { id: 'todo', label: 'BACKLOG', color: 'text-gray-500' },
+                { id: 'in-progress', label: 'ACTIVE', color: 'text-orange-500' },
+                { id: 'done', label: 'COMPLETE', color: 'text-cyan-400' }
+              ].map((col) => (
+                <div key={col.id} className="space-y-4">
+                  <div className="flex items-center gap-2 border-b border-gray-900 pb-2">
+                    <div className={`w-1 h-3 ${col.id === 'todo' ? 'bg-gray-800' : col.id === 'in-progress' ? 'bg-orange-500' : 'bg-cyan-500'}`} />
+                    <h3 className={`text-[10px] font-black uppercase tracking-[0.2em] ${col.color}`}>{col.label}</h3>
+                    <span className="ml-auto text-[8px] text-gray-700 font-mono">
+                      [{tasks.filter(t => t.status === col.id).length}]
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {tasks.filter(t => t.status === col.id).map(task => (
+                      <div key={task.id} className="bg-gray-950 border border-gray-900 p-3 group hover:border-gray-700 transition-all">
+                        <p className="text-xs text-gray-400 mb-3 font-mono leading-relaxed">{task.title}</p>
+                        
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-900/50">
+                          <div className="flex gap-1">
+                            {col.id !== 'todo' && (
+                              <button 
+                                onClick={() => moveTask(task.id, col.id === 'done' ? 'in-progress' : 'todo')}
+                                className="p-1 text-gray-700 hover:text-cyan-500 transition-colors"
+                              >
+                                <ChevronLeft size={14} />
+                              </button>
+                            )}
+                            {col.id !== 'done' && (
+                              <button 
+                                onClick={() => moveTask(task.id, col.id === 'todo' ? 'in-progress' : 'done')}
+                                className="p-1 text-gray-700 hover:text-cyan-500 transition-colors"
+                              >
+                                <ChevronRight size={14} />
+                              </button>
+                            )}
+                          </div>
+                          
+                          <button 
+                            onClick={() => deleteTask(task.id)}
+                            className="p-1 text-gray-800 hover:text-red-900 transition-colors opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {tasks.filter(t => t.status === col.id).length === 0 && (
+                      <div className="py-8 text-center border border-dashed border-gray-900 rounded">
+                        <span className="text-[8px] text-gray-800 uppercase tracking-widest">EMPTY</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Manual Modal Overlay */}
