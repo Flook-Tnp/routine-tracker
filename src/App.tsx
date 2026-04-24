@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from 'date-fns'
 import { CheckCircle2, Circle, Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, X, Flame, Pencil, Trash2, HelpCircle, Maximize2, Minimize2 } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts'
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart } from 'recharts'
 
 // --- TYPES ---
 export interface Routine {
@@ -443,14 +443,14 @@ function App() {
             const daysActiveForThisTask = eachDayOfInterval({ start: taskFirstDate, end: date }).length
             const taskCount = cumulativeTaskCompletions[routine.id]
 
-            const taskPercentage = Math.round((taskCount / daysActiveForThisTask) * 100)
+            const taskPercentage = (taskCount / daysActiveForThisTask) * 100
             entry[routine.title] = taskPercentage
             dailyTotalPercentage += taskPercentage
             activeTasksOnDay++
           }
         })
 
-        entry['Total'] = activeTasksOnDay > 0 ? Math.round(dailyTotalPercentage / activeTasksOnDay) : 0
+        entry['Total'] = activeTasksOnDay > 0 ? (dailyTotalPercentage / activeTasksOnDay) : 0
 
         // Reduce density for long periods (show every 2 days if over 1 year)
         if (daysInterval.length < 365 || index % 2 === 0 || index === daysInterval.length - 1) {
@@ -846,7 +846,13 @@ function App() {
             {/* Lifetime Performance Chart */}
             <div className="h-[350px] w-full bg-gray-950/20 border border-gray-900 p-4 pt-8 group">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={lifetimeChartData}>
+                <AreaChart data={lifetimeChartData}>
+                  <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#111827" vertical={false} />
                   <XAxis 
                     dataKey="name" 
@@ -856,43 +862,45 @@ function App() {
                     axisLine={false}
                     minTickGap={60}
                   />
-                  <YAxis 
-                    stroke="#374151" 
-                    fontSize={9} 
-                    tickLine={false} 
-                    axisLine={false} 
-                    domain={['auto', 'auto']}
-                    tickFormatter={(val) => `${val}%`}
+                  <YAxis
+                   stroke="#374151"
+                   fontSize={9}
+                   tickLine={false}
+                   axisLine={false}
+                   domain={['auto', 'auto']}
+                   tickFormatter={(val) => `${Math.round(val)}%`}
                   />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#000', border: '1px solid #1f2937', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
-                    itemStyle={{ padding: '0px' }}
-                    cursor={{ stroke: '#1f2937' }}
+                  <Tooltip
+                   contentStyle={{ backgroundColor: '#000', border: '1px solid #1f2937', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
+                   itemStyle={{ padding: '0px' }}
+                   cursor={{ stroke: '#1f2937' }}
+                   formatter={(val: any) => [`${Number(val).toFixed(1)}%`, '']}
                   />
                   {!hiddenRoutines.has('Total') && (
-                    <Line 
-                      type="monotone" 
-                      dataKey="Total" 
-                      stroke="#06b6d4" 
-                      strokeWidth={3} 
-                      dot={false}
-                      activeDot={{ r: 4, fill: '#06b6d4', stroke: '#000', strokeWidth: 2 }}
-                      animationDuration={1500}
-                    />
+                   <Area
+                     type="natural"
+                     dataKey="Total"
+                     stroke="#06b6d4"
+                     strokeWidth={3}
+                     fillOpacity={1}
+                     fill="url(#colorTotal)"
+                     dot={false}
+                     activeDot={{ r: 4, fill: '#06b6d4', stroke: '#000', strokeWidth: 2 }}
+                     animationDuration={1500}
+                   />
                   )}
                   {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
-                    <Line 
-                      key={r.id}
-                      type="monotone" 
-                      dataKey={r.title} 
-                      stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`} 
-                      strokeWidth={1.5} 
-                      dot={false}
-                      opacity={0.6}
-                      animationDuration={1500}
-                    />
-                  ))}
-                  <Brush 
+                   <Line
+                     key={r.id}
+                     type="natural"
+                     dataKey={r.title}
+                     stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
+                     strokeWidth={1.5}
+                     dot={false}
+                     opacity={0.6}
+                     animationDuration={1500}
+                   />
+                  ))}                  <Brush 
                     dataKey="name" 
                     height={30} 
                     stroke="#1f2937" 
@@ -900,7 +908,7 @@ function App() {
                     travellerWidth={10}
                     gap={1}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
 
@@ -1129,63 +1137,71 @@ function App() {
           </div>
 
           <div className="flex-1 bg-gray-950/50 border border-gray-900 p-6 md:p-10 relative">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={lifetimeChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#111827" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  stroke="#4b5563" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false}
-                  minTickGap={60}
-                />
-                <YAxis 
-                  stroke="#4b5563" 
-                  fontSize={10} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  domain={['auto', 'auto']}
-                  tickFormatter={(val) => `${val}%`}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#000', border: '1px solid #1f2937', fontSize: '12px', fontFamily: 'JetBrains Mono' }}
-                  cursor={{ stroke: '#374151', strokeWidth: 2 }}
-                />
-                {!hiddenRoutines.has('Total') && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="Total" 
-                    stroke="#06b6d4" 
-                    strokeWidth={4} 
-                    dot={false}
-                    activeDot={{ r: 6, fill: '#06b6d4', stroke: '#000', strokeWidth: 3 }}
-                  />
-                )}
-                {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
-                  <Line 
-                    key={r.id}
-                    type="monotone" 
-                    dataKey={r.title} 
-                    stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`} 
-                    strokeWidth={2} 
-                    dot={false}
-                    opacity={0.7}
-                  />
-                ))}
-                <Brush 
-                  dataKey="name" 
-                  height={40} 
-                  stroke="#374151" 
+           <ResponsiveContainer width="100%" height="100%">
+             <AreaChart data={lifetimeChartData}>
+               <defs>
+                 <linearGradient id="colorTotalFS" x1="0" y1="0" x2="0" y2="1">
+                   <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3}/>
+                   <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                 </linearGradient>
+               </defs>
+               <CartesianGrid strokeDasharray="3 3" stroke="#111827" vertical={false} />
+               <XAxis
+                 dataKey="name"
+                 stroke="#4b5563"
+                 fontSize={10}
+                 tickLine={false}
+                 axisLine={false}
+                 minTickGap={60}
+               />
+               <YAxis
+                 stroke="#4b5563"
+                 fontSize={10}
+                 tickLine={false}
+                 axisLine={false}
+                 domain={['auto', 'auto']}
+                 tickFormatter={(val) => `${Math.round(val)}%`}
+               />
+               <Tooltip
+                 contentStyle={{ backgroundColor: '#000', border: '1px solid #1f2937', fontSize: '12px', fontFamily: 'JetBrains Mono' }}
+                 cursor={{ stroke: '#374151', strokeWidth: 2 }}
+                 formatter={(val: any) => [`${Number(val).toFixed(1)}%`, '']}
+               />
+               {!hiddenRoutines.has('Total') && (
+                 <Area
+                   type="natural"
+                   dataKey="Total"
+                   stroke="#06b6d4"
+                   strokeWidth={4}
+                   fillOpacity={1}
+                   fill="url(#colorTotalFS)"
+                   dot={false}
+                   activeDot={{ r: 6, fill: '#06b6d4', stroke: '#000', strokeWidth: 3 }}
+                 />
+               )}
+               {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
+                 <Line
+                   key={r.id}
+                   type="natural"
+                   dataKey={r.title}
+                   stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
+                   strokeWidth={2}
+                   dot={false}
+                   opacity={0.7}
+                 />
+               ))}                <Brush
+                  dataKey="name"
+                  height={40}
+                  stroke="#374151"
                   fill="#000"
                   travellerWidth={20}
                 >
-                  <LineChart data={lifetimeChartData}>
-                    <Line type="monotone" dataKey="Total" stroke="#06b6d4" dot={false} />
-                  </LineChart>
+                  <AreaChart data={lifetimeChartData}>
+                    <Area type="natural" dataKey="Total" stroke="#06b6d4" fill="#06b6d4" fillOpacity={0.1} dot={false} />
+                  </AreaChart>
                 </Brush>
-              </LineChart>
-            </ResponsiveContainer>
+                </AreaChart>
+                </ResponsiveContainer>
           </div>
           
           <div className="mt-8 flex flex-wrap justify-center gap-3">
