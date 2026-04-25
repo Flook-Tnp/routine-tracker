@@ -201,6 +201,14 @@ export const StorageService = {
     return data[0] as Post
   },
 
+  async deletePost(postId: string): Promise<void> {
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', postId)
+    if (error) throw error
+  },
+
   async addComment(postId: string, content: string, userId: string): Promise<Comment> {
     const { data, error } = await supabase
       .from('comments')

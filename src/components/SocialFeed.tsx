@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { MessageSquare, Send } from 'lucide-react'
+import { MessageSquare, Send, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -66,8 +66,19 @@ export function SocialFeed({ session }: SocialFeedProps) {
     try {
       await StorageService.toggleReaction(postId, emoji, session.user.id)
       fetchPosts()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error toggling reaction:', err)
+    }
+  }
+
+  const handleDeletePost = async (postId: string) => {
+    if (!session || !window.confirm('TERMINATE_POST: Are you sure? This action is permanent.')) return
+    try {
+      await StorageService.deletePost(postId)
+      fetchPosts()
+    } catch (err: any) {
+      console.error('Error deleting post:', err)
+      alert('PROTOCOL_ERROR: Post could not be terminated.')
     }
   }
 
@@ -121,6 +132,15 @@ export function SocialFeed({ session }: SocialFeedProps) {
                 <span className="px-2 py-0.5 bg-orange-500/10 text-orange-500 border border-orange-500/30 text-[8px] font-bold uppercase tracking-widest">
                   Milestone
                 </span>
+              )}
+              {post.user_id === session?.user?.id && (
+                <button 
+                  onClick={() => handleDeletePost(post.id)}
+                  className="p-2 text-gray-700 hover:text-red-500 transition-colors"
+                  title="Delete Post"
+                >
+                  <Trash2 size={14} />
+                </button>
               )}
             </div>
 
