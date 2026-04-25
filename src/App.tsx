@@ -1,48 +1,28 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle } from 'lucide-react'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
 import { FullscreenChart } from './components/FullscreenChart'
 import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
-
-// --- TYPES ---
-export interface Routine {
-  id: string
-  title: string
-  created_at: string
-  is_active: boolean
-  category: string
-}
-
-export interface RoutineCompletion {
-  id: string
-  routine_id: string
-  completed_date: string
-}
-
-export interface Task {
-  id: string
-  title: string
-  status: 'todo' | 'in-progress' | 'done'
-  category: string
-  completed_date: string | null
-  created_at: string
-}
-
-interface TaskBreakdownItem {
-  title: string
-  percentage: number
-  startDate: string
-  totalCompletions: number
-  activeDays: number
-}
+import { AuthModal } from './components/Auth'
+import { StorageService } from './lib/storage'
+import { Routine, RoutineCompletion, Task, TaskBreakdownItem } from './types'
+import { Session } from '@supabase/supabase-js'
+import { calculateXP } from './lib/gamification'
+import { Leaderboard } from './components/Leaderboard'
+import { Profile } from './components/Profile'
+import { SocialFeed } from './components/SocialFeed'
+import { AccountabilityPods } from './components/AccountabilityPods'
 
 function App() {
-  const [currentView, setCurrentView] = useState<'tracker' | 'board'>('tracker')
+  const [session, setSession] = useState<Session | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
@@ -86,59 +66,92 @@ function App() {
     return routines.filter(r => (r.category || 'General') === activeCategory)
   }, [routines, activeCategory])
 
-  const fetchData = useCallback(async () => {
+  const syncData = useCallback(async (currentRoutines: Routine[], currentTasks: Task[]) => {
+    if (!session?.user) return
+
     try {
       setLoading(true)
-      const { data: routinesData, error: routinesError } = await supabase.from('routines').select('*').eq('is_active', true)
-      if (routinesError) throw routinesError
-      if (routinesData) setRoutines(routinesData as Routine[])
-      
-      let allCompletions: RoutineCompletion[] = []
-      let from = 0
-      let to = 999
-      let hasMore = true
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('routine_completions')
-          .select('*')
-          .order('completed_date', { ascending: true })
-          .range(from, to)
-        
-        if (error) {
-          console.error('Fetch error:', error)
-          break
-        }
-
-        if (data && data.length > 0) {
-          allCompletions = [...allCompletions, ...(data as RoutineCompletion[])]
-          if (data.length < 1000) {
-            hasMore = false
-          } else {
-            from += 1000
-            to += 1000
-          }
-        } else {
-          hasMore = false
-        }
-        
-        if (from > 1000000) break 
+      // Sync routines
+      for (const r of currentRoutines) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...routineData } = r
+        await StorageService.addRoutine({ ...routineData, id: undefined }, session.user.id)
       }
+      for (const t of currentTasks) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { id, ...taskData } = t
+        await StorageService.addTask({ ...taskData, id: undefined }, session.user.id)
+      }
+      
+      // After sync, re-fetch from cloud
+      const [cloudRoutines, cloudCompletions, cloudTasks] = await Promise.all([
+        StorageService.fetchRoutines(),
+        StorageService.fetchCompletions(),
+        StorageService.fetchTasks()
+      ])
+      setRoutines(cloudRoutines)
+      setCompletions(cloudCompletions)
+      setTasks(cloudTasks)
+    } catch (err) {
+      console.error('Sync error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [session])
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session?.user) {
+        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+      if (session?.user) {
+        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
+        if (event === 'SIGNED_IN' && (routines.length > 0 || tasks.length > 0)) {
+          syncData(routines, tasks)
+        }
+      } else {
+        setProfile(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [syncData, routines, tasks])
+
+  const fetchData = useCallback(async () => {
+    if (!session) {
+      setLoading(false)
+      return
+    }
+    try {
+      setLoading(true)
+      const routinesData = await StorageService.fetchRoutines()
+      setRoutines(routinesData)
+      
+      const allCompletions = await StorageService.fetchCompletions()
       setCompletions(allCompletions)
     } catch (err) {
       console.error('Fatal data fetch error:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [session])
 
   const fetchTasks = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (!error && data) setTasks(data as Task[])
-  }, [])
+    if (!session) return
+    try {
+      const data = await StorageService.fetchTasks()
+      setTasks(data)
+    } catch (err) {
+      console.error('Fetch tasks error:', err)
+    }
+  }, [session])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -150,59 +163,70 @@ function App() {
     e.preventDefault()
     if (!newTaskTitle.trim()) return
 
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert([{ title: newTaskTitle, status: 'todo', category: 'General' }])
-      .select()
-
-    if (error) {
-      console.error('Error adding task:', error)
-    } else if (data) {
-      setTasks([data[0] as Task, ...tasks])
-      setNewTaskTitle('')
+    const newTask: Partial<Task> = { 
+      title: newTaskTitle, 
+      status: 'todo', 
+      category: 'General',
+      created_at: new Date().toISOString()
     }
+
+    if (session) {
+      try {
+        const data = await StorageService.addTask(newTask)
+        setTasks([data, ...tasks])
+      } catch (err) {
+        console.error('Error adding task:', err)
+      }
+    } else {
+      const guestTask: Task = {
+        ...newTask,
+        id: crypto.randomUUID(),
+        completed_date: null
+      } as Task
+      setTasks([guestTask, ...tasks])
+    }
+    setNewTaskTitle('')
   }
 
   async function moveTask(id: string, newStatus: 'todo' | 'in-progress' | 'done') {
-    // When moving back from 'done', or just changing status, clear completed_date
     const updates: Partial<Task> = { status: newStatus }
     if (newStatus !== 'done') {
       updates.completed_date = null
     }
 
-    const { error } = await supabase
-      .from('tasks')
-      .update(updates)
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error moving task:', error)
+    if (session) {
+      try {
+        await StorageService.updateTask(id, updates)
+        setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
+      } catch (err) {
+        console.error('Error moving task:', err)
+      }
     } else {
       setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
     }
   }
 
   async function finalizeTask(id: string, dateStr: string) {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ completed_date: dateStr })
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error finalizing task:', error)
+    if (session) {
+      try {
+        await StorageService.updateTask(id, { completed_date: dateStr })
+        setTasks(tasks.map(t => t.id === id ? { ...t, completed_date: dateStr } : t))
+      } catch (err) {
+        console.error('Error finalizing task:', err)
+      }
     } else {
       setTasks(tasks.map(t => t.id === id ? { ...t, completed_date: dateStr } : t))
     }
   }
 
   async function deleteTask(id: string) {
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id)
-
-    if (error) {
-      console.error('Error deleting task:', error)
+    if (session) {
+      try {
+        await StorageService.deleteTask(id)
+        setTasks(tasks.filter(t => t.id !== id))
+      } catch (err) {
+        console.error('Error deleting task:', err)
+      }
     } else {
       setTasks(tasks.filter(t => t.id !== id))
     }
@@ -214,12 +238,14 @@ function App() {
       return
     }
 
-    const { error } = await supabase
-      .from('routines')
-      .update({ title: editingRoutineTitle })
-      .eq('id', id)
-
-    if (!error) {
+    if (session) {
+      try {
+        await StorageService.updateRoutine(id, { title: editingRoutineTitle })
+        setRoutines(routines.map(r => r.id === id ? { ...r, title: editingRoutineTitle } : r))
+      } catch (err) {
+        console.error('Error updating routine title:', err)
+      }
+    } else {
       setRoutines(routines.map(r => r.id === id ? { ...r, title: editingRoutineTitle } : r))
     }
     setEditingRoutineId(null)
@@ -231,17 +257,16 @@ function App() {
       return
     }
 
-    const { error: routineError } = await supabase
-      .from('routines')
-      .update({ category: newCategoryTitle })
-      .eq('category', activeCategory)
-
-    const { error: taskError } = await supabase
-      .from('tasks')
-      .update({ category: newCategoryTitle })
-      .eq('category', activeCategory)
-
-    if (!routineError && !taskError) {
+    if (session) {
+      try {
+        await StorageService.updateCategory(activeCategory, newCategoryTitle)
+        setRoutines(routines.map(r => r.category === activeCategory ? { ...r, category: newCategoryTitle } : r))
+        setTasks(tasks.map(t => t.category === activeCategory ? { ...t, category: newCategoryTitle } : t))
+        setActiveCategory(newCategoryTitle)
+      } catch (err) {
+        console.error('Error updating category name:', err)
+      }
+    } else {
       setRoutines(routines.map(r => r.category === activeCategory ? { ...r, category: newCategoryTitle } : r))
       setTasks(tasks.map(t => t.category === activeCategory ? { ...t, category: newCategoryTitle } : t))
       setActiveCategory(newCategoryTitle)
@@ -254,21 +279,28 @@ function App() {
     if (!newRoutineTitle.trim()) return
 
     const targetCategory = activeCategory || 'General'
-
-    const { data, error } = await supabase
-      .from('routines')
-      .insert([{ title: newRoutineTitle, category: targetCategory }])
-      .select()
-
-    if (error) {
-      console.error('Error adding routine:', error)
-      return
+    const newRoutine: Partial<Routine> = { 
+      title: newRoutineTitle, 
+      category: targetCategory,
+      is_active: true,
+      created_at: new Date().toISOString()
     }
 
-    if (data) {
-      setRoutines([...routines, data[0] as Routine])
-      setNewRoutineTitle('')
+    if (session) {
+      try {
+        const data = await StorageService.addRoutine(newRoutine)
+        setRoutines([...routines, data])
+      } catch (err) {
+        console.error('Error adding routine:', err)
+      }
+    } else {
+      const guestRoutine: Routine = {
+        ...newRoutine,
+        id: crypto.randomUUID(),
+      } as Routine
+      setRoutines([...routines, guestRoutine])
     }
+    setNewRoutineTitle('')
   }
 
   async function addCategory(e: React.FormEvent) {
@@ -284,17 +316,33 @@ function App() {
       c => c.routine_id === routineId && c.completed_date === selectedDateStr
     )
 
-    if (existing) {
-      await supabase.from('routine_completions').delete().eq('id', existing.id)
-      setCompletions(completions.filter(c => c.id !== existing.id))
+    // Calculate XP based on current streak
+    const currentStreak = dailyStreak 
+    const xp = calculateXP(currentStreak)
+
+    if (session) {
+      try {
+        const result = await StorageService.toggleCompletion(routineId, selectedDateStr, xp, session.user.id, existing?.id)
+        if (result) {
+          setCompletions([...completions, result])
+        } else {
+          setCompletions(completions.filter(c => c.id !== existing?.id))
+        }
+        // Refresh profile
+        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
+      } catch (err) {
+        console.error('Error toggling completion:', err)
+      }
     } else {
-      const { data } = await supabase
-        .from('routine_completions')
-        .insert([{ routine_id: routineId, completed_date: selectedDateStr }])
-        .select()
-      
-      if (data) {
-        setCompletions([...completions, data[0] as RoutineCompletion])
+      if (existing) {
+        setCompletions(completions.filter(c => c.id !== existing.id))
+      } else {
+        const guestCompletion: RoutineCompletion = {
+          id: crypto.randomUUID(),
+          routine_id: routineId,
+          completed_date: selectedDateStr
+        }
+        setCompletions([...completions, guestCompletion])
       }
     }
   }
@@ -624,6 +672,32 @@ function App() {
                     >
                       Board
                     </button>
+                    <button
+                      onClick={() => setCurrentView('leaderboard')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'leaderboard' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Rank
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('social')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Feed
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('pods')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Pods
+                    </button>
+                    {session && (
+                      <button
+                        onClick={() => setCurrentView('profile')}
+                        className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                      >
+                        Profile
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -699,21 +773,51 @@ function App() {
                       TODAY
                     </button>
                   )}
-                  </div>
-                  </div>              <div className="flex gap-6">
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-1 text-orange-500">
-                    <Flame size={18} fill="currentColor" />
-                    <span className="text-2xl font-black">{dailyStreak}</span>
-                  </div>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-widest">Daily</p>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center justify-end gap-1 text-cyan-400">
-                    <Trophy size={18} />
-                    <span className="text-2xl font-black">{weeklyStreak}</span>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="flex gap-6">
+                  <div className="text-right">
+                    <div className="flex items-center justify-end gap-1 text-orange-500">
+                      <Flame size={18} fill="currentColor" />
+                      <span className="text-2xl font-black">{dailyStreak}</span>
+                    </div>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest">Daily</p>
                   </div>
-                  <p className="text-[9px] text-gray-600 uppercase tracking-widest">Weekly</p>
+                  <div className="text-right">
+                    <div className="flex items-center justify-end gap-1 text-cyan-400">
+                      <Trophy size={18} />
+                      <span className="text-2xl font-black">{weeklyStreak}</span>
+                    </div>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest">Weekly</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end gap-2 pt-1">
+                  {session ? (
+                    <button 
+                      onClick={() => supabase.auth.signOut()}
+                      className="text-gray-700 hover:text-red-500 transition-colors"
+                      title="Logout"
+                    >
+                      <LogOut size={16} />
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setIsAuthModalOpen(true)}
+                      className="flex items-center gap-2 px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-[0.2em]"
+                    >
+                      <LogIn size={12} />
+                      Login
+                    </button>
+                  )}
+                  {session && (
+                    <div className="flex items-center gap-1 text-[8px] text-gray-600 uppercase font-bold">
+                      <User size={10} />
+                      {session.user.email?.split('@')[0]}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -804,8 +908,13 @@ function App() {
                             title: 'Danger Zone',
                             message: `DELETE ENTIRE SECTION "${cat.toUpperCase()}" AND ALL ITS HISTORY?`,
                             onConfirm: async () => {
-                              await supabase.from('routines').delete().eq('category', cat)
-                              await supabase.from('tasks').delete().eq('category', cat)
+                              if (session) {
+                                try {
+                                  await StorageService.deleteCategory(cat)
+                                } catch (err) {
+                                  console.error('Error deleting category:', err)
+                                }
+                              }
                               setRoutines(routines.filter(r => r.category !== cat))
                               setTasks(tasks.filter(t => t.category !== cat))
                               setActiveCategory('General')
@@ -1085,7 +1194,13 @@ function App() {
                       title: 'Danger Zone',
                       message: `DELETE "${title.toUpperCase()}" AND ALL HISTORY?`,
                       onConfirm: async () => {
-                        await supabase.from('routines').delete().eq('id', id)
+                        if (session) {
+                          try {
+                            await StorageService.deleteRoutine(id)
+                          } catch (err) {
+                            console.error('Error deleting routine:', err)
+                          }
+                        }
                         setRoutines(routines.filter(r => r.id !== id))
                         setConfirmDelete(null)
                       }
@@ -1097,7 +1212,7 @@ function App() {
           </div>
         </section>
       </>
-    ) : (
+    ) : currentView === 'board' ? (
       <KanbanBoard
         tasks={tasks}
         newTaskTitle={newTaskTitle}
@@ -1108,10 +1223,23 @@ function App() {
         selectedDateStr={selectedDateStr}
         finalizeTask={finalizeTask}
       />
-    )}
-      </div>
+    ) : currentView === 'leaderboard' ? (
+      <Leaderboard />
+    ) : currentView === 'social' ? (
+      <SocialFeed session={session} />
+    ) : currentView === 'pods' ? (
+      <AccountabilityPods session={session} />
+    ) : (
+      <Profile 
+        profile={profile} 
+        routines={routines} 
+        dailyStreak={dailyStreak} 
+        weeklyStreak={weeklyStreak} 
+      />
+    )}      </div>
 
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
+      {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}
       
       {confirmDelete && (
         <ConfirmDialog

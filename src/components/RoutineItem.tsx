@@ -1,5 +1,5 @@
 import { CheckCircle2, Circle, Pencil, Trash2 } from 'lucide-react'
-import { type Routine } from '../App'
+import { Routine } from '../types'
 
 interface RoutineItemProps {
   routine: Routine

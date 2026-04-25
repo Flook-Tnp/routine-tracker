@@ -1,5 +1,5 @@
 import { Plus, ChevronLeft, ChevronRight, Trash2, Check } from 'lucide-react'
-import { type Task } from '../App'
+import { Task } from '../types'
 
 interface KanbanBoardProps {
   tasks: Task[]
