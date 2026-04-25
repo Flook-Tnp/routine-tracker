@@ -140,7 +140,10 @@ function App() {
             .insert([{ title: newTaskTitle, status: 'todo' }])
             .select()
 
-          if (!error && data) {
+          if (error) {
+            console.error('Error adding task:', error)
+            alert(`Error adding task: ${error.message}. Did you run the SQL for the "tasks" table?`)
+          } else if (data) {
             setTasks([data[0], ...tasks])
             setNewTaskTitle('')
           }
@@ -152,7 +155,9 @@ function App() {
             .update({ status: newStatus })
             .eq('id', id)
 
-          if (!error) {
+          if (error) {
+            console.error('Error moving task:', error)
+          } else {
             setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t))
           }
         }
@@ -163,7 +168,9 @@ function App() {
             .delete()
             .eq('id', id)
 
-          if (!error) {
+          if (error) {
+            console.error('Error deleting task:', error)
+          } else {
             setTasks(tasks.filter(t => t.id !== id))
           }
         }
