@@ -1,4 +1,4 @@
-import { Routine, Profile as ProfileType } from '../types'
+import type { Routine, Profile as ProfileType } from '../types'
 import { Award, Zap, Target } from 'lucide-react'
 
 interface ProfileProps {

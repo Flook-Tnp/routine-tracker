@@ -10,11 +10,11 @@ import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AuthModal } from './components/Auth'
 import { StorageService } from './lib/storage'
-import { Routine, RoutineCompletion, Task, TaskBreakdownItem } from './types'
-import { Session } from '@supabase/supabase-js'
+import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile } from './types'
+import type { Session } from '@supabase/supabase-js'
 import { calculateXP } from './lib/gamification'
 import { Leaderboard } from './components/Leaderboard'
-import { Profile } from './components/Profile'
+import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
 
@@ -1230,7 +1230,7 @@ function App() {
     ) : currentView === 'pods' ? (
       <AccountabilityPods session={session} />
     ) : (
-      <Profile 
+      <ProfileComponent 
         profile={profile} 
         routines={routines} 
         dailyStreak={dailyStreak} 

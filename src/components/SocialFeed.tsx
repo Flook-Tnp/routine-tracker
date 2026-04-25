@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
 import { MessageSquare, Send } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { Post, Session } from '../types'
+import type { Post, Reaction } from '../types'
+import type { Session } from '@supabase/supabase-js'
 
 interface SocialFeedProps {
   session: Session | null

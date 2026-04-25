@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { StorageService } from '../lib/storage'
 import { Trophy, Medal } from 'lucide-react'
-import { Profile } from '../types'
+import type { Profile } from '../types'
 
 export function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<Partial<Profile>[]>([])

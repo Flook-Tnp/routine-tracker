@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction } from '../types'
+import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction } from '../types'
 
 export const StorageService = {
   async fetchRoutines(): Promise<Routine[]> {

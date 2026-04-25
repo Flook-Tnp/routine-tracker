@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
 import { Users, Plus, UserPlus, LogOut, ArrowRight } from 'lucide-react'
-import { Group, Session } from '../types'
+import type { Group } from '../types'
+import type { Session } from '@supabase/supabase-js'
 
 interface AccountabilityPodsProps {
   session: Session | null

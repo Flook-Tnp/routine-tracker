@@ -1,6 +1,6 @@
 import { Minimize2, Maximize2 } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line, Brush } from 'recharts'
-import { Routine } from '../types'
+import type { Routine } from '../types'
 
 interface FullscreenChartProps {
   isChartFullscreen: boolean
