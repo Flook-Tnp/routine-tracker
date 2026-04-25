@@ -178,8 +178,8 @@ export const StorageService = {
     return data
   },
 
-  async fetchPosts(): Promise<Post[]> {
-    const { data, error } = await supabase
+  async fetchPosts(groupId?: string): Promise<Post[]> {
+    let query = supabase
       .from('posts')
       .select(`
         *,
@@ -188,17 +188,37 @@ export const StorageService = {
         reactions (*)
       `)
       .order('created_at', { ascending: false })
+    
+    if (groupId) {
+      query = query.eq('group_id', groupId)
+    } else {
+      query = query.is('group_id', null)
+    }
+
+    const { data, error } = await query
     if (error) throw error
     return data as Post[]
   },
 
-  async createPost(content: string, userId: string, type: string = 'manual', metadata: any = {}): Promise<Post> {
+  async createPost(content: string, userId: string, type: string = 'manual', metadata: any = {}, groupId?: string): Promise<Post> {
     const { data, error } = await supabase
       .from('posts')
-      .insert([{ content, user_id: userId, type, metadata }])
+      .insert([{ content, user_id: userId, type, metadata, group_id: groupId }])
       .select()
     if (error) throw error
     return data[0] as Post
+  },
+
+  async fetchPodMembers(groupId: string): Promise<Profile[]> {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select(`
+        profiles (*)
+      `)
+      .eq('group_id', groupId)
+    
+    if (error) throw error
+    return data.map((d: any) => d.profiles) as Profile[]
   },
 
   async deletePost(postId: string): Promise<void> {

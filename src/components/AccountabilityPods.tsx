@@ -1,19 +1,24 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2 } from 'lucide-react'
-import type { Group } from '../types'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award } from 'lucide-react'
+import type { Group, Profile } from '../types'
 import type { Session } from '@supabase/supabase-js'
+import { SocialFeed } from './SocialFeed'
 
 interface AccountabilityPodsProps {
   session: Session | null
+  onShareStreak: () => void
+  dailyStreak: number
 }
 
-export function AccountabilityPods({ session }: AccountabilityPodsProps) {
+export function AccountabilityPods({ session, onShareStreak, dailyStreak }: AccountabilityPodsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
+  const [selectedPod, setSelectedPod] = useState<Group | null>(null)
+  const [podMembers, setPodMembers] = useState<Profile[]>([])
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -26,13 +31,26 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
     }
   }, [])
 
+  const fetchMembers = useCallback(async (groupId: string) => {
+    try {
+      const data = await StorageService.fetchPodMembers(groupId)
+      setPodMembers(data)
+    } catch (err) {
+      console.error('Error fetching members:', err)
+    }
+  }, [])
+
   useEffect(() => {
     let mounted = true
     if (mounted) {
-      fetchGroups()
+      if (selectedPod) {
+        fetchMembers(selectedPod.id)
+      } else {
+        fetchGroups()
+      }
     }
     return () => { mounted = false }
-  }, [fetchGroups])
+  }, [fetchGroups, fetchMembers, selectedPod])
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,6 +99,71 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
   }
 
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Pod_Network...</div>
+
+  if (selectedPod) {
+    return (
+      <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500 pb-20">
+        <button 
+          onClick={() => setSelectedPod(null)}
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+        >
+          <ChevronLeft size={14} /> Back_to_Network
+        </button>
+
+        <section className="bg-gray-950 border border-gray-900 p-8 space-y-6">
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
+              <p className="text-xs text-gray-500 font-mono leading-relaxed max-w-lg">{selectedPod.description}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[8px] text-gray-600 uppercase font-bold tracking-widest">Protocol_Established</p>
+              <p className="text-[10px] text-cyan-500 font-mono">{new Date(selectedPod.created_at).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-900">
+            <div className="space-y-4">
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
+                <Users size={12} className="text-cyan-500" /> Neural_Members
+              </h3>
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member, idx) => (
+                  <div key={member.id} className="bg-black/40 border border-gray-900 p-3 flex justify-between items-center group hover:border-gray-700 transition-all">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black text-gray-700 w-4">{String(idx + 1).padStart(2, '0')}</span>
+                      <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase">
+                        {member.username?.[0] || '?'}
+                      </div>
+                      <span className="text-xs font-bold text-gray-300 uppercase">{member.username || 'Unknown_Entity'}</span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1 text-orange-500">
+                        <Zap size={10} fill="currentColor" />
+                        <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
+                <Award size={12} className="text-orange-500" /> Pod_Pulse
+              </h3>
+              <SocialFeed 
+                session={session} 
+                groupId={selectedPod.id} 
+                dailyStreak={dailyStreak} 
+                onShareStreak={onShareStreak} 
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -163,7 +246,10 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
               <div className="pt-4 border-t border-gray-900/50 flex justify-between items-center">
                 {isMember ? (
                   <>
-                    <button className="flex items-center gap-2 text-cyan-400 text-[8px] font-black uppercase tracking-widest hover:text-cyan-300">
+                    <button 
+                      onClick={() => setSelectedPod(group)}
+                      className="flex items-center gap-2 text-cyan-400 text-[8px] font-black uppercase tracking-widest hover:text-cyan-300"
+                    >
                       Access_Pod <ArrowRight size={10} />
                     </button>
                     <button 

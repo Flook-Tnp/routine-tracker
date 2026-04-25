@@ -1265,8 +1265,13 @@ function App() {
         onShareStreak={handleShareStreak}
         dailyStreak={dailyStreak}
       />
-    ) : currentView === 'pods' ? (      <AccountabilityPods session={session} />
-    ) : (
+      ) : currentView === 'pods' ? (
+      <AccountabilityPods 
+        session={session} 
+        onShareStreak={handleShareStreak}
+        dailyStreak={dailyStreak}
+      />
+      ) : (
       <ProfileComponent 
         profile={profile} 
         routines={routines} 
