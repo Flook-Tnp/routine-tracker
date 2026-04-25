@@ -4,14 +4,19 @@ import { Award, Zap, Target } from 'lucide-react'
 interface ProfileProps {
   profile: ProfileType | null
   routines: Routine[]
+  tasks: any[]
   dailyStreak: number
   weeklyStreak: number
+  onSyncLocalData: () => void
 }
 
-export function Profile({ profile, routines, dailyStreak, weeklyStreak }: ProfileProps) {
+export function Profile({ profile, routines, tasks, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
   if (!profile) return null
 
   const categories = Array.from(new Set(routines.map(r => r.category || 'General')))
+  
+  // Check if we have local guest data (simplified check: if session exists but data might need sync)
+  // Actually, we'll just always show the option to sync if the user wants to ensure cloud alignment.
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -22,16 +27,26 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak }: Profil
           </div>
         </div>
         <h2 className="text-xl font-black text-white uppercase tracking-tighter">{profile.username}</h2>
-        <div className="flex justify-center gap-2">
-          {profile.badges?.map((badge) => (
-            <div key={badge.id} className="px-2 py-1 bg-gray-900 border border-gray-800 text-[10px] uppercase font-bold text-cyan-400 flex items-center gap-1">
-              <span>{badge.icon}</span>
-              {badge.name}
-            </div>
-          ))}
-          {(!profile.badges || profile.badges.length === 0) && (
-            <p className="text-[8px] text-gray-600 uppercase tracking-widest">No badges earned yet</p>
-          )}
+        
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex justify-center gap-2">
+            {profile.badges?.map((badge) => (
+              <div key={badge.id} className="px-2 py-1 bg-gray-900 border border-gray-800 text-[10px] uppercase font-bold text-cyan-400 flex items-center gap-1">
+                <span>{badge.icon}</span>
+                {badge.name}
+              </div>
+            ))}
+            {(!profile.badges || profile.badges.length === 0) && (
+              <p className="text-[8px] text-gray-600 uppercase tracking-widest">No badges earned yet</p>
+            )}
+          </div>
+
+          <button 
+            onClick={onSyncLocalData}
+            className="px-4 py-2 border border-orange-500/30 text-orange-500 text-[9px] font-black uppercase tracking-[0.2em] hover:bg-orange-500 hover:text-black transition-all"
+          >
+            Manual_Cloud_Sync
+          </button>
         </div>
       </section>
 
