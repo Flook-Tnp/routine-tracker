@@ -179,6 +179,19 @@ function App() {
     localStorage.setItem('disby_active_category', activeCategory)
   }, [activeCategory])
 
+  const handleShareStreak = async () => {
+    if (!session || dailyStreak === 0) return
+    try {
+      const content = `PROTOCOL_MILESTONE: I have achieved a ${dailyStreak}-day streak in ${activeCategory}! 🔥`
+      await StorageService.createPost(content, session.user.id, 'milestone', { streak: dailyStreak, category: activeCategory })
+      alert('MILESTONE_TRANSMITTED: Your achievement has been shared with the community.')
+      setCurrentView('social')
+    } catch (err: any) {
+      console.error('Error sharing streak:', err)
+      alert(`SHARE_FAILURE: ${err.message}`)
+    }
+  }
+
   async function addTask(e: React.FormEvent) {
     e.preventDefault()
     if (!newTaskTitle.trim()) return
@@ -814,6 +827,17 @@ function App() {
                     <p className="text-[9px] text-gray-600 uppercase tracking-widest">Weekly</p>
                   </div>
                 </div>
+
+                {session && dailyStreak > 0 && (
+                  <button 
+                    onClick={handleShareStreak}
+                    className="mt-1 px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse"
+                    title="Share your streak to the community"
+                  >
+                    <Plus size={10} />
+                    Share_Streak
+                  </button>
+                )}
 
                 <div className="flex flex-col items-end gap-2 pt-1">
                   {session ? (

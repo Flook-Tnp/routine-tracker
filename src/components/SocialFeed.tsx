@@ -20,8 +20,9 @@ export function SocialFeed({ session }: SocialFeedProps) {
     try {
       const data = await StorageService.fetchPosts()
       setPosts(data)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching posts:', err)
+      alert(`FEED_SYNC_ERROR: ${err.message || 'Check connection'}`)
     } finally {
       setLoading(false)
     }
@@ -182,6 +183,12 @@ export function SocialFeed({ session }: SocialFeedProps) {
             )}
           </div>
         ))}
+
+        {posts.length === 0 && !loading && (
+          <div className="py-20 text-center border border-dashed border-gray-900">
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">No transmissions detected in this sector.</p>
+          </div>
+        )}
       </div>
     </div>
   )
