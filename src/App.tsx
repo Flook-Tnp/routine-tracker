@@ -106,22 +106,25 @@ function App() {
       
       if (currentSession?.user) {
         try {
-          const [p, routinesData, allCompletions, tasksData] = await Promise.all([
-            StorageService.fetchProfile(currentSession.user.id),
+          // Fetch data separately so one failure doesn't block the others
+          StorageService.fetchProfile(currentSession.user.id)
+            .then(p => mounted && setProfile(p))
+            .catch(err => console.error('Profile fetch failed:', err))
+
+          const [routinesData, allCompletions, tasksData] = await Promise.all([
             StorageService.fetchRoutines(),
             StorageService.fetchCompletions(),
             StorageService.fetchTasks()
           ])
           
           if (mounted) {
-            setProfile(p)
             setRoutines(routinesData)
             setCompletions(allCompletions)
             setTasks(tasksData)
             setLoading(false)
           }
         } catch (err) {
-          console.error('PROTOCOL_ERROR: Initial data sequence failed', err)
+          console.error('PROTOCOL_ERROR: Data retrieval failed', err)
           if (mounted) setLoading(false)
         }
       } else {
@@ -150,6 +153,16 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  // Persist category selection
+  useEffect(() => {
+    const saved = localStorage.getItem('disby_active_category')
+    if (saved) setActiveCategory(saved)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('disby_active_category', activeCategory)
+  }, [activeCategory])
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault()
