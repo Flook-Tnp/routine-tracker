@@ -68,11 +68,8 @@ function App() {
 
   const syncData = useCallback(async (currentRoutines: Routine[], currentTasks: Task[]) => {
     if (!session?.user) return
-
     try {
       setLoading(true)
-      console.log('SYNC_PROTOCOL: Initializing data transmission...')
-      // Sync routines
       for (const r of currentRoutines) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { id, ...routineData } = r
@@ -84,8 +81,6 @@ function App() {
         await StorageService.addTask({ ...taskData, id: undefined }, session.user.id)
       }
       
-      console.log('SYNC_PROTOCOL: Transmission complete. Re-synchronizing state...')
-      // After sync, re-fetch from cloud
       const [cloudRoutines, cloudCompletions, cloudTasks] = await Promise.all([
         StorageService.fetchRoutines(),
         StorageService.fetchCompletions(),
@@ -102,63 +97,59 @@ function App() {
   }, [session])
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      if (session?.user) {
-        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
+    let mounted = true
+
+    const handleSession = async (currentSession: Session | null) => {
+      if (!mounted) return
+      
+      setSession(currentSession)
+      
+      if (currentSession?.user) {
+        try {
+          const [p, routinesData, allCompletions, tasksData] = await Promise.all([
+            StorageService.fetchProfile(currentSession.user.id),
+            StorageService.fetchRoutines(),
+            StorageService.fetchCompletions(),
+            StorageService.fetchTasks()
+          ])
+          
+          if (mounted) {
+            setProfile(p)
+            setRoutines(routinesData)
+            setCompletions(allCompletions)
+            setTasks(tasksData)
+            setLoading(false)
+          }
+        } catch (err) {
+          console.error('PROTOCOL_ERROR: Initial data sequence failed', err)
+          if (mounted) setLoading(false)
+        }
+      } else {
+        if (mounted) {
+          setProfile(null)
+          setRoutines([])
+          setCompletions([])
+          setTasks([])
+          setLoading(false)
+        }
       }
+    }
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session)
     })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session)
-      if (session?.user) {
-        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
-      } else {
-        setProfile(null)
-      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleSession(session)
     })
 
-    return () => subscription.unsubscribe()
-  }, [syncData]) // Only depend on syncData, not the data it modifies
-
-  const fetchData = useCallback(async () => {
-    if (!session) {
-      setLoading(false)
-      return
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
     }
-    try {
-      setLoading(true)
-      console.log('FETCH_DATA: Retrieving user progress...')
-      const routinesData = await StorageService.fetchRoutines()
-      setRoutines(routinesData)
-      
-      const allCompletions = await StorageService.fetchCompletions()
-      setCompletions(allCompletions)
-    } catch (err) {
-      console.error('Fatal data fetch error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [session])
-
-  const fetchTasks = useCallback(async () => {
-    if (!session) return
-    try {
-      const data = await StorageService.fetchTasks()
-      setTasks(data)
-    } catch (err) {
-      console.error('Fetch tasks error:', err)
-    }
-  }, [session])
-
-  useEffect(() => {
-    if (session) {
-      fetchData()
-      fetchTasks()
-    }
-  }, [session, fetchData, fetchTasks])
+  }, [])
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault()
