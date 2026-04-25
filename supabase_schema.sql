@@ -33,8 +33,13 @@ CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'todo', -- 'todo', 'in-progress', 'done'
+  category TEXT NOT NULL DEFAULT 'General',
+  completed_date DATE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_tasks_category ON tasks(category);
+CREATE INDEX IF NOT EXISTS idx_tasks_completed_date ON tasks(completed_date);
 
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all access to tasks" ON tasks FOR ALL USING (true);

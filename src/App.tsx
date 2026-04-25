@@ -28,6 +28,8 @@ export interface Task {
   id: string
   title: string
   status: 'todo' | 'in-progress' | 'done'
+  category: string
+  completed_date: string | null
   created_at: string
 }
 
@@ -150,7 +152,7 @@ function App() {
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert([{ title: newTaskTitle, status: 'todo' }])
+      .insert([{ title: newTaskTitle, status: 'todo', category: activeCategory }])
       .select()
 
     if (error) {
@@ -162,15 +164,34 @@ function App() {
   }
 
   async function moveTask(id: string, newStatus: 'todo' | 'in-progress' | 'done') {
+    // When moving back from 'done', or just changing status, clear completed_date
+    const updates: Partial<Task> = { status: newStatus }
+    if (newStatus !== 'done') {
+      updates.completed_date = null
+    }
+
     const { error } = await supabase
       .from('tasks')
-      .update({ status: newStatus })
+      .update(updates)
       .eq('id', id)
 
     if (error) {
       console.error('Error moving task:', error)
     } else {
-      setTasks(tasks.map(t => t.id === id ? { ...t, status: newStatus } : t))
+      setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
+    }
+  }
+
+  async function finalizeTask(id: string, dateStr: string) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ completed_date: dateStr })
+      .eq('id', id)
+
+    if (error) {
+      console.error('Error finalizing task:', error)
+    } else {
+      setTasks(tasks.map(t => t.id === id ? { ...t, completed_date: dateStr } : t))
     }
   }
 
@@ -210,13 +231,19 @@ function App() {
       return
     }
 
-    const { error } = await supabase
+    const { error: routineError } = await supabase
       .from('routines')
       .update({ category: newCategoryTitle })
       .eq('category', activeCategory)
 
-    if (!error) {
+    const { error: taskError } = await supabase
+      .from('tasks')
+      .update({ category: newCategoryTitle })
+      .eq('category', activeCategory)
+
+    if (!routineError && !taskError) {
       setRoutines(routines.map(r => r.category === activeCategory ? { ...r, category: newCategoryTitle } : r))
+      setTasks(tasks.map(t => t.category === activeCategory ? { ...t, category: newCategoryTitle } : t))
       setActiveCategory(newCategoryTitle)
     }
     setEditingCategory(null)
@@ -778,7 +805,9 @@ function App() {
                             message: `DELETE ENTIRE SECTION "${cat.toUpperCase()}" AND ALL ITS HISTORY?`,
                             onConfirm: async () => {
                               await supabase.from('routines').delete().eq('category', cat)
+                              await supabase.from('tasks').delete().eq('category', cat)
                               setRoutines(routines.filter(r => r.category !== cat))
+                              setTasks(tasks.filter(t => t.category !== cat))
                               setActiveCategory('General')
                               setConfirmDelete(null)
                             }
@@ -1076,6 +1105,9 @@ function App() {
         addTask={addTask}
         moveTask={moveTask}
         deleteTask={deleteTask}
+        activeCategory={activeCategory}
+        selectedDateStr={selectedDateStr}
+        finalizeTask={finalizeTask}
       />
     )}
       </div>
