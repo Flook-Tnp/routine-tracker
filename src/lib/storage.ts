@@ -86,7 +86,8 @@ export const StorageService = {
       if (error) throw error
       
       if (userId) {
-        await supabase.rpc('decrement_xp', { amount: xpEarned, user_id: userId })
+        const { error: rpcErr } = await supabase.rpc('decrement_xp', { amount: xpEarned, user_id: userId })
+        if (rpcErr) console.error('XP_DECREMENT_FAILED:', rpcErr)
       }
       return null
     } else {
@@ -97,7 +98,8 @@ export const StorageService = {
       if (error) throw error
 
       if (userId) {
-        await supabase.rpc('increment_xp', { amount: xpEarned, user_id: userId })
+        const { error: rpcErr } = await supabase.rpc('increment_xp', { amount: xpEarned, user_id: userId })
+        if (rpcErr) console.error('XP_INCREMENT_FAILED:', rpcErr)
       }
       return data[0] as RoutineCompletion
     }

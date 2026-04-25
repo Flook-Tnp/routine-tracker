@@ -28,7 +28,11 @@ export function SocialFeed({ session }: SocialFeedProps) {
   }, [])
 
   useEffect(() => {
-    fetchPosts()
+    let mounted = true
+    if (mounted) {
+      fetchPosts()
+    }
+    return () => { mounted = false }
   }, [fetchPosts])
 
   const handleCreatePost = async (e: React.FormEvent) => {

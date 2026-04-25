@@ -27,7 +27,11 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
   }, [])
 
   useEffect(() => {
-    fetchGroups()
+    let mounted = true
+    if (mounted) {
+      fetchGroups()
+    }
+    return () => { mounted = false }
   }, [fetchGroups])
 
   const handleCreateGroup = async (e: React.FormEvent) => {
