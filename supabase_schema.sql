@@ -15,6 +15,12 @@ CREATE TABLE routine_completions (
   UNIQUE(routine_id, completed_date)
 );
 
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_routine_completions_routine_id ON routine_completions(routine_id);
+CREATE INDEX IF NOT EXISTS idx_routine_completions_completed_date ON routine_completions(completed_date);
+CREATE INDEX IF NOT EXISTS idx_routines_category ON routines(category);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+
 -- Basic RLS (Row Level Security)
 ALTER TABLE routines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE routine_completions ENABLE ROW LEVEL SECURITY;
