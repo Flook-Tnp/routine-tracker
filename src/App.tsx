@@ -164,7 +164,7 @@ function App() {
 
     if (session) {
       try {
-        const data = await StorageService.addTask(newTask)
+        const data = await StorageService.addTask(newTask, session.user.id)
         setTasks([data, ...tasks])
       } catch (err) {
         console.error('Error adding task:', err)
@@ -280,7 +280,7 @@ function App() {
 
     if (session) {
       try {
-        const data = await StorageService.addRoutine(newRoutine)
+        const data = await StorageService.addRoutine(newRoutine, session.user.id)
         setRoutines([...routines, data])
       } catch (err) {
         console.error('Error adding routine:', err)
