@@ -38,8 +38,9 @@ export function SocialFeed({ session }: SocialFeedProps) {
       await StorageService.createPost(newPostContent, session.user.id)
       setNewPostContent('')
       fetchPosts()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating post:', err)
+      alert(`TRANSMISSION_ERROR: ${err.message || 'Check if posts table exists'}`)
     }
   }
 

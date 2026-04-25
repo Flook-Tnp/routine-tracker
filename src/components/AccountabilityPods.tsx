@@ -39,8 +39,9 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
       setNewDesc('')
       setIsCreating(false)
       fetchGroups()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error creating group:', err)
+      alert(`POD_INITIALIZATION_FAILURE: ${err.message || 'Check if groups table exists'}`)
     }
   }
 

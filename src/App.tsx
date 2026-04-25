@@ -335,8 +335,9 @@ function App() {
         }
         // Refresh profile
         StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error toggling completion:', err)
+        alert(`DATABASE_ERROR: ${err.message || 'Check if you ran the SQL script in Supabase'}`)
       }
     } else {
       if (existing) {
