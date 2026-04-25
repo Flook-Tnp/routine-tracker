@@ -1225,7 +1225,6 @@ function App() {
       <ProfileComponent 
         profile={profile} 
         routines={routines} 
-        tasks={tasks}
         dailyStreak={dailyStreak} 
         weeklyStreak={weeklyStreak} 
         onSyncLocalData={() => syncData(routines, tasks)}

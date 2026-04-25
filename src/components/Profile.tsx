@@ -4,13 +4,12 @@ import { Award, Zap, Target } from 'lucide-react'
 interface ProfileProps {
   profile: ProfileType | null
   routines: Routine[]
-  tasks: any[]
   dailyStreak: number
   weeklyStreak: number
   onSyncLocalData: () => void
 }
 
-export function Profile({ profile, routines, tasks, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
+export function Profile({ profile, routines, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
   if (!profile) return null
 
   const categories = Array.from(new Set(routines.map(r => r.category || 'General')))
