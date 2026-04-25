@@ -828,17 +828,6 @@ function App() {
                   </div>
                 </div>
 
-                {session && dailyStreak > 0 && (
-                  <button 
-                    onClick={handleShareStreak}
-                    className="mt-1 px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse"
-                    title="Share your streak to the community"
-                  >
-                    <Plus size={10} />
-                    Share_Streak
-                  </button>
-                )}
-
                 <div className="flex flex-col items-end gap-2 pt-1">
                   {session ? (
                     <button 
@@ -1271,9 +1260,12 @@ function App() {
     ) : currentView === 'leaderboard' ? (
       <Leaderboard />
     ) : currentView === 'social' ? (
-      <SocialFeed session={session} />
-    ) : currentView === 'pods' ? (
-      <AccountabilityPods session={session} />
+      <SocialFeed 
+        session={session} 
+        onShareStreak={handleShareStreak}
+        dailyStreak={dailyStreak}
+      />
+    ) : currentView === 'pods' ? (      <AccountabilityPods session={session} />
     ) : (
       <ProfileComponent 
         profile={profile} 

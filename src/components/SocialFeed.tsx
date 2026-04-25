@@ -1,15 +1,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { MessageSquare, Send, Trash2 } from 'lucide-react'
+import { MessageSquare, Send, Trash2, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
 
 interface SocialFeedProps {
   session: Session | null
+  onShareStreak: () => void
+  dailyStreak: number
 }
 
-export function SocialFeed({ session }: SocialFeedProps) {
+export function SocialFeed({ session, onShareStreak, dailyStreak }: SocialFeedProps) {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -87,7 +89,18 @@ export function SocialFeed({ session }: SocialFeedProps) {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <section className="space-y-4">
-        <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
+        <div className="flex justify-between items-end">
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
+          {session && dailyStreak > 0 && (
+            <button 
+              onClick={onShareStreak}
+              className="px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
+            >
+              <Plus size={10} />
+              Share_Active_Streak
+            </button>
+          )}
+        </div>
         {session ? (
           <form onSubmit={handleCreatePost} className="space-y-3">
             <textarea
