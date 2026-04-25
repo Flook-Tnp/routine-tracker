@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight } from 'lucide-react'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2 } from 'lucide-react'
 import type { Group } from '../types'
 import type { Session } from '@supabase/supabase-js'
 
@@ -62,6 +62,17 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
       fetchGroups()
     } catch (err) {
       console.error('Error leaving group:', err)
+    }
+  }
+
+  const handleDeleteGroup = async (groupId: string) => {
+    if (!session || !window.confirm('DELETE_POD: Are you sure? All data will be lost.')) return
+    try {
+      await StorageService.deleteGroup(groupId)
+      fetchGroups()
+    } catch (err) {
+      console.error('Error deleting group:', err)
+      alert('DELETE_FAILURE: Protocol could not be terminated.')
     }
   }
 
@@ -128,7 +139,18 @@ export function AccountabilityPods({ session }: AccountabilityPodsProps) {
                   <div className="p-2 bg-gray-900 border border-gray-800 text-cyan-500">
                     <Users size={16} />
                   </div>
-                  <span className="text-[8px] text-gray-700 font-mono">[{group.group_members?.length || 0}] Members</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] text-gray-700 font-mono">[{group.group_members?.length || 0}] Members</span>
+                    {group.created_by === session?.user?.id && (
+                      <button 
+                        onClick={() => handleDeleteGroup(group.id)}
+                        className="text-gray-800 hover:text-red-500 transition-colors"
+                        title="Terminate Pod"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <h3 className="text-sm font-bold text-white uppercase tracking-tight">{group.name}</h3>
                 <p className="text-[10px] text-gray-500 font-mono leading-relaxed line-clamp-2">{group.description}</p>

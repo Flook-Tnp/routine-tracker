@@ -274,5 +274,13 @@ export const StorageService = {
       .eq('group_id', groupId)
       .eq('user_id', userId)
     if (error) throw error
+  },
+
+  async deleteGroup(groupId: string): Promise<void> {
+    const { error } = await supabase
+      .from('groups')
+      .delete()
+      .eq('id', groupId)
+    if (error) throw error
   }
 }
