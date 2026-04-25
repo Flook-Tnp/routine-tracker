@@ -152,7 +152,7 @@ function App() {
 
     const { data, error } = await supabase
       .from('tasks')
-      .insert([{ title: newTaskTitle, status: 'todo', category: activeCategory }])
+      .insert([{ title: newTaskTitle, status: 'todo', category: 'General' }])
       .select()
 
     if (error) {
@@ -1105,7 +1105,6 @@ function App() {
         addTask={addTask}
         moveTask={moveTask}
         deleteTask={deleteTask}
-        activeCategory={activeCategory}
         selectedDateStr={selectedDateStr}
         finalizeTask={finalizeTask}
       />

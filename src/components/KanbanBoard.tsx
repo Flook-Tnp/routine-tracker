@@ -8,7 +8,6 @@ interface KanbanBoardProps {
   addTask: (e: React.FormEvent) => void
   moveTask: (id: string, newStatus: 'todo' | 'in-progress' | 'done') => void
   deleteTask: (id: string) => void
-  activeCategory: string
   selectedDateStr: string
   finalizeTask: (id: string, dateStr: string) => void
 }
@@ -20,14 +19,12 @@ export function KanbanBoard({
   addTask, 
   moveTask, 
   deleteTask,
-  activeCategory,
   selectedDateStr,
   finalizeTask
 }: KanbanBoardProps) {
-  // Filter tasks by category and whether they are active or completed on the selected date
+  // Filter tasks by whether they are active or completed on the selected date
   const filteredTasks = tasks.filter(t => 
-    (t.category || 'General') === activeCategory && 
-    (t.completed_date === null || t.completed_date === selectedDateStr)
+    t.completed_date === null || t.completed_date === selectedDateStr
   )
 
   return (
@@ -35,7 +32,7 @@ export function KanbanBoard({
       <section className="space-y-4">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{activeCategory.toUpperCase()}_TASK_BOARD</h2>
+            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">GLOBAL_TASK_BOARD</h2>
             <p className="text-[8px] text-gray-600 uppercase tracking-widest">Protocol: Direct Management</p>
           </div>
         </div>
@@ -45,7 +42,7 @@ export function KanbanBoard({
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder={`NEW_${activeCategory.toUpperCase()}_ENTRY...`}
+            placeholder="NEW_GLOBAL_ENTRY..."
             className="flex-1 bg-gray-900 border border-gray-800 px-4 py-2 focus:outline-none focus:border-cyan-500 text-sm text-gray-400 font-mono"
           />
           <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-cyan-500 hover:text-white transition-all duration-300">
