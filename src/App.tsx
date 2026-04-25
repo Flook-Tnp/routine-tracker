@@ -71,6 +71,7 @@ function App() {
 
     try {
       setLoading(true)
+      console.log('SYNC_PROTOCOL: Initializing data transmission...')
       // Sync routines
       for (const r of currentRoutines) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -83,6 +84,7 @@ function App() {
         await StorageService.addTask({ ...taskData, id: undefined }, session.user.id)
       }
       
+      console.log('SYNC_PROTOCOL: Transmission complete. Re-synchronizing state...')
       // After sync, re-fetch from cloud
       const [cloudRoutines, cloudCompletions, cloudTasks] = await Promise.all([
         StorageService.fetchRoutines(),
@@ -113,8 +115,22 @@ function App() {
       setSession(session)
       if (session?.user) {
         StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
-        if (event === 'SIGNED_IN' && (routines.length > 0 || tasks.length > 0)) {
-          syncData(routines, tasks)
+        
+        // We only trigger sync if it's a fresh sign in AND we have local guest data
+        // Use functional updates or refs to check state without including them in dependencies
+        if (event === 'SIGNED_IN') {
+          setRoutines(prevRoutines => {
+            setTasks(prevTasks => {
+              if (prevRoutines.length > 0 || prevTasks.length > 0) {
+                // We check if the data is "guest data" (no user_id)
+                // In our implementation, routines from cloud always have user_id (eventually)
+                // but for simplicity, we trigger sync if there is data and we JUST signed in.
+                syncData(prevRoutines, prevTasks)
+              }
+              return prevTasks
+            })
+            return prevRoutines
+          })
         }
       } else {
         setProfile(null)
@@ -122,7 +138,7 @@ function App() {
     })
 
     return () => subscription.unsubscribe()
-  }, [syncData, routines, tasks])
+  }, [syncData]) // Only depend on syncData, not the data it modifies
 
   const fetchData = useCallback(async () => {
     if (!session) {
