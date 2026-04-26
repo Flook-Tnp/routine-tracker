@@ -240,20 +240,31 @@ BEGIN
   END IF;
 
   -- 3. Live Streak Update
-  IF member_count > 1 AND (last_date IS NULL OR last_date < target_date) THEN
+  IF member_count > 1 THEN
     SELECT COUNT(DISTINCT user_id)::INT INTO active_member_count
     FROM group_task_completions gtc
     JOIN group_tasks gt ON gtc.task_id = gt.id
     WHERE gt.group_id = target_group_id AND gtc.completed_date = target_date;
 
     IF active_member_count::FLOAT / member_count >= threshold THEN
-      UPDATE groups 
-      SET current_streak = COALESCE(current_streak, 0) + 1,
-          max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
-          last_streak_date = target_date
-      WHERE id = target_group_id;
-      
-      SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE id = target_group_id;
+      IF last_date IS NULL OR last_date < target_date THEN
+        UPDATE groups 
+        SET current_streak = COALESCE(current_streak, 0) + 1,
+            max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
+            last_streak_date = target_date
+        WHERE groups.id = target_group_id;
+        
+        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE groups.id = target_group_id;
+      END IF;
+    ELSE
+      IF last_date = target_date THEN
+        UPDATE groups 
+        SET current_streak = GREATEST(COALESCE(current_streak, 1) - 1, 0),
+            last_streak_date = CASE WHEN COALESCE(current_streak, 1) - 1 > 0 THEN target_date - INTERVAL '1 day' ELSE NULL END
+        WHERE groups.id = target_group_id;
+        
+        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE groups.id = target_group_id;
+      END IF;
     END IF;
   END IF;
 
