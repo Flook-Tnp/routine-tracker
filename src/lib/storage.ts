@@ -381,9 +381,9 @@ export const StorageService = {
     if (error) throw error
   },
 
-  async pingUser(targetUserId: string): Promise<{ success: boolean; message: string; next_available?: string }> {
+  async pingUser(targetUserId: string, groupId: string): Promise<{ success: boolean; message: string; next_available?: string }> {
     const { data, error } = await supabase
-      .rpc('ping_user', { target_user_id: targetUserId })
+      .rpc('ping_user', { target_user_id: targetUserId, target_group_id: groupId })
     
     if (error) throw error
     return data

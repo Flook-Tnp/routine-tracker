@@ -104,8 +104,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   }
 
   const handlePing = async (userId: string, username: string) => {
+    if (!selectedPod) return
     try {
-      const result = await StorageService.pingUser(userId)
+      const result = await StorageService.pingUser(userId, selectedPod.id)
       if (result.success) {
         alert(`TRANSMISSION_SUCCESS: Nudge sent to ${username}.`)
       } else {

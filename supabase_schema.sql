@@ -299,3 +299,49 @@ BEGIN
   RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Add group_id to pings to allow per-pod rate limiting
+ALTER TABLE pings ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES groups(id) ON DELETE CASCADE;
+
+-- Update the ping_user function to include group_id
+CREATE OR REPLACE FUNCTION ping_user(target_user_id UUID, target_group_id UUID)
+RETURNS JSON AS $$
+DECLARE
+  last_ping TIMESTAMP;
+  sender_id UUID;
+  sender_name TEXT;
+BEGIN
+  sender_id := auth.uid();
+  SELECT username INTO sender_name FROM profiles WHERE id = sender_id;
+  
+  IF sender_id = target_user_id THEN
+    RETURN json_build_object('success', false, 'message', 'SELF_PING_PROHIBITED');
+  END IF;
+
+  -- Check last ping time FOR THIS SPECIFIC GROUP
+  SELECT created_at INTO last_ping
+  FROM pings
+  WHERE pings.sender_id = ping_user.sender_id 
+    AND pings.receiver_id = target_user_id
+    AND pings.group_id = target_group_id
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  IF last_ping IS NOT NULL AND last_ping > (now() - interval '24 hours') THEN
+    RETURN json_build_object(
+      'success', false, 
+      'message', 'PROTOCOL_COOLDOWN', 
+      'next_available', (last_ping + interval '24 hours')
+    );
+  END IF;
+
+  -- Record the ping with group context
+  INSERT INTO pings (sender_id, receiver_id, group_id)
+  VALUES (sender_id, target_user_id, target_group_id);
+
+  INSERT INTO notifications (user_id, type, content)
+  VALUES (target_user_id, 'ping', 'Incoming_Transmission: @' || sender_name || ' is requesting a status update in your Pod!');
+
+  RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
