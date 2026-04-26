@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
-import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User } from 'lucide-react'
+import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User, Bell, X } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
@@ -17,7 +17,7 @@ import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
-import type { Notification } from './types'
+import type { Notification as AppNotification } from './types'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -28,7 +28,7 @@ function App() {
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
   const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
   const [selectedPod, setSelectedPod] = useState<Group | null>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
