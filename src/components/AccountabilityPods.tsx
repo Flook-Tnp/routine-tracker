@@ -29,16 +29,24 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const fetchGroupData = useCallback(async (groupId: string) => {
     try {
       setLoading(true)
-      const [vitals, tasks, completions] = await Promise.all([
-        StorageService.fetchMemberVitals(groupId),
-        StorageService.fetchGroupTasks(groupId),
-        StorageService.fetchGroupTaskCompletions(groupId, new Date().toISOString().split('T')[0])
-      ])
-      setPodMembers(vitals)
-      setGroupTasks(tasks)
-      setGroupCompletions(completions)
-    } catch (err) {
-      console.error('Error fetching group data:', err)
+      // Use separate try/catch for vitals to ensure members show up even if RLS blocks tasks
+      try {
+        const vitals = await StorageService.fetchMemberVitals(groupId)
+        setPodMembers(vitals)
+      } catch (err) {
+        console.error('Vitals sync failed:', err)
+      }
+
+      try {
+        const [tasks, completions] = await Promise.all([
+          StorageService.fetchGroupTasks(groupId),
+          StorageService.fetchGroupTaskCompletions(groupId, new Date().toISOString().split('T')[0])
+        ])
+        setGroupTasks(tasks)
+        setGroupCompletions(completions)
+      } catch (err) {
+        console.error('Mission Protocol sync failed:', err)
+      }
     } finally {
       setLoading(false)
     }
