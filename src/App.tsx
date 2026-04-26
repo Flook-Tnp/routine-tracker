@@ -55,16 +55,6 @@ function App() {
   const lastUserId = useRef<string | undefined>(undefined)
   const dateStripRef = useRef<HTMLDivElement>(null)
 
-  // Auto-scroll active date into view
-  useEffect(() => {
-    if (dateStripRef.current) {
-      const activeElement = dateStripRef.current.querySelector('[data-active="true"]')
-      if (activeElement) {
-        activeElement.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
-      }
-    }
-  }, [selectedDateStr])
-
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
     
@@ -168,6 +158,16 @@ function App() {
       return format(new Date(), 'yyyy-MM-dd')
     }
   }, [selectedDate])
+
+  // Auto-scroll active date into view
+  useEffect(() => {
+    if (dateStripRef.current) {
+      const activeElement = dateStripRef.current.querySelector('[data-active="true"]')
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+      }
+    }
+  }, [selectedDateStr])
 
   const dateStrip = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => subDays(selectedDate, 3 - i))
