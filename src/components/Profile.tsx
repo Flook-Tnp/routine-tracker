@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
-import { Award, Zap, Target, Camera, Edit2, Check, X, Trash2, Flame, Trophy } from 'lucide-react'
+import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy } from 'lucide-react'
 
 interface ProfileProps {
   profile: ProfileType | null
