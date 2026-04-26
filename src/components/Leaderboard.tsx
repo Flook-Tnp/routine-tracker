@@ -27,59 +27,67 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
         <p className="text-[8px] text-gray-600 uppercase tracking-widest">Quarterly Reset: Q2 2026</p>
       </section>
 
-      <div className="bg-gray-950 border border-gray-900 overflow-hidden">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-gray-900 text-[8px] uppercase tracking-widest text-gray-500">
-              <th className="px-6 py-4 font-bold">Rank</th>
-              <th className="px-6 py-4 font-bold">Protocol_Id</th>
-              <th className="px-6 py-4 font-bold text-right">Accumulated_XP</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.map((user, index) => {
-              const isMe = user.id === currentUserId
-              return (
-                <tr 
-                  key={user.id} 
-                  onClick={() => !isMe && user.id && onSelectUser?.(user.id)}
-                  className={`border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors group ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      {index === 0 && <Trophy size={14} className="text-yellow-500" />}
-                      {index === 1 && <Medal size={14} className="text-gray-400" />}
-                      {index === 2 && <Medal size={14} className="text-amber-600" />}
-                      <span className={`text-xs font-black ${index < 3 ? 'text-white' : 'text-gray-600'}`}>
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
+      <div className="bg-gray-950/50 border border-gray-900 overflow-hidden">
+        {/* Header - Hidden on mobile */}
+        <div className="hidden md:grid grid-cols-[80px_1fr_120px] border-b border-gray-900 text-[9px] uppercase tracking-widest text-gray-500 font-bold bg-gray-900/20">
+          <div className="px-6 py-4">Rank</div>
+          <div className="px-6 py-4">Protocol_Id</div>
+          <div className="px-6 py-4 text-right">Accumulated_XP</div>
+        </div>
+
+        <div className="divide-y divide-gray-900/50">
+          {leaderboard.map((user, index) => {
+            const isMe = user.id === currentUserId
+            return (
+              <div 
+                key={user.id} 
+                onClick={() => !isMe && user.id && onSelectUser?.(user.id)}
+                className={`flex md:grid md:grid-cols-[80px_1fr_120px] items-center p-4 md:p-0 border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors group ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+              >
+                {/* Rank */}
+                <div className="md:px-6 md:py-4 flex-shrink-0 mr-4 md:mr-0">
+                  <div className="flex items-center gap-2">
+                    {index === 0 && <Trophy size={16} className="text-yellow-500 drop-shadow-[0_0_8px_rgba(234,179,8,0.3)]" />}
+                    {index === 1 && <Medal size={16} className="text-gray-400" />}
+                    {index === 2 && <Medal size={16} className="text-amber-600" />}
+                    <span className={`text-xs md:text-sm font-black ${index < 3 ? 'text-white' : 'text-gray-600'}`}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* User Info */}
+                <div className="md:px-6 md:py-4 flex-1">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 md:w-6 md:h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                      ) : (
+                        user.username?.[0]
+                      )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
-                        {user.avatar_url ? (
-                          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
-                        ) : (
-                          user.username?.[0]
-                        )}
-                      </div>
-                      <span className={`text-xs text-gray-300 font-bold uppercase transition-colors ${!isMe && 'group-hover:text-cyan-400'}`}>{user.username}</span>
+                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
+                      <span className={`text-sm md:text-xs text-gray-300 font-bold uppercase transition-colors ${!isMe && 'group-hover:text-cyan-400'}`}>{user.username}</span>
                       <div className="flex gap-1">
                         {user.badges?.map((badge) => (
-                          <span key={badge.id} title={badge.name} className="text-[10px] cursor-help">{badge.icon}</span>
+                          <span key={badge.id} title={badge.name} className="text-xs md:text-[10px] cursor-help">{badge.icon}</span>
                         ))}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="text-xs font-black text-cyan-400">{user.total_xp?.toLocaleString()}</span>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+
+                {/* XP - Shown below username on mobile */}
+                <div className="md:px-6 md:py-4 text-right flex-shrink-0">
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm md:text-xs font-black text-cyan-400 tracking-tight">{user.total_xp?.toLocaleString()}</span>
+                    <span className="md:hidden text-[8px] text-gray-700 uppercase font-bold">Total XP</span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

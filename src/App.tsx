@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User, Bell, X } from 'lucide-react'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
@@ -777,129 +777,109 @@ function App() {
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-[60] bg-black/80 backdrop-blur-md border-b border-gray-900 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
         <div className="max-w-2xl mx-auto px-4 md:px-8 py-6">
-          <header className="space-y-6">
-            <div className="flex justify-between items-end">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
-                  <button 
-                    onClick={() => setShowManual(true)}
-                    className="text-gray-700 hover:text-cyan-400 transition-colors"
-                    title="View Manual"
-                  >
-                    <HelpCircle size={16} />
-                  </button>
-
-                  <div className="relative">
+          <header className="space-y-4 md:space-y-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 md:gap-0">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between md:justify-start gap-3">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
                     <button 
-                      onClick={handleToggleNotifications}
-                      className={`relative flex items-center justify-center p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
-                      title="Transmissions"
+                      onClick={() => setShowManual(true)}
+                      className="text-gray-700 hover:text-cyan-400 transition-colors"
+                      title="View Manual"
                     >
-                      <Bell size={16} />
-                      {notifications.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[6px] font-black px-1 rounded-full border border-black">
-                          {notifications.length}
-                        </span>
-                      )}
+                      <HelpCircle size={18} />
                     </button>
-                    {showNotifications && (
-                      <div className="absolute top-full left-0 mt-4 w-64 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
-                        <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
-                          <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
-                          <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
-                            <X size={10} />
-                          </button>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                          {notifications.length > 0 ? (
-                            notifications.map((n) => (
-                              <div key={n.id} className="p-3 border-b border-gray-900 last:border-0 hover:bg-gray-900/50 transition-colors group">
-                                <p className="text-[10px] text-gray-300 font-mono leading-relaxed mb-2">{n.content}</p>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-[7px] text-gray-600 uppercase font-bold">{formatDistanceToNow(new Date(n.created_at))} ago</span>
-                                  <button 
-                                    onClick={() => dismissNotification(n.id)}
-                                    className="text-[7px] uppercase font-black text-cyan-500 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-all"
-                                  >
-                                    [Clear_Link]
-                                  </button>
+
+                    <div className="relative">
+                      <button 
+                        onClick={handleToggleNotifications}
+                        className={`relative flex items-center justify-center p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
+                        title="Transmissions"
+                      >
+                        <Bell size={18} />
+                        {notifications.length > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border border-black">
+                            {notifications.length}
+                          </span>
+                        )}
+                      </button>
+                      {showNotifications && (
+                        <div className="absolute top-full left-0 mt-4 w-72 md:w-64 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                          <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
+                            <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
+                            <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
+                              <X size={12} />
+                            </button>
+                          </div>
+                          <div className="max-h-80 md:max-h-60 overflow-y-auto custom-scrollbar">
+                            {notifications.length > 0 ? (
+                              notifications.map((n) => (
+                                <div key={n.id} className="p-4 border-b border-gray-900 last:border-0 hover:bg-gray-900/50 transition-colors group">
+                                  <p className="text-xs text-gray-300 font-mono leading-relaxed mb-2">{n.content}</p>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8px] text-gray-600 uppercase font-bold">{formatDistanceToNow(new Date(n.created_at))} ago</span>
+                                    <button 
+                                      onClick={() => dismissNotification(n.id)}
+                                      className="text-[8px] uppercase font-black text-cyan-500 hover:text-cyan-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                                    >
+                                      [Clear]
+                                    </button>
+                                  </div>
                                 </div>
+                              ))
+                            ) : (
+                              <div className="p-8 text-center text-gray-700">
+                                <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
                               </div>
-                            ))
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="md:hidden flex items-center gap-3">
+                    {session ? (
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase font-bold">
+                        <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="p-8 text-center text-gray-700">
-                              <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
-                            </div>
+                            <User size={14} />
                           )}
                         </div>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="ml-4 flex gap-1 bg-gray-900/50 p-1 border border-gray-800">
-                    <button
-                      onClick={() => setCurrentView('tracker')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'tracker' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Tracker
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('board')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'board' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Board
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('leaderboard')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'leaderboard' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Rank
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('social')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Global
-                    </button>
-                    <button
-                      onClick={() => setCurrentView('pods')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Pods
-                    </button>
-                    {session && (
-                      <button
-                        onClick={() => {
-                          setViewedProfileId(null)
-                          setCurrentView('profile')
-                        }}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    ) : (
+                      <button 
+                        onClick={() => setIsAuthModalOpen(true)}
+                        className="p-2 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all"
                       >
-                        Profile
+                        <LogIn size={18} />
                       </button>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+
+                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setSelectedDate(subDays(selectedDate, 1))}
-                    className="text-gray-600 hover:text-cyan-400 transition-colors"
+                    className="p-2 text-gray-600 hover:text-cyan-400 transition-colors border border-gray-900 md:border-0"
                   >
-                    <ChevronLeft size={18} />
+                    <ChevronLeft size={20} />
                   </button>
-                  <div className="relative">
+                  <div className="relative flex-1 md:flex-none">
                     <button 
                       onClick={() => setShowDatePicker(!showDatePicker)}
-                      className="flex items-center gap-2 text-cyan-400 bg-cyan-950/20 px-3 py-1 border border-cyan-500/30 hover:bg-cyan-900/40 transition-all text-xs font-bold"
+                      className="w-full md:w-auto flex items-center justify-center gap-2 text-cyan-400 bg-cyan-950/20 px-4 py-2 border border-cyan-500/30 hover:bg-cyan-900/40 transition-all text-xs font-bold"
                     >
-                      <CalendarIcon size={14} />
+                      <CalendarIcon size={16} />
                       {format(selectedDate, 'EEE, MMM d, yyyy').toUpperCase()}
                     </button>
                     {showDatePicker && (
-                      <div className="absolute top-full left-0 mt-2 z-50 bg-black border border-gray-800 p-3 shadow-2xl space-y-3 min-w-[200px]">
+                      <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-black border border-gray-800 p-4 shadow-2xl space-y-4 min-w-[200px]">
                         <div className="space-y-1">
-                          <label className="text-[8px] uppercase text-gray-500 font-bold">Select Date</label>
+                          <label className="text-[10px] uppercase text-gray-500 font-bold tracking-widest">Select Date</label>
                           <input 
                             autoFocus
                             type="date" 
@@ -916,13 +896,13 @@ function App() {
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') setShowDatePicker(false)
                             }}
-                            className="w-full bg-gray-900 text-white text-xs p-2 border border-gray-800 focus:outline-none focus:border-cyan-500 font-mono"
+                            className="w-full bg-gray-900 text-white text-sm p-3 border border-gray-800 focus:outline-none focus:border-cyan-500 font-mono"
                           />
                         </div>
                         <div className="flex gap-2">
                           <button 
                             onClick={() => setShowDatePicker(false)}
-                            className="flex-1 py-2 text-[9px] bg-cyan-500 text-black font-bold uppercase tracking-widest hover:bg-cyan-400"
+                            className="flex-1 py-3 text-[10px] bg-cyan-500 text-black font-bold uppercase tracking-widest hover:bg-cyan-400"
                           >
                             Confirm
                           </button>
@@ -931,7 +911,7 @@ function App() {
                               setSelectedDate(new Date())
                               setShowDatePicker(false)
                             }}
-                            className="flex-1 py-2 text-[9px] bg-gray-800 text-white font-bold uppercase tracking-widest hover:bg-gray-700"
+                            className="flex-1 py-3 text-[10px] bg-gray-800 text-white font-bold uppercase tracking-widest hover:bg-gray-700"
                           >
                             Today
                           </button>
@@ -941,65 +921,56 @@ function App() {
                   </div>
                   <button 
                     onClick={() => setSelectedDate(subDays(selectedDate, -1))}
-                    className="text-gray-600 hover:text-cyan-400 transition-colors"
+                    className="p-2 text-gray-600 hover:text-cyan-400 transition-colors border border-gray-900 md:border-0"
                   >
-                    <ChevronRight size={18} />
+                    <ChevronRight size={20} />
                   </button>
-
-                  {selectedDateStr !== format(new Date(), 'yyyy-MM-dd') && (
-                    <button 
-                      onClick={() => setSelectedDate(new Date())}
-                      className="ml-2 px-2 py-1 text-[9px] font-black bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all uppercase tracking-widest"
-                    >
-                      TODAY
-                    </button>
-                  )}
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <div className="flex gap-6">
-                  <div className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-orange-500">
-                      <Flame size={18} fill="currentColor" />
-                      <span className="text-2xl font-black">{dailyStreak}</span>
+              <div className="flex items-center justify-between md:justify-end gap-6 md:gap-8 border-t md:border-t-0 border-gray-900 pt-4 md:pt-0">
+                <div className="flex gap-6 md:gap-8">
+                  <div className="text-center md:text-right">
+                    <div className="flex items-center justify-center md:justify-end gap-1.5 text-orange-500">
+                      <Flame size={20} fill="currentColor" />
+                      <span className="text-2xl md:text-3xl font-black">{dailyStreak}</span>
                     </div>
-                    <p className="text-[9px] text-gray-600 uppercase tracking-widest">Daily</p>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-bold">Daily</p>
                   </div>
-                  <div className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-cyan-400">
-                      <Trophy size={18} />
-                      <span className="text-2xl font-black">{weeklyStreak}</span>
+                  <div className="text-center md:text-right">
+                    <div className="flex items-center justify-center md:justify-end gap-1.5 text-cyan-400">
+                      <Trophy size={20} />
+                      <span className="text-2xl md:text-3xl font-black">{weeklyStreak}</span>
                     </div>
-                    <p className="text-[9px] text-gray-600 uppercase tracking-widest">Weekly</p>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-bold">Weekly</p>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-2 pt-1">
+                <div className="hidden md:flex flex-col items-end gap-2 pt-1">
                   {session ? (
                     <button 
                       onClick={() => supabase.auth.signOut()}
-                      className="text-gray-700 hover:text-red-500 transition-colors"
+                      className="text-gray-700 hover:text-red-500 transition-colors p-1"
                       title="Logout"
                     >
-                      <LogOut size={16} />
+                      <LogOut size={18} />
                     </button>
                   ) : (
                     <button 
                       onClick={() => setIsAuthModalOpen(true)}
-                      className="flex items-center gap-2 px-3 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-[0.2em]"
+                      className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all text-[10px] font-black uppercase tracking-[0.2em]"
                     >
-                      <LogIn size={12} />
+                      <LogIn size={14} />
                       Login
                     </button>
                   )}
                   {session && profile && (
-                    <div className="flex items-center gap-2 text-[8px] text-gray-600 uppercase font-bold">
-                      <div className="w-4 h-4 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                    <div className="flex items-center gap-2 text-[9px] text-gray-600 uppercase font-bold">
+                      <div className="w-5 h-5 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
                         {profile.avatar_url ? (
                           <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
                         ) : (
-                          <User size={10} />
+                          <User size={12} />
                         )}
                       </div>
                       {profile.username}
@@ -1009,7 +980,7 @@ function App() {
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-1">
+            <div className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-2 md:pb-0">
               {dateStrip.map((date) => {
                 const isActive = format(date, 'yyyy-MM-dd') === selectedDateStr
                 const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
@@ -1017,9 +988,9 @@ function App() {
                   <button
                     key={date.toString()}
                     onClick={() => setSelectedDate(date)}
-                    className={`flex flex-col items-center py-2 border transition-all ${
+                    className={`flex-shrink-0 w-[54px] md:w-auto flex flex-col items-center py-3 border transition-all snap-center ${
                       isActive 
-                        ? 'bg-cyan-500 border-cyan-500 text-black font-black' 
+                        ? 'bg-cyan-500 border-cyan-500 text-black font-black shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
                         : 'bg-gray-950 border-gray-900 text-gray-500 hover:border-gray-700'
                     }`}
                   >
@@ -1030,7 +1001,7 @@ function App() {
                       {format(date, 'd')}
                     </span>
                     {isToday && !isActive && (
-                      <div className="w-1 h-1 bg-cyan-500 rounded-full mt-1" />
+                      <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full mt-1" />
                     )}
                   </button>
                 )
@@ -1040,7 +1011,7 @@ function App() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto p-4 md:p-8 pt-4 space-y-8">
+      <div className="max-w-2xl mx-auto p-4 md:p-8 pt-4 pb-24 md:pb-8 space-y-8">
         {currentView === 'tracker' ? (
           <>
             <section className="space-y-4">
@@ -1347,10 +1318,10 @@ function App() {
               value={newRoutineTitle}
               onChange={(e) => setNewRoutineTitle(e.target.value)}
               placeholder={`NEW_${activeCategory.toUpperCase()}_PROTOCOL...`}
-              className="flex-1 bg-gray-900 border border-gray-800 px-4 py-2 focus:outline-none focus:border-cyan-500 text-sm text-gray-400 font-mono"
+              className="flex-1 input-primary text-sm font-mono"
             />
-            <button type="submit" className="bg-white text-black px-4 py-2 hover:bg-cyan-500 hover:text-white transition-all duration-300">
-              <Plus size={18} />
+            <button type="submit" className="btn-primary">
+              <Plus size={20} />
             </button>
           </form>
 
@@ -1455,6 +1426,59 @@ function App() {
           onCancel={() => setConfirmDelete(null)}
         />
       )}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-black/95 backdrop-blur-lg border-t border-gray-900 px-2 py-3 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+        <div className="flex justify-around items-center max-w-lg mx-auto">
+          <button
+            onClick={() => setCurrentView('tracker')}
+            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'tracker' ? 'text-cyan-400' : 'text-gray-600'}`}
+          >
+            <ListTodo size={20} className={currentView === 'tracker' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Tracker</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('board')}
+            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'board' ? 'text-cyan-400' : 'text-gray-600'}`}
+          >
+            <LayoutDashboard size={20} className={currentView === 'board' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Board</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('leaderboard')}
+            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'leaderboard' ? 'text-cyan-400' : 'text-gray-600'}`}
+          >
+            <Award size={20} className={currentView === 'leaderboard' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Rank</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('social')}
+            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'social' ? 'text-cyan-400' : 'text-gray-600'}`}
+          >
+            <Globe size={20} className={currentView === 'social' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
+          </button>
+          <button
+            onClick={() => setCurrentView('pods')}
+            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'pods' ? 'text-cyan-400' : 'text-gray-600'}`}
+          >
+            <Users size={20} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <span className="text-[8px] font-black uppercase tracking-widest">Pods</span>
+          </button>
+          {session && (
+            <button
+              onClick={() => {
+                setViewedProfileId(null)
+                setCurrentView('profile')
+              }}
+              className={`flex flex-col items-center gap-1 transition-all ${currentView === 'profile' && !viewedProfileId ? 'text-cyan-400' : 'text-gray-600'}`}
+            >
+              <CircleUser size={20} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+              <span className="text-[8px] font-black uppercase tracking-widest">Profile</span>
+            </button>
+          )}
+        </div>
+      </nav>
     </div>
   )
 }
