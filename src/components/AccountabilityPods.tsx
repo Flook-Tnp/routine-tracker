@@ -272,10 +272,6 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
                   <Activity size={12} className="text-cyan-500" /> Mission_Objectives
                 </h3>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 border border-orange-500/30 bg-orange-500/5 text-orange-500 text-[8px] font-black uppercase tracking-widest">
-                  <Flame size={10} fill="currentColor" className="animate-pulse" />
-                  Collective_Streak: {podMembers[0]?.pod_current_streak ?? selectedPod.current_streak ?? 0}
-                </div>
               </div>
 
               <div className="bg-gray-900/20 border border-gray-900 p-6 space-y-6">
@@ -354,13 +350,6 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
                     <Users size={12} className="text-gray-500" /> Pod_Pulse
                   </h3>
-                  <div className="flex items-center gap-3 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 animate-in slide-in-from-right-4 duration-500">
-                    <Flame size={14} fill="currentColor" className="animate-pulse" />
-                    <div className="flex flex-col leading-none">
-                      <span className="text-[10px] font-black uppercase tracking-tighter">Squad_Streak</span>
-                      <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest">{podMembers[0]?.pod_current_streak ?? selectedPod.current_streak ?? 0} Days_Active</span>
-                    </div>
-                  </div>
                 </div>
                 <SocialFeed 
                   session={session} 
@@ -426,9 +415,13 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                               <p className={`text-[10px] font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-400 group-hover/card:text-cyan-400'}`}>
                                 {member.username}
                               </p>
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-1 h-1 rounded-full ${statusColor.replace('text-', 'bg-')} ${!isStable && 'animate-pulse'}`} />
-                                <p className={`text-[6px] font-bold uppercase tracking-widest ${statusColor}`}>{statusLabel}</p>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[6px] font-bold text-cyan-700 uppercase tracking-widest">{member.total_xp} XP</span>
+                                <div className="w-1 h-1 rounded-full bg-gray-800" />
+                                <div className="flex items-center gap-1">
+                                  <div className={`w-1 h-1 rounded-full ${statusColor.replace('text-', 'bg-')} ${!isStable && 'animate-pulse'}`} />
+                                  <p className={`text-[6px] font-bold uppercase tracking-widest ${statusColor}`}>{statusLabel}</p>
+                                </div>
                               </div>
                             </div>
                           </div>
