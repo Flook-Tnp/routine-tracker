@@ -127,21 +127,23 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       : 0
 
     return (
-      <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500 pb-20">
+      <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500 pb-20 pt-4">
         <button 
           onClick={() => onSelectPod(null)}
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors mb-4"
         >
           <ChevronLeft size={14} /> Back_to_Network
         </button>
 
         <section className="bg-gray-950 border border-gray-900 p-8 space-y-8 relative overflow-hidden">
-          {/* Synergy Meter */}
-          <div className="absolute top-0 left-0 w-full h-1 bg-gray-900">
+          {/* Enhanced Synergy Meter */}
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gray-900/50">
             <div 
-              className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-1000" 
+              className="h-full bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] transition-all duration-1000 relative" 
               style={{ width: `${avgProgress * 100}%` }}
-            />
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+            </div>
           </div>
 
           <div className="flex justify-between items-start">
