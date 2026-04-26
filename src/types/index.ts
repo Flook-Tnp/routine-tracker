@@ -35,7 +35,7 @@ export interface Profile {
   username: string
   total_xp: number
   lifetime_xp: number
-  avatar_url?: string
+  avatar_url?: string | null
   badges: Badge[]
   updated_at: string
 }
@@ -54,7 +54,7 @@ export interface Post {
   type: 'manual' | 'milestone'
   metadata: Record<string, any>
   created_at: string
-  profiles?: { username: string, avatar_url?: string }
+  profiles?: { username: string, avatar_url?: string | null }
   comments?: Comment[]
   reactions?: Reaction[]
 }
@@ -65,7 +65,7 @@ export interface Comment {
   user_id: string
   content: string
   created_at: string
-  profiles?: { username: string, avatar_url?: string }
+  profiles?: { username: string, avatar_url?: string | null }
 }
 
 export interface Reaction {
