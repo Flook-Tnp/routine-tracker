@@ -9,9 +9,10 @@ interface AccountabilityPodsProps {
   session: Session | null
   onShareStreak: () => void
   dailyStreak: number
+  onSelectUser?: (userId: string) => void
 }
 
-export function AccountabilityPods({ session, onShareStreak, dailyStreak }: AccountabilityPodsProps) {
+export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser }: AccountabilityPodsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
@@ -130,17 +131,21 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak }: Acco
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                 {podMembers.length > 0 ? (
                   podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member, idx) => (
-                    <div key={member.id} className="bg-black/40 border border-gray-900 p-3 flex justify-between items-center group hover:border-gray-700 transition-all">
+                    <div 
+                      key={member.id} 
+                      onClick={() => member.id && onSelectUser?.(member.id)}
+                      className="bg-black/40 border border-gray-900 p-3 flex justify-between items-center group/member hover:border-cyan-500/50 transition-all cursor-pointer"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-[10px] font-black text-gray-700 w-4">{String(idx + 1).padStart(2, '0')}</span>
-                        <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase overflow-hidden">
+                        <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase overflow-hidden group-hover/member:border-cyan-500/30 transition-colors">
                           {member.avatar_url ? (
                             <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
                           ) : (
                             member.username?.[0] || '?'
                           )}
                         </div>
-                        <span className="text-xs font-bold text-gray-300 uppercase">{member.username || 'Unknown_Entity'}</span>
+                        <span className="text-xs font-bold text-gray-300 uppercase group-hover/member:text-cyan-400 transition-colors">{member.username || 'Unknown_Entity'}</span>
                       </div>                      <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1 text-orange-500">
                           <Zap size={10} fill="currentColor" />
@@ -166,6 +171,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak }: Acco
                 groupId={selectedPod.id} 
                 dailyStreak={dailyStreak} 
                 onShareStreak={onShareStreak} 
+                onSelectUser={onSelectUser}
               />
             </div>
           </div>

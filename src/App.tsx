@@ -1321,12 +1321,14 @@ function App() {
         session={session} 
         onShareStreak={handleShareStreak}
         dailyStreak={dailyStreak}
+        onSelectUser={handleSelectUser}
       />
       ) : currentView === 'pods' ? (
       <AccountabilityPods 
         session={session} 
         onShareStreak={handleShareStreak}
         dailyStreak={dailyStreak}
+        onSelectUser={handleSelectUser}
       />
       ) : (
       <ProfileComponent 
