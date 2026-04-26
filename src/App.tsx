@@ -368,7 +368,7 @@ function App() {
 
     // Calculate XP based on current streak
     const currentStreak = dailyStreak 
-    const xp = calculateXP(currentStreak)
+    const xp = existing?.xp_earned ?? calculateXP(currentStreak)
 
     if (session) {
       try {
