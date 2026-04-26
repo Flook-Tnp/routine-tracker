@@ -16,18 +16,16 @@ import { calculateXP } from './lib/gamification'
 import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
-import { AccountabilityPods } from './components/AccountabilityPods'
 import type { AppNotification } from './types'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
-  const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
-  const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('leaderboard')
+  const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social'>('tracker')
+  const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social'>('leaderboard')
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
   const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
-  const [selectedPod, setSelectedPod] = useState<Group | null>(null)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -861,12 +859,6 @@ function App() {
                     >
                       Global
                     </button>
-                    <button
-                      onClick={() => setCurrentView('pods')}
-                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
-                    >
-                      Pods
-                    </button>
                     {session && (
                       <button
                         onClick={() => {
@@ -1417,15 +1409,6 @@ function App() {
         onShareStreak={handleShareStreak}
         dailyStreak={dailyStreak}
         onSelectUser={handleSelectUser}
-      />
-      ) : currentView === 'pods' ? (
-      <AccountabilityPods 
-        session={session} 
-        onShareStreak={handleShareStreak}
-        dailyStreak={dailyStreak}
-        onSelectUser={handleSelectUser}
-        selectedPod={selectedPod}
-        onSelectPod={setSelectedPod}
       />
       ) : (
       <ProfileComponent 

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
+import type { Routine, RoutineCompletion, Task, Profile, Post, Comment, Reaction, AppNotification } from '../types'
 
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
@@ -233,8 +233,8 @@ export const StorageService = {
     if (error) throw error
   },
 
-  async fetchPosts(groupId?: string): Promise<Post[]> {
-    let query = supabase
+  async fetchPosts(): Promise<Post[]> {
+    const { data, error } = await supabase
       .from('posts')
       .select(`
         *,
@@ -242,57 +242,20 @@ export const StorageService = {
         comments (*, profiles (username, avatar_url)),
         reactions (*)
       `)
+      .is('group_id', null)
       .order('created_at', { ascending: false })
     
-    if (groupId) {
-      query = query.eq('group_id', groupId)
-    } else {
-      query = query.is('group_id', null)
-    }
-
-    const { data, error } = await query
     if (error) throw error
     return data as Post[]
   },
 
-  async createPost(content: string, userId: string, type: string = 'manual', metadata: any = {}, groupId?: string): Promise<Post> {
+  async createPost(content: string, userId: string, type: string = 'manual', metadata: any = {}): Promise<Post> {
     const { data, error } = await supabase
       .from('posts')
-      .insert([{ content, user_id: userId, type, metadata, group_id: groupId }])
+      .insert([{ content, user_id: userId, type, metadata }])
       .select()
     if (error) throw error
     return data[0] as Post
-  },
-
-  async fetchPodMembers(groupId: string): Promise<Profile[]> {
-    const { data, error } = await supabase
-      .from('group_members')
-      .select(`
-        profiles!group_members_user_id_fkey (*)
-      `)
-      .eq('group_id', groupId)
-    
-    if (error) {
-      // Fallback for different join syntax or if FK is named differently
-      const { data: retryData, error: retryError } = await supabase
-        .from('group_members')
-        .select(`
-          profiles (*)
-        `)
-        .eq('group_id', groupId)
-      
-      if (retryError) throw retryError
-      return (retryData?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
-    }
-    
-    return (data?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
-  },
-
-  async fetchMemberVitals(groupId: string): Promise<MemberVital[]> {
-    const { data, error } = await supabase
-      .rpc('get_pod_member_vitals', { target_group_id: groupId })
-    if (error) throw error
-    return data as MemberVital[]
   },
 
   async deletePost(postId: string): Promise<void> {
@@ -336,133 +299,6 @@ export const StorageService = {
       if (error) throw error
       return data[0] as Reaction
     }
-  },
-
-  async fetchGroups(): Promise<Group[]> {
-    const { data, error } = await supabase
-      .from('groups')
-      .select(`
-        *,
-        group_members (user_id)
-      `)
-    if (error) throw error
-    return data as Group[]
-  },
-
-  async createGroup(name: string, description: string, userId: string): Promise<Group> {
-    const { data: group, error: groupError } = await supabase
-      .from('groups')
-      .insert([{ name, description, created_by: userId }])
-      .select()
-      .single()
-    if (groupError) throw groupError
-
-    // Automatically join the group
-    await this.joinGroup(group.id, userId)
-    return group as Group
-  },
-
-  async joinGroup(groupId: string, userId: string): Promise<{ user_id: string; group_id: string }> {
-    const { data, error } = await supabase
-      .from('group_members')
-      .insert([{ group_id: groupId, user_id: userId }])
-      .select()
-    if (error) throw error
-    return data[0]
-  },
-
-  async leaveGroup(groupId: string, userId: string): Promise<void> {
-    const { error } = await supabase
-      .from('group_members')
-      .delete()
-      .eq('group_id', groupId)
-      .eq('user_id', userId)
-    if (error) throw error
-  },
-
-  async deleteGroup(groupId: string): Promise<void> {
-    const { error } = await supabase
-      .from('groups')
-      .delete()
-      .eq('id', groupId)
-    if (error) throw error
-  },
-
-  async fetchGroupTasks(groupId: string): Promise<GroupTask[]> {
-    const { data, error } = await supabase
-      .from('group_tasks')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: true })
-    if (error) throw error
-    return data
-  },
-
-  async createGroupTask(groupId: string, title: string, description?: string): Promise<GroupTask> {
-    const { data, error } = await supabase
-      .from('group_tasks')
-      .insert({ group_id: groupId, title, description })
-      .select()
-      .single()
-    if (error) throw error
-    return data
-  },
-
-  async deleteGroupTask(taskId: string): Promise<void> {
-    const { error } = await supabase
-      .from('group_tasks')
-      .delete()
-      .eq('id', taskId)
-    if (error) throw error
-  },
-
-  async fetchGroupTaskCompletions(groupId: string, date: string): Promise<GroupTaskCompletion[]> {
-    // First get the task IDs for this group
-    const { data: tasks } = await supabase
-      .from('group_tasks')
-      .select('id')
-      .eq('group_id', groupId)
-    
-    if (!tasks || tasks.length === 0) return []
-    const taskIds = tasks.map(t => t.id)
-
-    // Then get completions for those tasks
-    const { data, error } = await supabase
-      .from('group_task_completions')
-      .select('*')
-      .in('task_id', taskIds)
-      .eq('completed_date', date)
-    
-    if (error) throw error
-    return data as GroupTaskCompletion[]
-  },
-
-  async toggleGroupTask(taskId: string, userId: string, date: string): Promise<void> {
-    const { data: existing } = await supabase
-      .from('group_task_completions')
-      .select('id')
-      .eq('task_id', taskId)
-      .eq('user_id', userId)
-      .eq('completed_date', date)
-      .maybeSingle()
-
-    if (existing) {
-      await supabase.from('group_task_completions').delete().eq('id', existing.id)
-    } else {
-      await supabase.from('group_task_completions').insert({
-        task_id: taskId,
-        user_id: userId,
-        completed_date: date
-      })
-    }
-  },
-
-  async pingUser(targetUserId: string, groupId: string): Promise<{ success: boolean; message: string; next_available?: string }> {
-    const { data, error } = await supabase
-      .rpc('ping_user', { target_user_id: targetUserId, target_group_id: groupId })
-    
-    if (error) throw error
-    return data
   },
 
   async fetchNotifications(userId: string): Promise<AppNotification[]> {
