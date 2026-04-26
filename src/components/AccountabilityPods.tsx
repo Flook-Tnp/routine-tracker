@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell, Activity, Check, Flame, X } from 'lucide-react'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Bell, Activity, Check, Flame } from 'lucide-react'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { SocialFeed } from './SocialFeed'
@@ -338,7 +338,6 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 {podMembers.length > 0 ? (
                   podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
                     const isMe = member.id === session?.user?.id
-                    const progress = member.routines_total > 0 ? (member.routines_completed_today / member.routines_total) : 0
                     
                     const isStable = member.routines_completed_today > 0
                     const isCritical = !isStable && new Date().getHours() >= 20 
