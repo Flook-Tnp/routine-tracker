@@ -195,34 +195,34 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   if (selectedPod) {
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500 pb-20 pt-4 font-mono">
+      <div className="space-y-6 view-enter pb-20 pt-2 font-mono">
         <button 
           onClick={() => onSelectPod(null)}
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors mb-4"
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors mb-2 active:scale-95 px-1"
         >
-          <ChevronLeft size={14} /> Back_to_Network
+          <ChevronLeft size={16} /> Back_to_Network
         </button>
 
-        <section className="bg-gray-950 border border-gray-900 p-8 space-y-8 relative">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <div className="flex items-center gap-4">
-                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
-                <div className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse">
+        <section className="bg-gray-950 border border-gray-900 p-5 md:p-8 space-y-6 md:space-y-8 relative">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
+                <div className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.1)]">
                   <Flame size={14} fill="currentColor" />
                   Squad_Streak: {podMembers[0]?.pod_current_streak ?? 0}
                 </div>
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed max-w-lg">{selectedPod.description}</p>
+              <p className="text-sm text-gray-500 leading-relaxed max-w-lg">{selectedPod.description}</p>
             </div>
-            <div className="text-right flex flex-col items-end gap-2">
-              <p className="text-[8px] text-gray-600 uppercase font-bold tracking-widest">Protocol_Established {new Date(selectedPod.created_at).toLocaleDateString()}</p>
+            <div className="w-full md:w-auto text-left md:text-right flex flex-col md:items-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-900 md:border-none">
+              <p className="text-[8px] text-gray-600 uppercase font-black tracking-widest">Protocol_Established {new Date(selectedPod.created_at).toLocaleDateString()}</p>
               {selectedPod.created_by === session?.user?.id ? (
-                <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[8px] font-black text-red-900 hover:text-red-500 uppercase tracking-widest flex items-center gap-1">
-                  <Trash2 size={10} /> Terminate_Pod
+                <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[10px] font-black text-red-900 hover:text-red-500 uppercase tracking-widest flex items-center gap-2 active:scale-95">
+                  <Trash2 size={14} /> Terminate_Pod
                 </button>
               ) : (
-                <button onClick={() => handleLeaveGroup(selectedPod.id)} className="text-[8px] font-black text-gray-700 hover:text-white uppercase tracking-widest">
+                <button onClick={() => handleLeaveGroup(selectedPod.id)} className="text-[10px] font-black text-gray-700 hover:text-white uppercase tracking-widest active:scale-95">
                   Leave_Pod
                 </button>
               )}
@@ -230,94 +230,109 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-3 space-y-6">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Activity size={12} className="text-cyan-500" /> Mission_Objectives
-              </h3>
+            <div className="lg:col-span-3 space-y-8">
+              <div className="space-y-4">
+                <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black flex items-center gap-2">
+                  <Activity size={14} className="text-cyan-500" /> Mission_Objectives
+                </h3>
 
-              <div className="bg-gray-900/20 border border-gray-900 p-6 space-y-6">
-                {selectedPod.created_by === session?.user?.id && (
-                  <div className="border-b border-gray-800 pb-6">
-                    {isAddingTask ? (
-                      <form onSubmit={handleAddTask} className="flex gap-2">
-                        <input
-                          autoFocus
-                          type="text"
-                          value={newTaskTitle}
-                          onChange={(e) => setNewTaskTitle(e.target.value)}
-                          placeholder="ENTER_NEW_MISSION..."
-                          className="flex-1 bg-black border border-gray-800 px-4 py-2 text-xs text-gray-300 focus:outline-none focus:border-cyan-500"
-                        />
-                        <button type="submit" className="px-4 bg-cyan-500 text-black text-[10px] font-black uppercase hover:bg-white transition-all">Establish</button>
-                        <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-gray-800 text-gray-400 text-[10px] font-black uppercase hover:text-white transition-all">Abort</button>
-                      </form>
-                    ) : (
-                      <button onClick={() => setIsAddingTask(true)} className="w-full py-3 border border-dashed border-gray-800 text-[9px] font-black uppercase text-gray-600 hover:text-cyan-500 transition-all bg-black/20 flex items-center justify-center gap-2">
-                        <Plus size={12} /> Add_Mission_Protocol
-                      </button>
+                <div className="bg-gray-900/10 border border-gray-900 p-4 md:p-6 space-y-6">
+                  {selectedPod.created_by === session?.user?.id && (
+                    <div className="border-b border-gray-800 pb-6">
+                      {isAddingTask ? (
+                        <form onSubmit={handleAddTask} className="flex flex-col md:flex-row gap-3">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={newTaskTitle}
+                            onChange={(e) => setNewTaskTitle(e.target.value)}
+                            placeholder="ENTER_NEW_MISSION..."
+                            className="flex-1 input-primary text-sm py-3"
+                          />
+                          <div className="flex gap-2">
+                            <button type="submit" className="flex-1 btn-primary py-3">Establish</button>
+                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-gray-800 text-gray-400 text-[10px] font-black uppercase hover:text-white transition-all active:scale-95">Abort</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <button onClick={() => setIsAddingTask(true)} className="w-full py-4 border border-dashed border-gray-800 text-[10px] font-black uppercase text-gray-600 hover:text-cyan-500 hover:border-cyan-500/30 transition-all bg-black/20 flex items-center justify-center gap-2 active:scale-[0.98]">
+                          <Plus size={14} /> Add_Mission_Protocol
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid gap-3">
+                    {groupTasks.map((task) => {
+                      const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
+                      return (
+                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border transition-all ${isDone ? 'bg-cyan-500/5 border-cyan-500/30 shadow-[inset_0_0_20px_rgba(6,182,212,0.05)]' : 'bg-black/40 border-gray-900 hover:border-gray-700'}`}>
+                          <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
+                            <div className={`w-7 h-7 md:w-6 md:h-6 border-2 transition-all flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-cyan-500 border-cyan-500' : 'border-gray-800 bg-black'}`}>
+                              {isDone && <Check size={16} className="text-black stroke-[4px]" />}
+                            </div>
+                            <span className={`text-sm md:text-xs font-black uppercase tracking-tight ${isDone ? 'text-cyan-400 opacity-50 line-through' : 'text-gray-200'}`}>
+                              {task.title}
+                            </span>
+                          </button>
+                          {selectedPod.created_by === session?.user?.id && (
+                            <button onClick={() => handleDeleteTask(task.id)} className="p-2 text-gray-800 hover:text-red-500 md:opacity-0 group-hover/task:opacity-100 transition-all active:scale-90">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {groupTasks.length === 0 && (
+                      <div className="text-center py-12 border border-dashed border-gray-900 rounded">
+                        <p className="text-[10px] text-gray-700 uppercase font-black tracking-widest">NO_MISSIONS_ASSIGNED</p>
+                      </div>
                     )}
                   </div>
-                )}
-
-                <div className="grid gap-3">
-                  {groupTasks.map((task) => {
-                    const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
-                    return (
-                      <div key={task.id} className={`flex items-center justify-between group/task p-4 border transition-all ${isDone ? 'bg-cyan-500/5 border-cyan-500/20' : 'bg-black/40 border-gray-900 hover:border-gray-800'}`}>
-                        <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
-                          <div className={`w-6 h-6 border-2 transition-all flex items-center justify-center ${isDone ? 'bg-cyan-500 border-cyan-500' : 'border-gray-800 bg-black'}`}>
-                            {isDone && <Check size={14} className="text-black stroke-[4px]" />}
-                          </div>
-                          <span className={`text-xs font-black uppercase tracking-tight ${isDone ? 'text-cyan-400 opacity-50' : 'text-gray-200'}`}>
-                            {task.title}
-                          </span>
-                        </button>
-                        {selectedPod.created_by === session?.user?.id && (
-                          <button onClick={() => handleDeleteTask(task.id)} className="p-2 text-gray-800 hover:text-red-500 opacity-0 group-hover/task:opacity-100 transition-all">
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                  {groupTasks.length === 0 && <p className="text-[10px] text-gray-700 text-center py-10 uppercase font-black">No missions assigned.</p>}
                 </div>
               </div>
 
-              <div className="pt-6">
-                <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold mb-6">Pod_Pulse</h3>
-                <SocialFeed session={session} groupId={selectedPod.id} dailyStreak={dailyStreak} onShareStreak={onShareStreak} onSelectUser={onSelectUser} />
+              <div className="pt-4">
+                <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black mb-6">Pod_Pulse_Feed</h3>
+                <div className="border-l-2 border-gray-900 pl-4 md:pl-6">
+                  <SocialFeed session={session} groupId={selectedPod.id} dailyStreak={dailyStreak} onShareStreak={onShareStreak} onSelectUser={onSelectUser} />
+                </div>
               </div>
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Activity size={12} className="text-cyan-500" /> Neural_Vitals
+              <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black flex items-center gap-2">
+                <Activity size={14} className="text-cyan-500" /> Neural_Vitals
               </h3>
-              <div className="space-y-3">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-3">
                 {podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
                   const isMe = member.id === session?.user?.id
                   const isDone = member.group_tasks_completed > 0
                   return (
-                    <div key={member.id} className={`bg-black/60 border ${isDone ? 'border-cyan-500/20' : 'border-gray-900'} p-3 space-y-2 group/card`}>
+                    <div key={member.id} className={`bg-black border ${isDone ? 'border-cyan-500/30 bg-cyan-500/[0.02]' : 'border-gray-900'} p-4 space-y-3 group/card transition-all hover:border-gray-700`}>
                       <div className="flex justify-between items-center">
-                        <div className={`flex items-center gap-2 ${!isMe && 'cursor-pointer'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
-                          <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
-                            {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold text-gray-600">{member.username?.[0]}</span>}
+                        <div className={`flex items-center gap-3 ${!isMe && 'cursor-pointer active:scale-95 transition-transform'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
+                          <div className="w-10 h-10 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden shadow-lg">
+                            {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-sm font-black text-gray-600">{member.username?.[0]?.toUpperCase()}</span>}
                           </div>
                           <div>
-                            <p className={`text-[10px] font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-400 group-hover/card:text-cyan-400'}`}>{member.username}</p>
-                            <p className="text-[6px] font-bold text-cyan-700 uppercase tracking-widest">{member.total_xp} XP</p>
+                            <p className={`text-xs font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-400 group-hover/card:text-cyan-400 transition-colors'}`}>{member.username}</p>
+                            <p className="text-[7px] font-black text-cyan-600 uppercase tracking-widest">{member.total_xp?.toLocaleString()} XP</p>
                           </div>
                         </div>
                         {!isMe && !isDone && (
-                          <button onClick={() => handlePing(member.id, member.username)} className="p-1.5 border border-gray-800 text-gray-700 hover:bg-white hover:text-black transition-all">
-                            <Bell size={10} />
+                          <button onClick={() => handlePing(member.id, member.username)} className="p-2 border border-gray-800 text-gray-700 hover:bg-white hover:text-black transition-all active:scale-90" title="Ping Member">
+                            <Bell size={14} />
                           </button>
                         )}
                       </div>
-                      <div className={`text-[8px] font-black uppercase ${isDone ? 'text-cyan-500' : 'text-red-900 animate-pulse'}`}>
-                        {isDone ? 'PROTOCOL_SYNCED' : 'CRITICAL_OFFLINE'}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className={`text-[9px] font-black uppercase tracking-widest ${isDone ? 'text-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.2)]' : 'text-red-900 animate-pulse'}`}>
+                          {isDone ? 'SYNCED' : 'OFFLINE'}
+                        </div>
+                        <div className="text-[8px] text-gray-700 font-bold uppercase">
+                          {member.group_tasks_completed}/{member.group_tasks_total || groupTasks.length} MISSIONS
+                        </div>
                       </div>
                     </div>
                   )
@@ -331,29 +346,32 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 font-mono">
-      <section className="flex justify-between items-end">
-        <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Accountability_Pods</h2>
+    <div className="space-y-8 view-enter pt-2 font-mono">
+      <section className="flex justify-between items-end px-1">
+        <div className="space-y-1">
+          <h2 className="text-[11px] uppercase tracking-[0.3em] text-gray-500 font-black">Accountability_Network</h2>
+          <p className="text-[8px] text-gray-700 uppercase font-black tracking-widest">Global_Pods_Overview</p>
+        </div>
         {session && (
-          <button onClick={() => setIsCreating(!isCreating)} className="px-3 py-1 border border-cyan-500/30 text-cyan-400 text-[8px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-black transition-all flex items-center gap-2">
-            <Plus size={12} /> Initialize_Pod
+          <button onClick={() => setIsCreating(!isCreating)} className="btn-primary py-2 px-4 flex items-center gap-2">
+            <Plus size={14} /> Initialize_Pod
           </button>
         )}
       </section>
 
       {isCreating && (
-        <form onSubmit={handleCreateGroup} className="bg-gray-950 border border-cyan-500/30 p-6 space-y-4">
-          <div className="space-y-1">
-            <label className="text-[8px] uppercase text-gray-600 font-bold">Pod_Name</label>
-            <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., NEURAL_LEARNERS" className="w-full bg-black border border-gray-900 px-4 py-2 text-xs text-white focus:outline-none focus:border-cyan-500" />
+        <form onSubmit={handleCreateGroup} className="bg-gray-950 border border-cyan-500/30 p-6 space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">Pod_Identifier</label>
+            <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., NEURAL_LEARNERS" className="w-full input-primary text-sm py-3" />
           </div>
-          <div className="space-y-1">
-            <label className="text-[8px] uppercase text-gray-600 font-bold">Objective</label>
-            <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Define protocols..." className="w-full bg-black border border-gray-900 px-4 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 h-24 resize-none" />
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">Protocol_Objectives</label>
+            <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Define your mission objectives..." className="w-full input-primary text-sm py-3 h-28 resize-none" />
           </div>
-          <div className="flex gap-3">
-            <button type="submit" className="flex-1 bg-cyan-500 text-black py-2 text-[10px] font-black uppercase tracking-widest">Initialize</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-gray-900 text-gray-500 py-2 text-[10px] font-black uppercase tracking-widest">Abort</button>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" className="flex-1 btn-primary py-4">Establish_Link</button>
+            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-gray-900 text-gray-500 py-4 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all active:scale-95">Abort</button>
           </div>
         </form>
       )}
@@ -362,19 +380,20 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         {groups.map((group) => {
           const isMember = group.group_members?.some(m => m.user_id === session?.user?.id)
           return (
-            <div key={group.id} className="bg-gray-950/50 border border-gray-900 p-6 space-y-4 group">
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-white uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">{group.name}</h3>
-                <div className="flex items-center gap-3">
-                  <span className="text-[8px] text-gray-600 uppercase font-bold tracking-widest flex items-center gap-1"><Users size={10} /> {group.group_members?.length || 0} Members</span>
-                  {group.current_streak! > 0 && <span className="text-[8px] text-orange-500 font-black flex items-center gap-1"><Flame size={10} fill="currentColor" /> {group.current_streak} Day_Streak</span>}
+            <div key={group.id} className="bg-gray-950/40 border border-gray-900 p-6 md:p-8 space-y-6 group hover:border-gray-700 transition-all hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]">
+              <div className="space-y-2">
+                <h3 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter group-hover:text-cyan-400 transition-colors">{group.name}</h3>
+                <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{group.description}</p>
+                <div className="flex items-center gap-4 pt-2">
+                  <span className="text-[9px] text-gray-500 uppercase font-black tracking-widest flex items-center gap-2"><Users size={14} /> {group.group_members?.length || 0} Members</span>
+                  {group.current_streak! > 0 && <span className="text-[9px] text-orange-500 font-black flex items-center gap-2 uppercase tracking-widest"><Flame size={14} fill="currentColor" /> {group.current_streak} Day_Streak</span>}
                 </div>
               </div>
               <div className="pt-2">
                 {isMember ? (
-                  <button onClick={() => onSelectPod(group)} className="w-full py-2 bg-gray-900 text-cyan-400 border border-gray-800 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all">Enter_Dashboard</button>
+                  <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-gray-900 text-cyan-400 border border-gray-800 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">Enter_Dashboard</button>
                 ) : (
-                  <button onClick={() => handleJoinGroup(group.id)} className="w-full py-2 bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all">Join_Pod</button>
+                  <button onClick={() => handleJoinGroup(group.id)} className="w-full py-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">Join_Pod_Protocol</button>
                 )}
               </div>
             </div>
@@ -384,3 +403,4 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     </div>
   )
 }
+
