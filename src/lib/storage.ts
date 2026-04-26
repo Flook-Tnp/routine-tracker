@@ -379,5 +379,13 @@ export const StorageService = {
       .delete()
       .eq('id', groupId)
     if (error) throw error
+  },
+
+  async pingUser(targetUserId: string): Promise<{ success: boolean; message: string; next_available?: string }> {
+    const { data, error } = await supabase
+      .rpc('ping_user', { target_user_id: targetUserId })
+    
+    if (error) throw error
+    return data
   }
 }

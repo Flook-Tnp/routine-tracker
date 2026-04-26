@@ -192,3 +192,53 @@ BEGIN
   WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Pings table to track social nudges
+CREATE TABLE IF NOT EXISTS pings (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  sender_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  receiver_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Index for fast lookup of daily pings
+CREATE INDEX IF NOT EXISTS pings_sender_receiver_idx ON pings (sender_id, receiver_id, created_at);
+
+-- Function to ping a user with rate limiting (once per 24h per pair)
+CREATE OR REPLACE FUNCTION ping_user(target_user_id UUID)
+RETURNS JSON AS $$
+DECLARE
+  last_ping TIMESTAMP;
+  sender_id UUID;
+BEGIN
+  sender_id := auth.uid();
+  
+  -- Check if user is pinging themselves
+  IF sender_id = target_user_id THEN
+    RETURN json_build_object('success', false, 'message', 'SELF_PING_PROHIBITED');
+  END IF;
+
+  -- Get the last ping time for this specific pair
+  SELECT created_at INTO last_ping
+  FROM pings
+  WHERE pings.sender_id = ping_user.sender_id 
+    AND pings.receiver_id = target_user_id
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  -- Check if 24 hours have passed
+  IF last_ping IS NOT NULL AND last_ping > (now() - interval '24 hours') THEN
+    RETURN json_build_object(
+      'success', false, 
+      'message', 'PROTOCOL_COOLDOWN', 
+      'next_available', (last_ping + interval '24 hours')
+    );
+  END IF;
+
+  -- Record the ping
+  INSERT INTO pings (sender_id, receiver_id)
+  VALUES (sender_id, target_user_id);
+
+  RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

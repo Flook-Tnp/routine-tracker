@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award } from 'lucide-react'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell } from 'lucide-react'
 import type { Group, Profile } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { SocialFeed } from './SocialFeed'
@@ -103,6 +103,21 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }
 
+  const handlePing = async (userId: string, username: string) => {
+    try {
+      const result = await StorageService.pingUser(userId)
+      if (result.success) {
+        alert(`TRANSMISSION_SUCCESS: Nudge sent to ${username}.`)
+      } else {
+        const timeStr = result.next_available ? new Date(result.next_available).toLocaleTimeString() : 'later'
+        alert(`COOLDOWN_ACTIVE: ${result.message}. Try again after ${timeStr}.`)
+      }
+    } catch (err: any) {
+      console.error('Ping failed:', err)
+      alert(`LINK_ERROR: ${err.message}`)
+    }
+  }
+
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Pod_Network...</div>
 
   if (selectedPod) {
@@ -152,7 +167,19 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                             )}
                           </div>
                           <span className={`text-xs font-bold text-gray-300 uppercase transition-colors ${!isMe && 'group-hover/member:text-cyan-400'}`}>{member.username || 'Unknown_Entity'}</span>
-                        </div>                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-4">
+                          {!isMe && session && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handlePing(member.id, member.username)
+                              }}
+                              className="p-1.5 text-gray-700 hover:text-yellow-500 transition-colors border border-transparent hover:border-yellow-500/30 bg-black/40"
+                              title="Ping User"
+                            >
+                              <Bell size={12} />
+                            </button>
+                          )}
                           <div className="flex items-center gap-1 text-orange-500">
                             <Zap size={10} fill="currentColor" />
                             <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
