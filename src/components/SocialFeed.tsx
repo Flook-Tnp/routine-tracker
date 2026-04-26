@@ -9,11 +9,10 @@ interface SocialFeedProps {
   session: Session | null
   onShareStreak: () => void
   dailyStreak: number
-  groupId?: string
   onSelectUser?: (userId: string) => void
 }
 
-export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSelectUser }: SocialFeedProps) {
+export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }: SocialFeedProps) {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -22,7 +21,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
   const fetchPosts = useCallback(async () => {
     try {
-      const data = await StorageService.fetchPosts(groupId)
+      const data = await StorageService.fetchPosts()
       setPosts(data)
     } catch (err: any) {
       console.error('Error fetching posts:', err)
@@ -30,7 +29,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     } finally {
       setLoading(false)
     }
-  }, [groupId])
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -44,7 +43,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     e.preventDefault()
     if (!newPostContent.trim() || !session) return
     try {
-      await StorageService.createPost(newPostContent, session.user.id, 'manual', {}, groupId)
+      await StorageService.createPost(newPostContent, session.user.id, 'manual', {})
       setNewPostContent('')
       fetchPosts()
     } catch (err: any) {
@@ -85,11 +84,11 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       alert('PROTOCOL_ERROR: Post could not be terminated.')
     }
   }
-if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Connecting_to_Neural_Feed...</div>
 
-return (
-  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-    {!groupId && (
+  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Connecting_to_Neural_Feed...</div>
+
+  return (
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       <section className="space-y-4">
         <div className="flex justify-between items-end">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
@@ -104,9 +103,8 @@ return (
           )}
         </div>
       </section>
-    )}
 
-    <section className="space-y-4">
+      <section className="space-y-4">
         {session ? (
           <form onSubmit={handleCreatePost} className="space-y-3">
             <textarea
