@@ -32,10 +32,11 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       const date = new Date().toISOString().split('T')[0]
 
       // Parallel fetching with individual error handling
-      const [vitalsResult, tasksResult, completionsResult] = await Promise.allSettled([
+      const [vitalsResult, tasksResult, completionsResult, groupsResult] = await Promise.allSettled([
         StorageService.fetchMemberVitals(groupId),
         StorageService.fetchGroupTasks(groupId),
-        StorageService.fetchGroupTaskCompletions(groupId, date)
+        StorageService.fetchGroupTaskCompletions(groupId, date),
+        StorageService.fetchGroups() // Refresh group data to get latest streak from DB
       ])
 
       if (vitalsResult.status === 'fulfilled' && vitalsResult.value.length > 0) {
@@ -57,13 +58,21 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
       if (tasksResult.status === 'fulfilled') setGroupTasks(tasksResult.value)
       if (completionsResult.status === 'fulfilled') setGroupCompletions(completionsResult.value)
+      
+      // Update selectedPod in parent if we found it in the refreshed list
+      if (groupsResult.status === 'fulfilled') {
+        const refreshedPod = groupsResult.value.find(g => g.id === groupId)
+        if (refreshedPod) {
+          onSelectPod(refreshedPod)
+        }
+      }
 
     } catch (err) {
       console.error('Group data sync failed:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [onSelectPod])
 
   const fetchGroups = useCallback(async () => {
     try {
