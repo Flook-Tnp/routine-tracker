@@ -101,5 +101,7 @@ export interface MemberVital {
   routines_total: number
   routines_completed_today: number
   last_activity_date: string | null
+  pod_current_streak?: number
+  pod_max_streak?: number
 }
 

@@ -394,3 +394,104 @@ BEGIN
     ALTER TABLE group_members ADD COLUMN joined_at TIMESTAMP WITH TIME ZONE DEFAULT now();
   END IF;
 END $$;
+
+-- Add streak tracking to groups
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS current_streak INT DEFAULT 0;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS max_streak INT DEFAULT 0;
+ALTER TABLE groups ADD COLUMN IF NOT EXISTS last_streak_date DATE;
+
+-- Update the vitals function to also update group streaks
+CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  total_xp BIGINT,
+  routines_total INT,
+  routines_completed_today INT,
+  last_activity_date DATE,
+  pod_current_streak INT,
+  pod_max_streak INT
+) AS $$
+DECLARE
+  member_count INT;
+  synergy_pct FLOAT;
+  threshold FLOAT;
+  last_date DATE;
+  today DATE := CURRENT_DATE;
+BEGIN
+  -- 1. Run the Auto-Kick Purge (Inactive for 7 days)
+  DELETE FROM group_members
+  WHERE group_id = target_group_id
+    AND user_id IN (
+      SELECT m.user_id
+      FROM group_members m
+      LEFT JOIN routine_completions c ON c.user_id = m.user_id
+      WHERE m.group_id = target_group_id
+        AND m.user_id != (SELECT created_by FROM groups WHERE id = target_group_id) -- Don't kick owner
+      GROUP BY m.user_id, m.joined_at
+      HAVING (MAX(c.completed_date) < today - INTERVAL '7 days')
+         OR (MAX(c.completed_date) IS NULL AND m.joined_at < today - INTERVAL '7 days')
+    );
+
+  -- 2. Calculate Synergy for Yesterday (to check if streak continues)
+  SELECT COUNT(*)::INT INTO member_count FROM group_members WHERE group_id = target_group_id;
+  
+  -- Define threshold based on group size
+  IF member_count <= 1 THEN threshold := 1.0;
+  ELSIF member_count <= 5 THEN threshold := 0.8;
+  ELSE threshold := 0.7;
+  END IF;
+
+  -- Get current group streak data
+  SELECT last_streak_date, current_streak INTO last_date, pod_current_streak FROM groups WHERE id = target_group_id;
+
+  -- 3. Streak Maintenance Logic (Run once per day)
+  IF last_date IS NULL OR last_date < today THEN
+    -- Check yesterday's synergy
+    SELECT 
+      AVG(CASE WHEN r_total > 0 THEN (r_done::FLOAT / r_total) ELSE 0 END) INTO synergy_pct
+    FROM (
+      SELECT 
+        gm.user_id,
+        (SELECT COUNT(*)::INT FROM routines r WHERE r.user_id = gm.user_id AND r.is_active = true) as r_total,
+        (SELECT COUNT(*)::INT FROM routine_completions rc 
+         WHERE rc.user_id = gm.user_id AND rc.completed_date = today - INTERVAL '1 day') as r_done
+      FROM group_members gm
+      WHERE gm.group_id = target_group_id
+    ) member_stats;
+
+    IF synergy_pct >= threshold THEN
+      -- Increment Streak
+      UPDATE groups 
+      SET current_streak = current_streak + 1,
+          max_streak = GREATEST(max_streak, current_streak + 1),
+          last_streak_date = today
+      WHERE id = target_group_id;
+    ELSIF last_date < today - INTERVAL '1 day' THEN
+      -- Reset Streak if they missed a day entirely
+      UPDATE groups SET current_streak = 0, last_streak_date = today WHERE id = target_group_id;
+    END IF;
+  END IF;
+
+  -- Final Refresh values for return
+  SELECT current_streak, max_streak INTO pod_current_streak, pod_max_streak FROM groups WHERE id = target_group_id;
+
+  -- 4. Return member vitals
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.username,
+    p.avatar_url,
+    p.total_xp,
+    COALESCE((SELECT COUNT(*)::INT FROM routines r WHERE r.user_id = p.id AND r.is_active = true), 0),
+    COALESCE((SELECT COUNT(*)::INT FROM routine_completions rc 
+     WHERE rc.user_id = p.id AND rc.completed_date = today), 0),
+    (SELECT MAX(completed_date) FROM routine_completions rc WHERE rc.user_id = p.id),
+    pod_current_streak,
+    pod_max_streak
+  FROM profiles p
+  JOIN group_members gm ON p.id = gm.user_id
+  WHERE gm.group_id = target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

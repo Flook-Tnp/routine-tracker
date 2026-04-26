@@ -150,8 +150,16 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             <div className="space-y-2">
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
-                <div className="px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
-                  Synergy: {Math.round(avgProgress * 100)}%
+                <div className="flex gap-2">
+                  <div className="px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
+                    Synergy: {Math.round(avgProgress * 100)}%
+                  </div>
+                  {podMembers[0]?.pod_current_streak !== undefined && (
+                    <div className="px-2 py-0.5 border border-orange-500/30 bg-orange-500/10 text-orange-500 text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
+                      <Flame size={8} fill="currentColor" />
+                      Squad_Streak: {podMembers[0].pod_current_streak}
+                    </div>
+                  )}
                 </div>
               </div>
               <p className="text-xs text-gray-500 font-mono leading-relaxed max-w-lg">{selectedPod.description}</p>
