@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, LogOut, Trash2, ChevronLeft, Bell, Activity, Check, Flame } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
