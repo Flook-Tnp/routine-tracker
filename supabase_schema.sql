@@ -595,3 +595,92 @@ BEGIN
   WHERE gm.group_id = target_group_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Update the Mission Logic to be STRICT: Each member must complete >= 1 task
+CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  total_xp BIGINT,
+  routines_total INT,
+  routines_completed_today INT,
+  last_activity_date DATE,
+  pod_current_streak INT,
+  pod_max_streak INT
+) AS $$
+DECLARE
+  member_count INT;
+  active_member_count INT; -- Members who did >= 1 task yesterday
+  last_date DATE;
+  today DATE := CURRENT_DATE;
+  creator_id UUID;
+BEGIN
+  SELECT created_by INTO creator_id FROM groups WHERE groups.id = target_group_id;
+
+  -- 1. Auto-Kick inactive members (> 7 days), protect creator
+  DELETE FROM group_members
+  WHERE group_id = target_group_id
+    AND user_id IN (
+      SELECT m.user_id
+      FROM group_members m
+      LEFT JOIN group_task_completions gtc ON gtc.user_id = m.user_id
+      WHERE m.group_id = target_group_id
+        AND m.user_id != creator_id
+      GROUP BY m.user_id, m.joined_at
+      HAVING (MAX(gtc.completed_date) < today - INTERVAL '7 days')
+         OR (MAX(gtc.completed_date) IS NULL AND m.joined_at < today - INTERVAL '7 days')
+    );
+
+  -- 2. Count total members
+  SELECT COUNT(*)::INT INTO member_count FROM group_members WHERE group_id = target_group_id;
+
+  -- 3. Streak Maintenance
+  SELECT last_streak_date, current_streak INTO last_date, pod_current_streak FROM groups WHERE groups.id = target_group_id;
+
+  -- Only calculate streak if tasks actually exist in the pod
+  IF (last_date IS NULL OR last_date < today) AND (SELECT COUNT(*) FROM group_tasks WHERE group_tasks.group_id = target_group_id) > 0 THEN
+    
+    -- Count how many members completed AT LEAST ONE task yesterday
+    SELECT COUNT(DISTINCT user_id)::INT INTO active_member_count
+    FROM group_task_completions gtc
+    JOIN group_tasks gt ON gtc.task_id = gt.id
+    WHERE gt.group_id = target_group_id AND gtc.completed_date = today - INTERVAL '1 day';
+
+    -- STRICT RULE: All members must have been active
+    IF member_count > 0 AND active_member_count = member_count THEN
+      UPDATE groups 
+      SET current_streak = COALESCE(current_streak, 0) + 1,
+          max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
+          last_streak_date = today
+      WHERE groups.id = target_group_id;
+    ELSIF last_date < today - INTERVAL '1 day' THEN
+      -- Streak resets if missed
+      UPDATE groups SET current_streak = 0, last_streak_date = today WHERE id = target_group_id;
+    END IF;
+  END IF;
+
+  -- Refresh values
+  SELECT COALESCE(current_streak, 0), COALESCE(max_streak, 0) INTO pod_current_streak, pod_max_streak 
+  FROM groups WHERE groups.id = target_group_id;
+
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.username,
+    p.avatar_url,
+    p.total_xp,
+    (SELECT COUNT(*)::INT FROM group_tasks gt WHERE gt.group_id = target_group_id),
+    (SELECT COUNT(DISTINCT gtc.task_id)::INT FROM group_task_completions gtc 
+     JOIN group_tasks gt ON gtc.task_id = gt.id
+     WHERE gtc.user_id = p.id AND gt.group_id = target_group_id AND gtc.completed_date = today),
+    (SELECT MAX(gtc.completed_date) FROM group_task_completions gtc 
+     JOIN group_tasks gt ON gtc.task_id = gt.id
+     WHERE gtc.user_id = p.id AND gt.group_id = target_group_id),
+    pod_current_streak,
+    pod_max_streak
+  FROM profiles p
+  JOIN group_members gm ON p.id = gm.user_id
+  WHERE gm.group_id = target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

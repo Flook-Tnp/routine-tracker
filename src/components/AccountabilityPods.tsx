@@ -243,10 +243,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   <div className="px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
                     Synergy: {Math.round(avgProgress * 100)}%
                   </div>
-                  {podMembers[0]?.pod_current_streak !== undefined && (
+                  {(podMembers[0]?.pod_current_streak !== undefined || selectedPod.current_streak !== undefined) && (
                     <div className="px-2 py-0.5 border border-orange-500/30 bg-orange-500/10 text-orange-500 text-[8px] font-black uppercase tracking-widest flex items-center gap-1">
                       <Flame size={8} fill="currentColor" />
-                      Squad_Streak: {podMembers[0].pod_current_streak}
+                      Squad_Streak: {podMembers[0]?.pod_current_streak ?? selectedPod.current_streak ?? 0}
                     </div>
                   )}
                 </div>
@@ -266,10 +266,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
                   <Activity size={12} className="text-cyan-500" /> Mission_Objectives
                 </h3>
-                {podMembers[0]?.pod_current_streak !== undefined && (
+                {(podMembers[0]?.pod_current_streak !== undefined || selectedPod.current_streak !== undefined) && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 border border-orange-500/30 bg-orange-500/5 text-orange-500 text-[8px] font-black uppercase tracking-widest">
                     <Flame size={10} fill="currentColor" className="animate-pulse" />
-                    Collective_Streak: {podMembers[0].pod_current_streak}
+                    Collective_Streak: {podMembers[0]?.pod_current_streak ?? selectedPod.current_streak ?? 0}
                   </div>
                 )}
               </div>
@@ -346,9 +346,20 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               </div>
 
               <div className="pt-6">
-                <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2 mb-4">
-                  <Users size={12} className="text-gray-500" /> Pod_Pulse
-                </h3>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
+                    <Users size={12} className="text-gray-500" /> Pod_Pulse
+                  </h3>
+                  {(podMembers[0]?.pod_current_streak !== undefined || selectedPod.current_streak !== undefined) && (
+                    <div className="flex items-center gap-3 px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 animate-in slide-in-from-right-4 duration-500">
+                      <Flame size={14} fill="currentColor" className="animate-pulse" />
+                      <div className="flex flex-col leading-none">
+                        <span className="text-[10px] font-black uppercase tracking-tighter">Squad_Streak</span>
+                        <span className="text-[8px] font-bold opacity-80 uppercase tracking-widest">{podMembers[0]?.pod_current_streak ?? selectedPod.current_streak ?? 0} Days_Active</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <SocialFeed 
                   session={session} 
                   groupId={selectedPod.id} 

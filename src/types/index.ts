@@ -81,6 +81,9 @@ export interface Group {
   description: string
   created_by: string
   created_at: string
+  current_streak?: number
+  max_streak?: number
+  last_streak_date?: string
   group_members?: { user_id: string }[]
 }
 
