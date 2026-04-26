@@ -51,6 +51,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           total_xp: m.total_xp,
           routines_total: 0,
           routines_completed_today: 0,
+          group_tasks_total: 0,
+          group_tasks_completed: 0,
           last_activity_date: null
         })))
       }
