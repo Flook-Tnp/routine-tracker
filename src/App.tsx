@@ -109,7 +109,6 @@ function App() {
             setCompletions(allCompletions)
             setTasks(tasksData)
             setLoading(false)
-            setCurrentView('tracker')
           }
         } catch (err) {
           console.error('PROTOCOL_ERROR: Data retrieval failed', err)
@@ -122,7 +121,6 @@ function App() {
           setCompletions([])
           setTasks([])
           setLoading(false)
-          setCurrentView('tracker')
         }
       }
     }
@@ -133,8 +131,11 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       handleSession(session)
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setCurrentView('tracker')
+      }
     })
 
     return () => {
