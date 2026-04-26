@@ -813,7 +813,7 @@ function App() {
                       )}
                     </button>
                     {showNotifications && (
-                      <div className="absolute top-full left-0 mt-4 w-64 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                      <div className="absolute top-full left-0 mt-4 w-72 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
                           <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
                           <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
@@ -898,7 +898,7 @@ function App() {
                     <div className="relative">
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} /></button>
                       {showNotifications && (
-                        <div className="absolute top-full right-0 mt-4 w-72 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="absolute top-full left-0 mt-4 w-[calc(100vw-2rem)] sm:w-80 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                           <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
                             <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
                             <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
