@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO } from 'date-fns'
 import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User } from 'lucide-react'
@@ -44,6 +44,7 @@ function App() {
   const [newCategoryTitle, setNewCategoryTitle] = useState('')
 
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null)
+  const lastUserId = useRef<string | undefined>(undefined)
 
   const selectedDateStr = useMemo(() => {
     try {
@@ -72,6 +73,10 @@ function App() {
     const handleSession = async (currentSession: Session | null) => {
       if (!mounted) return
       
+      const currentUserId = currentSession?.user?.id
+      const identityChanged = currentUserId !== lastUserId.current
+      lastUserId.current = currentUserId
+
       setSession(currentSession)
       
       if (currentSession?.user) {
@@ -109,6 +114,7 @@ function App() {
             setCompletions(allCompletions)
             setTasks(tasksData)
             setLoading(false)
+            if (identityChanged) setCurrentView('tracker')
           }
         } catch (err) {
           console.error('PROTOCOL_ERROR: Data retrieval failed', err)
@@ -121,6 +127,7 @@ function App() {
           setCompletions([])
           setTasks([])
           setLoading(false)
+          if (identityChanged) setCurrentView('tracker')
         }
       }
     }
@@ -131,11 +138,8 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       handleSession(session)
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setCurrentView('tracker')
-      }
     })
 
     return () => {
