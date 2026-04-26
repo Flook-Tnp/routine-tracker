@@ -17,7 +17,7 @@ import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
-import type { Notification as AppNotification } from './types'
+import type { AppNotification } from './types'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)

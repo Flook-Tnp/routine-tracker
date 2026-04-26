@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction } from '../types'
+import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction, AppNotification } from '../types'
 
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
@@ -389,7 +389,7 @@ export const StorageService = {
     return data
   },
 
-  async fetchNotifications(userId: string): Promise<Notification[]> {
+  async fetchNotifications(userId: string): Promise<AppNotification[]> {
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
@@ -397,7 +397,7 @@ export const StorageService = {
       .eq('is_read', false)
       .order('created_at', { ascending: false })
     if (error) throw error
-    return data as Notification[]
+    return data as AppNotification[]
   },
 
   async markNotificationAsRead(id: string): Promise<void> {

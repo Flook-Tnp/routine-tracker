@@ -84,7 +84,7 @@ export interface Group {
   group_members?: { user_id: string }[]
 }
 
-export interface Notification {
+export interface AppNotification {
   id: string
   user_id: string
   type: string
