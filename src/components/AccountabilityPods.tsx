@@ -181,9 +181,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Pod_Network...</div>
 
   if (selectedPod) {
-    const avgProgress = podMembers.length > 0 
-      ? podMembers.reduce((acc, m) => acc + (m.routines_total > 0 ? (m.routines_completed_today / m.routines_total) : 0), 0) / podMembers.length 
-      : 0
+    const activeMembersCount = podMembers.filter(m => m.routines_completed_today > 0).length
+    const avgProgress = podMembers.length > 0 ? (activeMembersCount / podMembers.length) : 0
 
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500 pb-20 pt-4">
@@ -229,117 +228,24 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-4">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Activity size={12} className="text-cyan-500" /> Neural_Vitals_Grid
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {podMembers.length > 0 ? (
-                  podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
-                    const isMe = member.id === session?.user?.id
-                    const progress = member.routines_total > 0 ? (member.routines_completed_today / member.routines_total) : 0
-                    
-                    // Determine Status
-                    const isStable = progress === 1
-                    const isCritical = !isStable && new Date().getHours() >= 20 // 8 PM
-                    const isDegrading = !isStable && !isCritical && new Date().getHours() >= 14 // 2 PM
-                    
-                    let statusLabel = 'STABLE'
-                    let statusColor = 'text-cyan-500'
-                    let borderColor = 'border-gray-900'
-                    let pulseClass = 'animate-pulse'
-
-                    if (isCritical) {
-                      statusLabel = 'CRITICAL'
-                      statusColor = 'text-red-500'
-                      borderColor = 'border-red-900/50'
-                      pulseClass = 'animate-[pulse_1s_infinite]'
-                    } else if (isDegrading) {
-                      statusLabel = 'DEGRADING'
-                      statusColor = 'text-orange-500'
-                      borderColor = 'border-orange-900/30'
-                    } else if (isStable) {
-                      pulseClass = ''
-                    }
-
-                    return (
-                      <div 
-                        key={member.id} 
-                        className={`bg-black border ${borderColor} p-4 space-y-4 transition-all relative group/card ${!isMe && 'hover:border-cyan-500/30'}`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div 
-                            className={`flex items-center gap-3 ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
-                            onClick={() => !isMe && onSelectUser?.(member.id)}
-                          >
-                            <div className={`w-10 h-10 bg-gray-900 border ${isStable ? 'border-cyan-500/50' : 'border-gray-800'} flex items-center justify-center overflow-hidden relative`}>
-                              {member.avatar_url ? (
-                                <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                              ) : (
-                                <span className="text-xs font-bold text-gray-500">{member.username?.[0]}</span>
-                              )}
-                              {!isStable && <div className={`absolute inset-0 border-2 ${statusColor.replace('text-', 'border-')}/20 ${pulseClass}`} />}
-                            </div>
-                            <div>
-                              <p className={`text-xs font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-300 group-hover/card:text-cyan-400'}`}>
-                                {member.username} {isMe && '(YOU)'}
-                              </p>
-                              <p className={`text-[7px] font-bold uppercase tracking-widest ${statusColor}`}>{statusLabel}</p>
-                            </div>
-                          </div>
-                          
-                          {!isMe && session && !isStable && (
-                            <button
-                              onClick={() => handlePing(member.id, member.username)}
-                              className={`p-2 border ${isCritical ? 'border-red-500/30 text-red-500' : 'border-gray-800 text-gray-600'} hover:bg-white hover:text-black transition-all`}
-                              title="Transmit Nudge"
-                            >
-                              <Bell size={12} />
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-gray-600">
-                            <span>Today_Sync</span>
-                            <span>{Math.round(progress * 100)}%</span>
-                          </div>
-                          <div className="h-1 bg-gray-900 overflow-hidden">
-                            <div 
-                              className={`h-full transition-all duration-500 ${isStable ? 'bg-cyan-500' : isCritical ? 'bg-red-500' : 'bg-orange-500'}`}
-                              style={{ width: `${progress * 100}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-end pt-2 border-t border-gray-900/50">
-                          <div className="flex items-center gap-1 text-orange-500">
-                            <Zap size={10} fill="currentColor" />
-                            <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
-                          </div>
-                          <p className="text-[6px] text-gray-700 uppercase font-black">Last_Active: {member.last_activity_date || 'Unknown'}</p>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="col-span-full py-10 text-center border border-dashed border-gray-900">
-                    <p className="text-[8px] text-gray-700 uppercase tracking-widest">No active neural signatures</p>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Left Column: Mission Objectives (Primary Focus) */}
+            <div className="lg:col-span-3 space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
+                  <Activity size={12} className="text-cyan-500" /> Mission_Objectives
+                </h3>
+                {podMembers[0]?.pod_current_streak !== undefined && (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 border border-orange-500/30 bg-orange-500/5 text-orange-500 text-[8px] font-black uppercase tracking-widest">
+                    <Flame size={10} fill="currentColor" className="animate-pulse" />
+                    Collective_Streak: {podMembers[0].pod_current_streak}
                   </div>
                 )}
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Award size={12} className="text-orange-500" /> Mission_Objectives
-              </h3>
-              
-              <div className="bg-gray-900/30 border border-gray-900 p-4 space-y-4">
+              <div className="bg-gray-900/20 border border-gray-900 p-6 space-y-6">
                 {selectedPod.created_by === session?.user?.id && (
-                  <div className="border-b border-gray-800 pb-4">
+                  <div className="border-b border-gray-800 pb-6">
                     {isAddingTask ? (
                       <form onSubmit={handleAddTask} className="flex gap-2">
                         <input
@@ -347,71 +253,170 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                           type="text"
                           value={newTaskTitle}
                           onChange={(e) => setNewTaskTitle(e.target.value)}
-                          placeholder="ENTER_OBJECTIVE..."
-                          className="flex-1 bg-black border border-gray-800 px-3 py-1 text-[10px] font-mono text-gray-300 focus:outline-none focus:border-cyan-500"
+                          placeholder="ENTER_NEW_MISSION_PROTOCOL..."
+                          className="flex-1 bg-black border border-gray-800 px-4 py-2 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500"
                         />
-                        <button type="submit" className="text-cyan-500 hover:text-white transition-colors">
-                          <Plus size={16} />
+                        <button type="submit" className="px-4 bg-cyan-500 text-black text-[10px] font-black uppercase hover:bg-white transition-all">
+                          Establish
                         </button>
-                        <button type="button" onClick={() => setIsAddingTask(false)} className="text-gray-600 hover:text-red-500">
-                          <X size={16} />
+                        <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-gray-800 text-gray-400 text-[10px] font-black uppercase hover:text-white transition-all">
+                          Abort
                         </button>
                       </form>
                     ) : (
                       <button 
                         onClick={() => setIsAddingTask(true)}
-                        className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-gray-800 text-[8px] font-black uppercase text-gray-600 hover:text-cyan-500 hover:border-cyan-500/50 transition-all"
+                        className="w-full flex items-center justify-center gap-2 py-3 border border-dashed border-gray-800 text-[9px] font-black uppercase text-gray-600 hover:text-cyan-500 hover:border-cyan-500/50 transition-all bg-black/20"
                       >
-                        <Plus size={10} /> Add_New_Mission_Protocol
+                        <Plus size={12} /> Add_Mission_Protocol
                       </button>
                     )}
                   </div>
                 )}
 
-                <div className="space-y-2">
+                <div className="grid gap-3">
                   {groupTasks.length > 0 ? (
                     groupTasks.map((task) => {
                       const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
                       return (
-                        <div key={task.id} className="flex items-center justify-between group/task bg-black/40 p-2 border border-gray-900 hover:border-gray-800 transition-all">
+                        <div key={task.id} className={`flex items-center justify-between group/task p-4 border transition-all ${isDone ? 'bg-cyan-500/5 border-cyan-500/20' : 'bg-black/40 border-gray-900 hover:border-gray-800'}`}>
                           <button 
                             onClick={() => handleToggleTask(task.id)}
-                            className={`flex items-center gap-3 text-left transition-all ${isDone ? 'text-cyan-500' : 'text-gray-500 hover:text-gray-300'}`}
+                            className="flex-1 flex items-center gap-4 text-left"
                           >
-                            <div className={`w-4 h-4 border ${isDone ? 'bg-cyan-500 border-cyan-500' : 'border-gray-700'} flex items-center justify-center transition-all`}>
-                              {isDone && <Check size={10} className="text-black" />}
+                            <div className={`w-6 h-6 border-2 transition-all flex items-center justify-center ${isDone ? 'bg-cyan-500 border-cyan-500' : 'border-gray-800 bg-black group-hover/task:border-gray-600'}`}>
+                              {isDone && <Check size={14} className="text-black stroke-[4px]" />}
                             </div>
-                            <span className="text-[10px] font-bold uppercase tracking-tight">{task.title}</span>
+                            <div>
+                              <span className={`text-xs font-black uppercase tracking-tight transition-all ${isDone ? 'text-cyan-400 line-through opacity-50' : 'text-gray-200'}`}>
+                                {task.title}
+                              </span>
+                              {isDone && <p className="text-[7px] text-cyan-700 font-bold uppercase mt-0.5">Objective_Secured</p>}
+                            </div>
                           </button>
                           {selectedPod.created_by === session?.user?.id && (
                             <button 
                               onClick={() => handleDeleteTask(task.id)}
-                              className="text-gray-800 hover:text-red-500 transition-colors opacity-0 group-hover/task:opacity-100"
+                              className="p-2 text-gray-800 hover:text-red-500 transition-colors opacity-0 group-hover/task:opacity-100"
                             >
-                              <Trash2 size={12} />
+                              <Trash2 size={14} />
                             </button>
                           )}
                         </div>
                       )
                     })
                   ) : (
-                    <div className="py-10 text-center">
-                      <p className="text-[8px] text-gray-700 uppercase tracking-widest">No mission protocols defined</p>
+                    <div className="py-20 text-center border border-dashed border-gray-900 bg-black/10">
+                      <p className="text-[10px] text-gray-700 uppercase font-black tracking-[0.2em]">No Mission Protocols Detected</p>
+                      <p className="text-[8px] text-gray-800 uppercase font-bold mt-1 italic">Waiting for command from creator...</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2 pt-4">
-                <Users size={12} className="text-gray-500" /> Pod_Pulse
+              <div className="pt-6">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2 mb-4">
+                  <Users size={12} className="text-gray-500" /> Pod_Pulse
+                </h3>
+                <SocialFeed 
+                  session={session} 
+                  groupId={selectedPod.id} 
+                  dailyStreak={dailyStreak} 
+                  onShareStreak={onShareStreak} 
+                  onSelectUser={onSelectUser}
+                />
+              </div>
+            </div>
+
+            {/* Right Column: Squad Vitals (Sidebar) */}
+            <div className="space-y-6">
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
+                <Activity size={12} className="text-cyan-500" /> Neural_Vitals
               </h3>
-              <SocialFeed 
-                session={session} 
-                groupId={selectedPod.id} 
-                dailyStreak={dailyStreak} 
-                onShareStreak={onShareStreak} 
-                onSelectUser={onSelectUser}
-              />
+              
+              <div className="space-y-3">
+                {podMembers.length > 0 ? (
+                  podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
+                    const isMe = member.id === session?.user?.id
+                    const progress = member.routines_total > 0 ? (member.routines_completed_today / member.routines_total) : 0
+                    
+                    const isStable = member.routines_completed_today > 0
+                    const isCritical = !isStable && new Date().getHours() >= 20 
+                    const isDegrading = !isStable && !isCritical && new Date().getHours() >= 14 
+                    
+                    let statusLabel = 'OFFLINE'
+                    let statusColor = 'text-gray-600'
+                    let borderColor = 'border-gray-900'
+
+                    if (isStable) {
+                      statusLabel = 'SYNCED'
+                      statusColor = 'text-cyan-500'
+                      borderColor = 'border-cyan-500/20'
+                    } else if (isCritical) {
+                      statusLabel = 'CRITICAL'
+                      statusColor = 'text-red-500'
+                      borderColor = 'border-red-900/50'
+                    } else if (isDegrading) {
+                      statusLabel = 'DEGRADING'
+                      statusColor = 'text-orange-500'
+                      borderColor = 'border-orange-900/30'
+                    }
+
+                    return (
+                      <div 
+                        key={member.id} 
+                        className={`bg-black/60 border ${borderColor} p-3 space-y-3 transition-all relative group/card`}
+                      >
+                        <div className="flex justify-between items-center">
+                          <div 
+                            className={`flex items-center gap-2 ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+                            onClick={() => !isMe && onSelectUser?.(member.id)}
+                          >
+                            <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                              {member.avatar_url ? (
+                                <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-[10px] font-bold text-gray-600">{member.username?.[0]}</span>
+                              )}
+                            </div>
+                            <div>
+                              <p className={`text-[10px] font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-400 group-hover/card:text-cyan-400'}`}>
+                                {member.username}
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <div className={`w-1 h-1 rounded-full ${statusColor.replace('text-', 'bg-')} ${!isStable && 'animate-pulse'}`} />
+                                <p className={`text-[6px] font-bold uppercase tracking-widest ${statusColor}`}>{statusLabel}</p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {!isMe && session && !isStable && (
+                            <button
+                              onClick={() => handlePing(member.id, member.username)}
+                              className={`p-1.5 border ${isCritical ? 'border-red-500/30 text-red-500' : 'border-gray-800 text-gray-700'} hover:bg-white hover:text-black transition-all`}
+                            >
+                              <Bell size={10} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[6px] font-bold uppercase tracking-widest text-gray-700">
+                            <span>Mission_Progress</span>
+                            <span>{member.routines_completed_today}/{member.routines_total}</span>
+                          </div>
+                          <div className="h-0.5 bg-gray-900 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-700 ${isStable ? 'bg-cyan-500' : 'bg-gray-800'}`}
+                              style={{ width: `${(member.routines_completed_today / Math.max(member.routines_total, 1)) * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })
+                ) : null}
+              </div>
             </div>
           </div>
         </section>
