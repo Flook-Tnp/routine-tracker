@@ -897,7 +897,35 @@ function App() {
                     <button onClick={() => setShowManual(true)} className="text-gray-700 hover:text-cyan-400 p-1"><HelpCircle size={18} /></button>
                     <div className="relative">
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} /></button>
-                      {/* Notifications dropdown same as desktop... */}
+                      {showNotifications && (
+                        <div className="absolute top-full right-0 mt-4 w-72 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                          <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
+                            <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
+                            <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
+                              <X size={12} />
+                            </button>
+                          </div>
+                          <div className="max-h-80 overflow-y-auto custom-scrollbar">
+                            {notifications.length > 0 ? (
+                              notifications.map((n) => (
+                                <div key={n.id} className="p-4 border-b border-gray-900 last:border-0 hover:bg-gray-900/50 transition-colors group">
+                                  <p className="text-xs text-gray-300 font-mono leading-relaxed mb-2">{n.content}</p>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[8px] text-gray-600 uppercase font-bold">{formatDistanceToNow(new Date(n.created_at))} ago</span>
+                                    <button onClick={() => dismissNotification(n.id)} className="text-[8px] uppercase font-black text-cyan-500 hover:text-cyan-400 opacity-100 transition-all">
+                                      [Clear]
+                                    </button>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="p-8 text-center text-gray-700">
+                                <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 
