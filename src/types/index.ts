@@ -54,7 +54,7 @@ export interface Post {
   type: 'manual' | 'milestone'
   metadata: Record<string, any>
   created_at: string
-  profiles?: { username: string }
+  profiles?: { username: string, avatar_url?: string }
   comments?: Comment[]
   reactions?: Reaction[]
 }
@@ -65,7 +65,7 @@ export interface Comment {
   user_id: string
   content: string
   created_at: string
-  profiles?: { username: string }
+  profiles?: { username: string, avatar_url?: string }
 }
 
 export interface Reaction {
