@@ -101,8 +101,10 @@ export interface MemberVital {
   username: string
   avatar_url: string | null
   total_xp: number
-  routines_total: number
-  routines_completed_today: number
+  routines_total: number          // Personal routines
+  routines_completed_today: number // Personal routines done
+  group_tasks_total: number       // Shared pod tasks
+  group_tasks_completed: number   // Shared pod tasks done
   last_activity_date: string | null
   pod_current_streak?: number
   pod_max_streak?: number

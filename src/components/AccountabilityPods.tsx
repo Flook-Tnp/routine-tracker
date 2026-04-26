@@ -212,8 +212,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Pod_Network...</div>
 
   if (selectedPod) {
-    const activeMembersCount = podMembers.filter(m => m.routines_completed_today > 0).length
-    const avgProgress = podMembers.length > 0 ? (activeMembersCount / podMembers.length) : 0
+    const totalGroupTasks = podMembers.length > 0 ? podMembers[0].group_tasks_total : 0
+    const totalGroupCompletions = podMembers.reduce((acc, m) => acc + m.group_tasks_completed, 0)
+    const maxPossibleCompletions = podMembers.length * Math.max(totalGroupTasks, 1)
+    const avgProgress = maxPossibleCompletions > 0 ? (totalGroupCompletions / maxPossibleCompletions) : 0
 
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500 pb-20 pt-4">
@@ -443,7 +445,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
                         <div className="space-y-1">
                           <div className="flex justify-between text-[6px] font-bold uppercase tracking-widest text-gray-700">
-                            <span>Mission_Progress</span>
+                            <span>Routine_Sync</span>
                             <span>{member.routines_completed_today}/{member.routines_total}</span>
                           </div>
                           <div className="h-0.5 bg-gray-900 overflow-hidden">
