@@ -121,6 +121,7 @@ function App() {
           setCompletions([])
           setTasks([])
           setLoading(false)
+          setCurrentView('tracker')
         }
       }
     }
