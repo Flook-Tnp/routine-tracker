@@ -228,8 +228,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="lg:col-span-3 space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
               <div className="space-y-4">
                 <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black flex items-center gap-2">
                   <Activity size={14} className="text-cyan-500" /> Mission_Objectives
@@ -308,25 +308,30 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   const isMe = member.id === session?.user?.id
                   const isDone = member.group_tasks_completed > 0
                   return (
-                    <div key={member.id} className={`bg-black border ${isDone ? 'border-cyan-500/30 bg-cyan-500/[0.02]' : 'border-gray-900'} p-4 space-y-4 group/card transition-all hover:border-gray-700 shadow-sm`}>
-                      <div className="flex items-start justify-between gap-3">
+                    <div key={member.id} className={`relative bg-black border ${isDone ? 'border-cyan-500/30 bg-cyan-500/[0.02]' : 'border-gray-900'} p-4 space-y-4 group/card transition-all hover:border-gray-700 shadow-sm`}>
+                      <div className="flex items-center gap-3 pr-8">
                         <div className={`flex items-center gap-3 flex-1 min-w-0 ${!isMe && 'cursor-pointer active:scale-95 transition-transform'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
                           <div className="w-10 h-10 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
                             {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-sm font-black text-gray-600">{member.username?.[0]?.toUpperCase()}</span>}
                           </div>
                           <div className="min-w-0">
                             <p className={`text-xs font-black uppercase tracking-tighter truncate ${isMe ? 'text-white' : 'text-gray-400 group-hover/card:text-cyan-400 transition-colors'}`}>{member.username}</p>
-                            <p className="text-[7px] font-black text-cyan-600 uppercase tracking-widest">{member.total_xp?.toLocaleString()} XP</p>
+                            <p className="text-[8px] font-black text-cyan-600 uppercase tracking-widest mt-0.5">{member.total_xp?.toLocaleString()} XP</p>
                           </div>
                         </div>
-                        {!isMe && !isDone && (
-                          <button onClick={() => handlePing(member.id, member.username)} className="p-2 border border-gray-800 text-gray-700 hover:bg-white hover:text-black transition-all active:scale-90 flex-shrink-0" title="Ping Member">
-                            <Bell size={14} />
-                          </button>
-                        )}
                       </div>
+
+                      {!isMe && !isDone && (
+                        <button 
+                          onClick={() => handlePing(member.id, member.username)} 
+                          className="absolute top-4 right-4 p-2 border border-gray-800 text-gray-700 hover:bg-white hover:text-black transition-all active:scale-90 flex-shrink-0 bg-black/50" 
+                          title="Ping Member"
+                        >
+                          <Bell size={14} />
+                        </button>
+                      )}
                       
-                      <div className="flex items-center justify-between pt-3 border-t border-gray-900/50">
+                      <div className="flex flex-col gap-2 pt-3 border-t border-gray-900/50">
                         <div className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${isDone ? 'text-cyan-500' : 'text-red-900 animate-pulse'}`}>
                           <div className={`w-1 h-1 rounded-full ${isDone ? 'bg-cyan-500 shadow-[0_0_5px_#06b6d4]' : 'bg-red-900'}`} />
                           {isDone ? 'SYNCED' : 'OFFLINE'}
