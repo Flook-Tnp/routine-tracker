@@ -23,6 +23,8 @@ function App() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
+  const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
+  const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
@@ -45,6 +47,79 @@ function App() {
 
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null)
   const lastUserId = useRef<string | undefined>(undefined)
+
+  const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
+    if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
+    
+    const activeRoutineIds = new Set(userRoutines.map(r => r.id))
+    const doneDates = new Set(
+      userCompletions
+        .filter(c => activeRoutineIds.has(c.routine_id))
+        .map(c => c.completed_date)
+    )
+
+    let daily = 0
+    let checkDate = new Date()
+    const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
+    if (!isDateFinished(checkDate)) checkDate = subDays(checkDate, 1)
+    while (isDateFinished(checkDate)) {
+      daily++
+      checkDate = subDays(checkDate, 1)
+      if (daily > 10000) break 
+    }
+
+    let weekly = 0
+    const isWeekSuccessful = (dateInWeek: Date) => {
+      const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
+      const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
+      let activeDaysCount = 0
+      weekDays.forEach(d => {
+        if (userCompletions.some(c => c.completed_date === format(d, 'yyyy-MM-dd') && activeRoutineIds.has(c.routine_id))) activeDaysCount++
+      })
+      return activeDaysCount >= 3
+    }
+    let currentCheck = new Date()
+    if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
+    while (isWeekSuccessful(currentCheck)) {
+      weekly++
+      currentCheck = subDays(currentCheck, 7)
+      if (weekly > 500) break 
+    }
+
+    return { daily, weekly }
+  }
+
+  const handleSelectUser = async (userId: string) => {
+    if (session?.user?.id === userId) {
+      setViewedProfileId(null)
+      setCurrentView('profile')
+      return
+    }
+
+    try {
+      setCurrentView('profile')
+      setViewedProfileId(userId)
+      setViewedData(null) // Loading state
+
+      const [targetProfile, targetRoutines, targetCompletions] = await Promise.all([
+        StorageService.fetchProfile(userId),
+        StorageService.fetchRoutines(userId),
+        StorageService.fetchCompletions(userId)
+      ])
+
+      const { daily, weekly } = calculateStreaks(targetRoutines, targetCompletions)
+      setViewedData({
+        profile: targetProfile,
+        routines: targetRoutines,
+        dailyStreak: daily,
+        weeklyStreak: weekly
+      })
+    } catch (err) {
+      console.error('Error fetching user data:', err)
+      alert('PROTOCOL_ERROR: Failed to retrieve public profile data')
+      setCurrentView('leaderboard')
+    }
+  }
 
   const selectedDateStr = useMemo(() => {
     try {
@@ -699,8 +774,11 @@ function App() {
                     </button>
                     {session && (
                       <button
-                        onClick={() => setCurrentView('profile')}
-                        className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                        onClick={() => {
+                          setViewedProfileId(null)
+                          setCurrentView('profile')
+                        }}
+                        className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
                       >
                         Profile
                       </button>
@@ -1237,7 +1315,7 @@ function App() {
         finalizeTask={finalizeTask}
       />
     ) : currentView === 'leaderboard' ? (
-      <Leaderboard />
+      <Leaderboard onSelectUser={handleSelectUser} />
     ) : currentView === 'social' ? (
       <SocialFeed 
         session={session} 
@@ -1252,11 +1330,16 @@ function App() {
       />
       ) : (
       <ProfileComponent 
-        profile={profile} 
-        routines={routines} 
-        dailyStreak={dailyStreak} 
-        weeklyStreak={weeklyStreak} 
-        onProfileUpdate={setProfile}
+        profile={viewedProfileId ? viewedData?.profile || null : profile} 
+        routines={viewedProfileId ? viewedData?.routines || [] : routines} 
+        dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak} 
+        weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : weeklyStreak} 
+        onProfileUpdate={viewedProfileId ? undefined : setProfile}
+        isPublic={!!viewedProfileId}
+        onBack={() => {
+          setViewedProfileId(null)
+          setCurrentView('leaderboard')
+        }}
       />
     )}      </div>
 

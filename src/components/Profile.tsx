@@ -9,9 +9,11 @@ interface ProfileProps {
   dailyStreak: number
   weeklyStreak: number
   onProfileUpdate?: (profile: ProfileType) => void
+  isPublic?: boolean
+  onBack?: () => void
 }
 
-export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate }: ProfileProps) {
+export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [newUsername, setNewUsername] = useState(profile?.username || '')
   const [isUploading, setIsUploading] = useState(false)
@@ -25,15 +27,16 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         <p className="text-[8px] text-gray-700 font-mono">Status: Establishing secure connection to profile sector</p>
       </div>
       <button 
-        onClick={() => window.location.reload()}
+        onClick={() => onBack ? onBack() : window.location.reload()}
         className="px-4 py-2 bg-gray-900 text-gray-500 text-[8px] font-black uppercase tracking-widest border border-gray-800 hover:text-white hover:border-gray-700 transition-all"
       >
-        Re-Initialize_System
+        {onBack ? 'Return_to_Standings' : 'Re-Initialize_System'}
       </button>
     </div>
   )
 
   const handleUsernameUpdate = async () => {
+    if (isPublic) return
     if (!newUsername.trim() || newUsername === profile.username) {
       setIsEditing(false)
       return
@@ -49,6 +52,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   }
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isPublic) return
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -66,7 +70,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   }
 
   const handleAvatarDelete = async () => {
-    if (!profile || !profile.avatar_url) return
+    if (isPublic || !profile || !profile.avatar_url) return
     if (!confirm('Are you sure you want to delete your profile picture?')) return
 
     try {
@@ -85,6 +89,14 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {isPublic && (
+        <button 
+          onClick={onBack}
+          className="text-[8px] uppercase tracking-widest text-gray-500 hover:text-cyan-500 transition-colors flex items-center gap-2 font-bold"
+        >
+          <X size={10} /> Exit_Public_View
+        </button>
+      )}
       <section className="text-center space-y-4">
         <div className="relative inline-block group">
           <div className="p-1 border border-cyan-500/30 rounded-full mb-4 overflow-hidden">
@@ -96,34 +108,38 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
               )}
             </div>
           </div>
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-            className="absolute bottom-4 right-0 p-2 bg-black border border-gray-800 rounded-full text-cyan-500 hover:text-white hover:border-cyan-500 transition-all shadow-xl disabled:opacity-50"
-          >
-            <Camera size={14} className={isUploading ? 'animate-pulse' : ''} />
-          </button>
-          {profile.avatar_url && (
-            <button 
-              onClick={handleAvatarDelete}
-              disabled={isUploading}
-              className="absolute bottom-4 -left-2 p-2 bg-black border border-gray-800 rounded-full text-red-500 hover:text-white hover:border-red-500 transition-all shadow-xl disabled:opacity-50"
-              title="Delete Profile Picture"
-            >
-              <Trash2 size={14} />
-            </button>
+          {!isPublic && (
+            <>
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="absolute bottom-4 right-0 p-2 bg-black border border-gray-800 rounded-full text-cyan-500 hover:text-white hover:border-cyan-500 transition-all shadow-xl disabled:opacity-50"
+              >
+                <Camera size={14} className={isUploading ? 'animate-pulse' : ''} />
+              </button>
+              {profile.avatar_url && (
+                <button 
+                  onClick={handleAvatarDelete}
+                  disabled={isUploading}
+                  className="absolute bottom-4 -left-2 p-2 bg-black border border-gray-800 rounded-full text-red-500 hover:text-white hover:border-red-500 transition-all shadow-xl disabled:opacity-50"
+                  title="Delete Profile Picture"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleAvatarUpload} 
+                accept="image/*" 
+                className="hidden" 
+              />
+            </>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleAvatarUpload} 
-            accept="image/*" 
-            className="hidden" 
-          />
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          {isEditing ? (
+          {isEditing && !isPublic ? (
             <div className="flex items-center gap-2 bg-gray-950 border border-cyan-500/30 px-3 py-1">
               <input
                 autoFocus
@@ -143,12 +159,14 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           ) : (
             <div className="flex items-center gap-3 group">
               <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{profile.username}</h2>
-              <button 
-                onClick={() => setIsEditing(true)}
-                className="p-1 text-gray-700 hover:text-cyan-500 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Edit2 size={14} />
-              </button>
+              {!isPublic && (
+                <button 
+                  onClick={() => setIsEditing(true)}
+                  className="p-1 text-gray-700 hover:text-cyan-500 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <Edit2 size={14} />
+                </button>
+              )}
             </div>
           )}
           

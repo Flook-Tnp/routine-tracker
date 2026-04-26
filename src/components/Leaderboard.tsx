@@ -3,7 +3,11 @@ import { StorageService } from '../lib/storage'
 import { Trophy, Medal } from 'lucide-react'
 import type { Profile } from '../types'
 
-export function Leaderboard() {
+interface LeaderboardProps {
+  onSelectUser?: (userId: string) => void
+}
+
+export function Leaderboard({ onSelectUser }: LeaderboardProps) {
   const [leaderboard, setLeaderboard] = useState<Partial<Profile>[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -33,7 +37,11 @@ export function Leaderboard() {
           </thead>
           <tbody>
             {leaderboard.map((user, index) => (
-              <tr key={user.id} className="border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors">
+              <tr 
+                key={user.id} 
+                onClick={() => user.id && onSelectUser?.(user.id)}
+                className="border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors cursor-pointer group"
+              >
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
                     {index === 0 && <Trophy size={14} className="text-yellow-500" />}
@@ -46,14 +54,14 @@ export function Leaderboard() {
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden">
+                    <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden group-hover:border-cyan-500/50 transition-colors">
                       {user.avatar_url ? (
                         <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
                       ) : (
                         user.username?.[0]
                       )}
                     </div>
-                    <span className="text-xs text-gray-300 font-bold uppercase">{user.username}</span>
+                    <span className="text-xs text-gray-300 font-bold uppercase group-hover:text-cyan-400 transition-colors">{user.username}</span>
                     <div className="flex gap-1">
                       {user.badges?.map((badge) => (
                         <span key={badge.id} title={badge.name} className="text-[10px] cursor-help">{badge.icon}</span>
