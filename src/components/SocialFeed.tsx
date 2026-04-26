@@ -133,27 +133,29 @@ return (
       </section>
 
       <div className="space-y-6">
-        {posts.map((post) => (
-          <div key={post.id} className="bg-gray-950 border border-gray-900 p-6 space-y-4">
-            <div className="flex justify-between items-start">
-              <div 
-                className="flex items-center gap-3 cursor-pointer group/user"
-                onClick={() => post.user_id && onSelectUser?.(post.user_id)}
-              >
-                <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden group-hover/user:border-cyan-500/50 transition-colors">
-                  {post.profiles?.avatar_url ? (
-                    <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
-                  ) : (
-                    post.profiles?.username?.[0]
-                  )}
+        {posts.map((post) => {
+          const isMe = post.user_id === session?.user?.id
+          return (
+            <div key={post.id} className="bg-gray-950 border border-gray-900 p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <div 
+                  className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+                  onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
+                >
+                  <div className={`w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/user:border-cyan-500/50'}`}>
+                    {post.profiles?.avatar_url ? (
+                      <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
+                    ) : (
+                      post.profiles?.username?.[0]
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-xs font-bold text-white uppercase tracking-tighter transition-colors ${!isMe && 'group-hover/user:text-cyan-400'}`}>{post.profiles?.username}</p>
+                    <p className="text-[8px] text-gray-600 uppercase font-bold">
+                      {formatDistanceToNow(new Date(post.created_at))} ago
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-bold text-white uppercase tracking-tighter group-hover/user:text-cyan-400 transition-colors">{post.profiles?.username}</p>
-                  <p className="text-[8px] text-gray-600 uppercase font-bold">
-                    {formatDistanceToNow(new Date(post.created_at))} ago
-                  </p>
-                </div>
-              </div>
               {post.type === 'milestone' && (
                 <span className="px-2 py-0.5 bg-orange-500/10 text-orange-500 border border-orange-500/30 text-[8px] font-bold uppercase tracking-widest">
                   Milestone
@@ -196,25 +198,28 @@ return (
 
             {(post.comments?.length || 0) > 0 && (
               <div className="space-y-3 pl-4 border-l border-gray-900 mt-4">
-                {post.comments?.map((comment) => (
-                  <div key={comment.id} className="space-y-1">
-                    <div 
-                      className="flex items-center gap-2 cursor-pointer group/commenter"
-                      onClick={() => comment.user_id && onSelectUser?.(comment.user_id)}
-                    >
-                      <div className="w-4 h-4 bg-gray-900 border border-gray-800 flex items-center justify-center text-[6px] font-bold text-cyan-500 uppercase overflow-hidden group-hover/commenter:border-cyan-500/50 transition-colors">
-                        {comment.profiles?.avatar_url ? (
-                          <img src={comment.profiles.avatar_url} alt={comment.profiles.username} className="w-full h-full object-cover" />
-                        ) : (
-                          comment.profiles?.username?.[0]
-                        )}
+                {post.comments?.map((comment) => {
+                  const isCommentMe = comment.user_id === session?.user?.id
+                  return (
+                    <div key={comment.id} className="space-y-1">
+                      <div 
+                        className={`flex items-center gap-2 group/commenter ${isCommentMe ? 'cursor-default' : 'cursor-pointer'}`}
+                        onClick={() => !isCommentMe && comment.user_id && onSelectUser?.(comment.user_id)}
+                      >
+                        <div className={`w-4 h-4 bg-gray-900 border border-gray-800 flex items-center justify-center text-[6px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-cyan-500/50'}`}>
+                          {comment.profiles?.avatar_url ? (
+                            <img src={comment.profiles.avatar_url} alt={comment.profiles.username} className="w-full h-full object-cover" />
+                          ) : (
+                            comment.profiles?.username?.[0]
+                          )}
+                        </div>
+                        <span className={`text-[9px] font-bold text-cyan-600 uppercase transition-colors ${!isCommentMe && 'group-hover/commenter:text-cyan-400'}`}>{comment.profiles?.username}</span>
+                        <span className="text-[7px] text-gray-700 font-bold uppercase">{formatDistanceToNow(new Date(comment.created_at))} ago</span>
                       </div>
-                      <span className="text-[9px] font-bold text-cyan-600 uppercase group-hover/commenter:text-cyan-400 transition-colors">{comment.profiles?.username}</span>
-                      <span className="text-[7px] text-gray-700 font-bold uppercase">{formatDistanceToNow(new Date(comment.created_at))} ago</span>
+                      <p className="text-[11px] text-gray-400 font-mono">{comment.content}</p>
                     </div>
-                    <p className="text-[11px] text-gray-400 font-mono">{comment.content}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
 

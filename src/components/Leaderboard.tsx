@@ -5,9 +5,10 @@ import type { Profile } from '../types'
 
 interface LeaderboardProps {
   onSelectUser?: (userId: string) => void
+  currentUserId?: string
 }
 
-export function Leaderboard({ onSelectUser }: LeaderboardProps) {
+export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
   const [leaderboard, setLeaderboard] = useState<Partial<Profile>[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -36,44 +37,47 @@ export function Leaderboard({ onSelectUser }: LeaderboardProps) {
             </tr>
           </thead>
           <tbody>
-            {leaderboard.map((user, index) => (
-              <tr 
-                key={user.id} 
-                onClick={() => user.id && onSelectUser?.(user.id)}
-                className="border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors cursor-pointer group"
-              >
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
-                    {index === 0 && <Trophy size={14} className="text-yellow-500" />}
-                    {index === 1 && <Medal size={14} className="text-gray-400" />}
-                    {index === 2 && <Medal size={14} className="text-amber-600" />}
-                    <span className={`text-xs font-black ${index < 3 ? 'text-white' : 'text-gray-600'}`}>
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden group-hover:border-cyan-500/50 transition-colors">
-                      {user.avatar_url ? (
-                        <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
-                      ) : (
-                        user.username?.[0]
-                      )}
+            {leaderboard.map((user, index) => {
+              const isMe = user.id === currentUserId
+              return (
+                <tr 
+                  key={user.id} 
+                  onClick={() => !isMe && user.id && onSelectUser?.(user.id)}
+                  className={`border-b border-gray-900/50 hover:bg-gray-900/30 transition-colors group ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      {index === 0 && <Trophy size={14} className="text-yellow-500" />}
+                      {index === 1 && <Medal size={14} className="text-gray-400" />}
+                      {index === 2 && <Medal size={14} className="text-amber-600" />}
+                      <span className={`text-xs font-black ${index < 3 ? 'text-white' : 'text-gray-600'}`}>
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-300 font-bold uppercase group-hover:text-cyan-400 transition-colors">{user.username}</span>
-                    <div className="flex gap-1">
-                      {user.badges?.map((badge) => (
-                        <span key={badge.id} title={badge.name} className="text-[10px] cursor-help">{badge.icon}</span>
-                      ))}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
+                        {user.avatar_url ? (
+                          <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                        ) : (
+                          user.username?.[0]
+                        )}
+                      </div>
+                      <span className={`text-xs text-gray-300 font-bold uppercase transition-colors ${!isMe && 'group-hover:text-cyan-400'}`}>{user.username}</span>
+                      <div className="flex gap-1">
+                        {user.badges?.map((badge) => (
+                          <span key={badge.id} title={badge.name} className="text-[10px] cursor-help">{badge.icon}</span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <span className="text-xs font-black text-cyan-400">{user.total_xp?.toLocaleString()}</span>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <span className="text-xs font-black text-cyan-400">{user.total_xp?.toLocaleString()}</span>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

@@ -1318,7 +1318,7 @@ function App() {
         finalizeTask={finalizeTask}
       />
     ) : currentView === 'leaderboard' ? (
-      <Leaderboard onSelectUser={handleSelectUser} />
+      <Leaderboard onSelectUser={handleSelectUser} currentUserId={session?.user?.id} />
     ) : currentView === 'social' ? (
       <SocialFeed 
         session={session} 
