@@ -53,6 +53,17 @@ function App() {
 
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null)
   const lastUserId = useRef<string | undefined>(undefined)
+  const dateStripRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll active date into view
+  useEffect(() => {
+    if (dateStripRef.current) {
+      const activeElement = dateStripRef.current.querySelector('[data-active="true"]')
+      if (activeElement) {
+        activeElement.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+      }
+    }
+  }, [selectedDateStr])
 
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
@@ -1025,13 +1036,17 @@ function App() {
               </div>
             </div>
 
-            <div className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-2 md:pb-0">
+            <div 
+              ref={dateStripRef}
+              className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-2 md:pb-0"
+            >
               {dateStrip.map((date) => {
                 const isActive = format(date, 'yyyy-MM-dd') === selectedDateStr
                 const isToday = format(date, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
                 return (
                   <button
                     key={date.toString()}
+                    data-active={isActive}
                     onClick={() => setSelectedDate(date)}
                     className={`flex-shrink-0 w-[54px] md:w-auto flex flex-col items-center py-3 border transition-all snap-center ${
                       isActive 
@@ -1056,13 +1071,13 @@ function App() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto p-4 md:p-8 pt-4 pb-24 md:pb-8 space-y-8">
+      <div key={currentView} className="max-w-2xl mx-auto p-4 md:p-8 pt-4 pb-24 md:pb-8 space-y-8 view-enter">
         {currentView === 'tracker' ? (
           <>
             <section className="space-y-4">
-          <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex overflow-x-auto no-scrollbar md:flex-wrap gap-2 items-center -mx-4 px-4 md:mx-0 md:px-0">
             {categories.map(cat => (
-              <div key={cat} className="flex">
+              <div key={cat} className="flex-shrink-0 flex">
                 {editingCategory === cat ? (
                   <input
                     autoFocus
@@ -1071,7 +1086,7 @@ function App() {
                     onChange={(e) => setNewCategoryTitle(e.target.value)}
                     onBlur={updateCategoryName}
                     onKeyDown={(e) => e.key === 'Enter' && updateCategoryName()}
-                    className="bg-gray-900 border border-cyan-500 text-[10px] uppercase tracking-widest px-3 py-1 text-white font-mono focus:outline-none"
+                    className="input-primary text-[10px] uppercase tracking-widest px-3 py-1.5 h-[34px] w-[120px]"
                   />
                 ) : (
                   <button
@@ -1080,10 +1095,10 @@ function App() {
                       setEditingCategory(cat)
                       setNewCategoryTitle(cat)
                     }}
-                    className={`px-3 py-1 text-[10px] uppercase tracking-widest border transition-all ${
+                    className={`px-4 py-1.5 h-[34px] text-[10px] uppercase tracking-widest border transition-all flex items-center gap-2 ${
                       activeCategory === cat 
-                        ? 'bg-white text-black border-white font-bold' 
-                        : 'border-gray-800 text-gray-600 hover:border-gray-600 hover:text-gray-400'
+                        ? 'bg-white text-black border-white font-black shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
+                        : 'border-gray-800 text-gray-500 hover:border-gray-600 hover:text-gray-400'
                     }`}
                   >
                     {cat}
@@ -1097,10 +1112,10 @@ function App() {
                           setEditingCategory(cat)
                           setNewCategoryTitle(cat)
                         }}
-                        className="border border-l-0 border-gray-800 px-2 py-1 text-gray-700 hover:text-cyan-500 transition-colors"
+                        className="border border-l-0 border-gray-800 px-3 py-1.5 h-[34px] text-gray-600 hover:text-cyan-500 transition-colors flex items-center justify-center"
                         title="Rename Section"
                       >
-                        <Pencil size={12} />
+                        <Pencil size={14} />
                       </button>
                     )}
                     {cat !== 'General' && (
@@ -1125,10 +1140,10 @@ function App() {
                             }
                           })
                         }}
-                        className="border border-l-0 border-gray-800 px-2 py-1 text-gray-700 hover:text-red-500 hover:border-red-900 transition-colors"
+                        className="border border-l-0 border-gray-800 px-3 py-1.5 h-[34px] text-gray-600 hover:text-red-500 hover:border-red-900 transition-colors flex items-center justify-center"
                         title="Delete Section"
                       >
-                        <Trash2 size={12} />
+                        <Trash2 size={14} />
                       </button>
                     )}
                   </div>
@@ -1137,41 +1152,51 @@ function App() {
             ))}
             <button
               onClick={() => setIsAddingCategory(!isAddingCategory)}
-              className="px-3 py-1 text-[10px] uppercase tracking-widest border border-dashed border-gray-800 text-gray-600 hover:text-cyan-400 hover:border-cyan-500/50 transition-all"
+              className="flex-shrink-0 px-4 py-1.5 h-[34px] text-[10px] uppercase tracking-widest border border-dashed border-gray-800 text-gray-600 hover:text-cyan-400 hover:border-cyan-500/50 transition-all flex items-center gap-2"
             >
               + NEW_SECTION
             </button>
           </div>
           
           {isAddingCategory && (
-            <form onSubmit={addCategory} className="flex gap-2">
+            <form onSubmit={addCategory} className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
               <input 
                 autoFocus
                 type="text" 
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder="ENTER_SECTION_NAME..."
-                className="flex-1 bg-gray-950 border border-gray-800 px-3 py-1 text-[10px] uppercase tracking-widest focus:outline-none focus:border-cyan-500 text-gray-400 font-mono"
+                className="flex-1 input-primary text-[10px] uppercase tracking-widest py-3"
               />
-              <button type="submit" className="bg-gray-800 text-white px-3 py-1 text-[10px] hover:bg-cyan-600 transition-all">
+              <button type="submit" className="bg-gray-800 text-white px-6 py-1 text-[10px] font-black hover:bg-cyan-600 transition-all uppercase tracking-widest">
                 CONFIRM
               </button>
             </form>
           )}
         </section>
 
-        <section className="space-y-2">
-          <div className="flex justify-between text-[10px] uppercase tracking-widest text-gray-500">
-            <span>{activeCategory}_Progress</span>
-            <span className={dailyStats.percentage === 100 ? "text-cyan-400" : ""}>
-              {dailyStats.completed}/{dailyStats.total} - {dailyStats.percentage}%
+        <section className="space-y-3">
+          <div className="flex justify-between items-end">
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">Execution_Progress</span>
+              <p className="text-[8px] text-gray-700 uppercase tracking-widest">{activeCategory}_PROTOCOL_STABILITY</p>
+            </div>
+            <span className={`text-sm font-black tracking-tighter ${dailyStats.percentage === 100 ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" : "text-gray-500"}`}>
+              {dailyStats.completed}/{dailyStats.total} <span className="text-[10px] opacity-50 ml-1">({dailyStats.percentage}%)</span>
             </span>
           </div>
-          <div className="h-3 bg-gray-900 border border-gray-800 rounded-none overflow-hidden p-[2px]">
+          <div className="h-4 bg-gray-950 border border-gray-900 rounded-none overflow-hidden p-[2px] relative group">
             <div 
-              className="h-full bg-cyan-500 transition-all duration-700 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+              className="h-full bg-cyan-500 transition-all duration-1000 ease-out relative"
               style={{ width: `${dailyStats.percentage}%` }}
-            />
+            >
+              {dailyStats.percentage > 0 && (
+                <div className="absolute right-0 top-0 bottom-0 w-1 bg-white shadow-[0_0_15px_#fff] animate-pulse" />
+              )}
+            </div>
+            {/* Background Grid Pattern */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none" 
+                 style={{ backgroundImage: 'linear-gradient(90deg, #374151 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
           </div>
         </section>
 
@@ -1477,37 +1502,37 @@ function App() {
         <div className="flex justify-around items-center max-w-lg mx-auto">
           <button
             onClick={() => setCurrentView('tracker')}
-            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'tracker' ? 'text-cyan-400' : 'text-gray-600'}`}
+            className={`nav-btn ${currentView === 'tracker' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
-            <ListTodo size={20} className={currentView === 'tracker' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <ListTodo size={22} className={currentView === 'tracker' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
             <span className="text-[8px] font-black uppercase tracking-widest">Tracker</span>
           </button>
           <button
             onClick={() => setCurrentView('board')}
-            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'board' ? 'text-cyan-400' : 'text-gray-600'}`}
+            className={`nav-btn ${currentView === 'board' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
-            <LayoutDashboard size={20} className={currentView === 'board' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <LayoutDashboard size={22} className={currentView === 'board' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
             <span className="text-[8px] font-black uppercase tracking-widest">Board</span>
           </button>
           <button
             onClick={() => setCurrentView('leaderboard')}
-            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'leaderboard' ? 'text-cyan-400' : 'text-gray-600'}`}
+            className={`nav-btn ${currentView === 'leaderboard' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
-            <Award size={20} className={currentView === 'leaderboard' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <Award size={22} className={currentView === 'leaderboard' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
             <span className="text-[8px] font-black uppercase tracking-widest">Rank</span>
           </button>
           <button
             onClick={() => setCurrentView('social')}
-            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'social' ? 'text-cyan-400' : 'text-gray-600'}`}
+            className={`nav-btn ${currentView === 'social' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
-            <Globe size={20} className={currentView === 'social' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <Globe size={22} className={currentView === 'social' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
             <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
           </button>
           <button
             onClick={() => setCurrentView('pods')}
-            className={`flex flex-col items-center gap-1 transition-all ${currentView === 'pods' ? 'text-cyan-400' : 'text-gray-600'}`}
+            className={`nav-btn ${currentView === 'pods' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
-            <Users size={20} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+            <Users size={22} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
             <span className="text-[8px] font-black uppercase tracking-widest">Pods</span>
           </button>
           {session && (
@@ -1516,9 +1541,9 @@ function App() {
                 setViewedProfileId(null)
                 setCurrentView('profile')
               }}
-              className={`flex flex-col items-center gap-1 transition-all ${currentView === 'profile' && !viewedProfileId ? 'text-cyan-400' : 'text-gray-600'}`}
+              className={`nav-btn ${currentView === 'profile' && !viewedProfileId ? 'text-cyan-400' : 'text-gray-600'}`}
             >
-              <CircleUser size={20} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+              <CircleUser size={22} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
               <span className="text-[8px] font-black uppercase tracking-widest">Profile</span>
             </button>
           )}
