@@ -242,3 +242,60 @@ BEGIN
   RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Notifications table for in-app alerts
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  type TEXT NOT NULL, -- 'ping', 'achievement', etc.
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Update the ping_user function to also create a notification
+CREATE OR REPLACE FUNCTION ping_user(target_user_id UUID)
+RETURNS JSON AS $$
+DECLARE
+  last_ping TIMESTAMP;
+  sender_id UUID;
+  sender_name TEXT;
+BEGIN
+  sender_id := auth.uid();
+  
+  -- Get sender name
+  SELECT username INTO sender_name FROM profiles WHERE id = sender_id;
+  
+  -- Check if user is pinging themselves
+  IF sender_id = target_user_id THEN
+    RETURN json_build_object('success', false, 'message', 'SELF_PING_PROHIBITED');
+  END IF;
+
+  -- Get the last ping time for this specific pair
+  SELECT created_at INTO last_ping
+  FROM pings
+  WHERE pings.sender_id = ping_user.sender_id 
+    AND pings.receiver_id = target_user_id
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  -- Check if 24 hours have passed
+  IF last_ping IS NOT NULL AND last_ping > (now() - interval '24 hours') THEN
+    RETURN json_build_object(
+      'success', false, 
+      'message', 'PROTOCOL_COOLDOWN', 
+      'next_available', (last_ping + interval '24 hours')
+    );
+  END IF;
+
+  -- Record the ping
+  INSERT INTO pings (sender_id, receiver_id)
+  VALUES (sender_id, target_user_id);
+
+  -- Create the in-app notification
+  INSERT INTO notifications (user_id, type, content)
+  VALUES (target_user_id, 'ping', 'Incoming_Transmission: @' || sender_name || ' is requesting a status update on your protocols!');
+
+  RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

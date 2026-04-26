@@ -387,5 +387,24 @@ export const StorageService = {
     
     if (error) throw error
     return data
+  },
+
+  async fetchNotifications(userId: string): Promise<Notification[]> {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_read', false)
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data as Notification[]
+  },
+
+  async markNotificationAsRead(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('id', id)
+    if (error) throw error
   }
 }

@@ -17,6 +17,7 @@ import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
+import type { Notification } from './types'
 
 function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -27,6 +28,8 @@ function App() {
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
   const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
   const [selectedPod, setSelectedPod] = useState<Group | null>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
@@ -89,6 +92,15 @@ function App() {
     }
 
     return { daily, weekly }
+  }
+
+  const dismissNotification = async (id: string) => {
+    try {
+      await StorageService.markNotificationAsRead(id)
+      setNotifications(notifications.filter(n => n.id !== id))
+    } catch (err) {
+      console.error('Error dismissing notification:', err)
+    }
   }
 
   const handleSelectUser = async (userId: string) => {
@@ -181,16 +193,18 @@ function App() {
               }
             })
 
-          const [routinesData, allCompletions, tasksData] = await Promise.all([
+          const [routinesData, allCompletions, tasksData, notificationsData] = await Promise.all([
             StorageService.fetchRoutines(currentSession.user.id),
             StorageService.fetchCompletions(currentSession.user.id),
-            StorageService.fetchTasks(currentSession.user.id)
+            StorageService.fetchTasks(currentSession.user.id),
+            StorageService.fetchNotifications(currentSession.user.id)
           ])
           
           if (mounted) {
             setRoutines(routinesData)
             setCompletions(allCompletions)
             setTasks(tasksData)
+            setNotifications(notificationsData)
             setLoading(false)
             if (identityChanged) setCurrentView('tracker')
           }
@@ -744,6 +758,53 @@ function App() {
                     <HelpCircle size={16} />
                   </button>
 
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className={`relative flex items-center justify-center p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
+                      title="Transmissions"
+                    >
+                      <Bell size={16} />
+                      {notifications.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[6px] font-black px-1 rounded-full border border-black">
+                          {notifications.length}
+                        </span>
+                      )}
+                    </button>
+                    {showNotifications && (
+                      <div className="absolute top-full left-0 mt-4 w-64 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
+                          <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
+                          <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
+                            <X size={10} />
+                          </button>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                          {notifications.length > 0 ? (
+                            notifications.map((n) => (
+                              <div key={n.id} className="p-3 border-b border-gray-900 last:border-0 hover:bg-gray-900/50 transition-colors group">
+                                <p className="text-[10px] text-gray-300 font-mono leading-relaxed mb-2">{n.content}</p>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[7px] text-gray-600 uppercase font-bold">{formatDistanceToNow(new Date(n.created_at))} ago</span>
+                                  <button 
+                                    onClick={() => dismissNotification(n.id)}
+                                    className="text-[7px] uppercase font-black text-cyan-500 hover:text-cyan-400 opacity-0 group-hover:opacity-100 transition-all"
+                                  >
+                                    [Clear_Link]
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="p-8 text-center text-gray-700">
+                              <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="ml-4 flex gap-1 bg-gray-900/50 p-1 border border-gray-800">
                     <button
                       onClick={() => setCurrentView('tracker')}
@@ -767,7 +828,7 @@ function App() {
                       onClick={() => setCurrentView('social')}
                       className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                      Feed
+                      Global
                     </button>
                     <button
                       onClick={() => setCurrentView('pods')}
