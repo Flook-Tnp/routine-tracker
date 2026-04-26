@@ -100,9 +100,9 @@ function App() {
       
       console.log('SYNC_PROTOCOL: Migration complete. Re-synchronizing cloud state...')
       const [routinesData, allCompletions, tasksData] = await Promise.all([
-        StorageService.fetchRoutines(),
-        StorageService.fetchCompletions(),
-        StorageService.fetchTasks()
+        StorageService.fetchRoutines(session.user.id),
+        StorageService.fetchCompletions(session.user.id),
+        StorageService.fetchTasks(session.user.id)
       ])
       
       setRoutines(routinesData)
@@ -139,16 +139,20 @@ function App() {
                     currentSession.user.email?.split('@')[0] || 'User'
                   )
                   if (mounted) setProfile(newProfile)
-                } catch (createErr) {
+                } catch (createErr: any) {
                   console.error('Profile creation failed:', createErr)
+                  if (mounted) {
+                    alert(`IDENTITY_INITIALIZATION_FAILED: ${createErr.message || 'Check RLS policies'}`)
+                    setLoading(false)
+                  }
                 }
               }
             })
 
           const [routinesData, allCompletions, tasksData] = await Promise.all([
-            StorageService.fetchRoutines(),
-            StorageService.fetchCompletions(),
-            StorageService.fetchTasks()
+            StorageService.fetchRoutines(currentSession.user.id),
+            StorageService.fetchCompletions(currentSession.user.id),
+            StorageService.fetchTasks(currentSession.user.id)
           ])
           
           if (mounted) {

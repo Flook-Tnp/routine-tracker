@@ -2,16 +2,17 @@ import { supabase } from './supabase'
 import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction } from '../types'
 
 export const StorageService = {
-  async fetchRoutines(): Promise<Routine[]> {
+  async fetchRoutines(userId: string): Promise<Routine[]> {
     const { data, error } = await supabase
       .from('routines')
       .select('*')
+      .eq('user_id', userId)
       .eq('is_active', true)
     if (error) throw error
     return data as Routine[]
   },
 
-  async fetchCompletions(): Promise<RoutineCompletion[]> {
+  async fetchCompletions(userId: string): Promise<RoutineCompletion[]> {
     let allCompletions: RoutineCompletion[] = []
     let from = 0
     let to = 999
@@ -21,6 +22,7 @@ export const StorageService = {
       const { data, error } = await supabase
         .from('routine_completions')
         .select('*')
+        .eq('user_id', userId)
         .order('completed_date', { ascending: true })
         .range(from, to)
       
@@ -43,10 +45,11 @@ export const StorageService = {
     return allCompletions
   },
 
-  async fetchTasks(): Promise<Task[]> {
+  async fetchTasks(userId: string): Promise<Task[]> {
     const { data, error } = await supabase
       .from('tasks')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
     if (error) throw error
     return data as Task[]
@@ -169,9 +172,11 @@ export const StorageService = {
   },
 
   async createProfile(userId: string, username: string): Promise<Profile> {
+    // Append a small random string to ensure username uniqueness on first try
+    const uniqueUsername = `${username}_${Math.random().toString(36).substring(2, 5)}`
     const { data, error } = await supabase
       .from('profiles')
-      .insert([{ id: userId, username, total_xp: 0, badges: [] }])
+      .insert([{ id: userId, username: uniqueUsername, total_xp: 0, badges: [] }])
       .select()
       .single()
     if (error) throw error

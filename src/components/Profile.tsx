@@ -10,10 +10,21 @@ interface ProfileProps {
 }
 
 export function Profile({ profile, routines, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
+  const [error, setError] = (window as any)._profileErrorState || [null, () => {}];
+
   if (!profile) return (
-    <div className="text-center py-20 space-y-4">
+    <div className="text-center py-20 space-y-6">
       <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
-      <p className="text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Neural_Identity...</p>
+      <div className="space-y-2">
+        <p className="text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Neural_Identity...</p>
+        <p className="text-[8px] text-gray-700 font-mono">Status: Establishing secure connection to profile sector</p>
+      </div>
+      <button 
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 bg-gray-900 text-gray-500 text-[8px] font-black uppercase tracking-widest border border-gray-800 hover:text-white hover:border-gray-700 transition-all"
+      >
+        Re-Initialize_System
+      </button>
     </div>
   )
 
