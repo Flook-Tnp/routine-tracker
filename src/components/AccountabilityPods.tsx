@@ -10,15 +10,16 @@ interface AccountabilityPodsProps {
   onShareStreak: () => void
   dailyStreak: number
   onSelectUser?: (userId: string) => void
+  selectedPod: Group | null
+  onSelectPod: (pod: Group | null) => void
 }
 
-export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser }: AccountabilityPodsProps) {
+export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod }: AccountabilityPodsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
-  const [selectedPod, setSelectedPod] = useState<Group | null>(null)
   const [podMembers, setPodMembers] = useState<Profile[]>([])
 
   const fetchGroups = useCallback(async () => {
@@ -105,7 +106,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500 pb-20">
         <button 
-          onClick={() => setSelectedPod(null)}
+          onClick={() => onSelectPod(null)}
           className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-white transition-colors"
         >
           <ChevronLeft size={14} /> Back_to_Network
@@ -262,7 +263,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 {isMember ? (
                   <>
                     <button 
-                      onClick={() => setSelectedPod(group)}
+                      onClick={() => onSelectPod(group)}
                       className="flex items-center gap-2 text-cyan-400 text-[8px] font-black uppercase tracking-widest hover:text-cyan-300"
                     >
                       Access_Pod <ArrowRight size={10} />

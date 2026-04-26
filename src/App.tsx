@@ -10,7 +10,7 @@ import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { AuthModal } from './components/Auth'
 import { StorageService } from './lib/storage'
-import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile } from './types'
+import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile, Group } from './types'
 import type { Session } from '@supabase/supabase-js'
 import { calculateXP } from './lib/gamification'
 import { Leaderboard } from './components/Leaderboard'
@@ -26,6 +26,7 @@ function App() {
   const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('leaderboard')
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
   const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
+  const [selectedPod, setSelectedPod] = useState<Group | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
@@ -1331,6 +1332,8 @@ function App() {
         onShareStreak={handleShareStreak}
         dailyStreak={dailyStreak}
         onSelectUser={handleSelectUser}
+        selectedPod={selectedPod}
+        onSelectPod={setSelectedPod}
       />
       ) : (
       <ProfileComponent 
