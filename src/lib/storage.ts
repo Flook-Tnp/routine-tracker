@@ -417,16 +417,24 @@ export const StorageService = {
   },
 
   async fetchGroupTaskCompletions(groupId: string, date: string): Promise<GroupTaskCompletion[]> {
+    // First get the task IDs for this group
+    const { data: tasks } = await supabase
+      .from('group_tasks')
+      .select('id')
+      .eq('group_id', groupId)
+    
+    if (!tasks || tasks.length === 0) return []
+    const taskIds = tasks.map(t => t.id)
+
+    // Then get completions for those tasks
     const { data, error } = await supabase
       .from('group_task_completions')
-      .select(`
-        *,
-        group_tasks!inner(group_id)
-      `)
-      .eq('group_tasks.group_id', groupId)
+      .select('*')
+      .in('task_id', taskIds)
       .eq('completed_date', date)
+    
     if (error) throw error
-    return data as any[]
+    return data as GroupTaskCompletion[]
   },
 
   async toggleGroupTask(taskId: string, userId: string, date: string): Promise<void> {
