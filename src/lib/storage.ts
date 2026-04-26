@@ -172,14 +172,20 @@ export const StorageService = {
   },
 
   async createProfile(userId: string, username: string): Promise<Profile> {
-    // Append a small random string to ensure username uniqueness on first try
     const uniqueUsername = `${username}_${Math.random().toString(36).substring(2, 5)}`
     const { data, error } = await supabase
       .from('profiles')
       .insert([{ id: userId, username: uniqueUsername, total_xp: 0, badges: [] }])
       .select()
       .single()
-    if (error) throw error
+    
+    if (error) {
+      // If it already exists, just fetch it
+      if (error.code === '23505') {
+        return this.fetchProfile(userId)
+      }
+      throw error
+    }
     return data as Profile
   },
 

@@ -138,13 +138,13 @@ function App() {
                     currentSession.user.id, 
                     currentSession.user.email?.split('@')[0] || 'User'
                   )
-                  if (mounted) setProfile(newProfile)
-                } catch (createErr: any) {
-                  console.error('Profile creation failed:', createErr)
                   if (mounted) {
-                    alert(`IDENTITY_INITIALIZATION_FAILED: ${createErr.message || 'Check RLS policies'}`)
+                    setProfile(newProfile)
                     setLoading(false)
                   }
+                } catch (createErr: any) {
+                  console.error('Profile initialization failed:', createErr)
+                  if (mounted) setLoading(false)
                 }
               }
             })
