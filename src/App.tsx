@@ -66,57 +66,6 @@ function App() {
     return routines.filter(r => (r.category || 'General') === activeCategory)
   }, [routines, activeCategory])
 
-  const syncData = useCallback(async (currentRoutines: Routine[], currentTasks: Task[], currentCompletions: RoutineCompletion[]) => {
-    if (!session?.user) return
-    try {
-      setLoading(true)
-      console.log('SYNC_PROTOCOL: Initiating multi-stage data migration...')
-      
-      const routineIdMap: Record<string, string> = {}
-      
-      // 1. Sync routines and build ID map
-      for (const r of currentRoutines) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id: oldId, ...routineData } = r
-        const newRoutine = await StorageService.addRoutine({ ...routineData, id: undefined }, session.user.id)
-        routineIdMap[oldId] = newRoutine.id
-      }
-      
-      // 2. Sync tasks
-      for (const t of currentTasks) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { id, ...taskData } = t
-        await StorageService.addTask({ ...taskData, id: undefined }, session.user.id)
-      }
-
-      // 3. Sync completions using the ID map
-      for (const c of currentCompletions) {
-        const newRoutineId = routineIdMap[c.routine_id]
-        if (newRoutineId) {
-          // Pass base XP for synced guest completions
-          await StorageService.toggleCompletion(newRoutineId, c.completed_date, 10, session.user.id)
-        }
-      }
-      
-      console.log('SYNC_PROTOCOL: Migration complete. Re-synchronizing cloud state...')
-      const [routinesData, allCompletions, tasksData] = await Promise.all([
-        StorageService.fetchRoutines(session.user.id),
-        StorageService.fetchCompletions(session.user.id),
-        StorageService.fetchTasks(session.user.id)
-      ])
-      
-      setRoutines(routinesData)
-      setCompletions(allCompletions)
-      setTasks(tasksData)
-      alert('SYNC_SUCCESS: Local data has been merged with your neural identity.')
-    } catch (err: any) {
-      console.error('Sync error:', err)
-      alert(`SYNC_FAILURE: ${err.message}`)
-    } finally {
-      setLoading(false)
-    }
-  }, [session])
-
   useEffect(() => {
     let mounted = true
 
@@ -1294,7 +1243,6 @@ function App() {
         routines={routines} 
         dailyStreak={dailyStreak} 
         weeklyStreak={weeklyStreak} 
-        onSyncLocalData={() => syncData(routines, tasks, completions)}
       />
     )}      </div>
 
