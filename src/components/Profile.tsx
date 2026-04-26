@@ -224,14 +224,19 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       <section className="space-y-4">
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Achievement_Protocol</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {['Streak_7', 'Streak_30', 'Streak_100', 'XP_1000'].map(id => {
-            const hasBadge = profile.badges?.some((b) => b.id.toLowerCase() === id.toLowerCase())
+          {[
+            { id: 'Streak_7', label: 'Streak 7', check: dailyStreak >= 7 },
+            { id: 'Streak_30', label: 'Streak 30', check: dailyStreak >= 30 },
+            { id: 'Streak_100', label: 'Streak 100', check: dailyStreak >= 100 },
+            { id: 'XP_1000', label: 'XP 1000', check: (profile.total_xp || 0) >= 1000 }
+          ].map(badge => {
+            const isEarned = badge.check || profile.badges?.some((b) => b.id.toLowerCase() === badge.id.toLowerCase())
             return (
-              <div key={id} className={`p-6 border text-center space-y-3 transition-all duration-500 ${hasBadge ? 'bg-cyan-500/5 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'bg-gray-950/30 border-gray-900 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`}>
+              <div key={badge.id} className={`p-6 border text-center space-y-3 transition-all duration-500 ${isEarned ? 'bg-cyan-500/5 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'bg-gray-950/30 border-gray-900 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`}>
                 <div className="text-3xl mb-1">
-                  {id.includes('Streak') ? '🔥' : '💎'}
+                  {badge.id.includes('Streak') ? '🔥' : '💎'}
                 </div>
-                <p className="text-[10px] uppercase font-black tracking-widest text-gray-500">{id.replace('_', ' ')}</p>
+                <p className={`text-[10px] uppercase font-black tracking-widest ${isEarned ? 'text-cyan-400' : 'text-gray-500'}`}>{badge.label}</p>
               </div>
             )
           })}
