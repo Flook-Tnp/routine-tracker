@@ -10,8 +10,6 @@ interface ProfileProps {
 }
 
 export function Profile({ profile, routines, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
-  const [error, setError] = (window as any)._profileErrorState || [null, () => {}];
-
   if (!profile) return (
     <div className="text-center py-20 space-y-6">
       <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
