@@ -947,35 +947,80 @@ function App() {
                 </div>
 
                 <div className="hidden md:flex flex-col items-end gap-2 pt-1">
-                  {session ? (
-                    <button 
-                      onClick={() => supabase.auth.signOut()}
-                      className="text-gray-700 hover:text-red-500 transition-colors p-1"
-                      title="Logout"
+                  <div className="flex gap-1 bg-gray-900/50 p-1 border border-gray-800 mb-1">
+                    <button
+                      onClick={() => setCurrentView('tracker')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'tracker' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                      <LogOut size={18} />
+                      Tracker
                     </button>
-                  ) : (
-                    <button 
-                      onClick={() => setIsAuthModalOpen(true)}
-                      className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                    <button
+                      onClick={() => setCurrentView('board')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'board' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
                     >
-                      <LogIn size={14} />
-                      Login
+                      Board
                     </button>
-                  )}
-                  {session && profile && (
-                    <div className="flex items-center gap-2 text-[9px] text-gray-600 uppercase font-bold">
-                      <div className="w-5 h-5 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
-                        {profile.avatar_url ? (
-                          <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-                        ) : (
-                          <User size={12} />
-                        )}
+                    <button
+                      onClick={() => setCurrentView('leaderboard')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'leaderboard' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Rank
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('social')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Global
+                    </button>
+                    <button
+                      onClick={() => setCurrentView('pods')}
+                      className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                    >
+                      Pods
+                    </button>
+                    {session && (
+                      <button
+                        onClick={() => {
+                          setViewedProfileId(null)
+                          setCurrentView('profile')
+                        }}
+                        className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-cyan-500 text-black' : 'text-gray-500 hover:text-gray-300'}`}
+                      >
+                        Profile
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {session && profile && (
+                      <div className="flex items-center gap-2 text-[9px] text-gray-600 uppercase font-bold">
+                        <div className="w-5 h-5 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                          {profile.avatar_url ? (
+                            <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                          ) : (
+                            <User size={12} />
+                          )}
+                        </div>
+                        {profile.username}
                       </div>
-                      {profile.username}
-                    </div>
-                  )}
+                    )}
+                    {session ? (
+                      <button 
+                        onClick={() => supabase.auth.signOut()}
+                        className="text-gray-700 hover:text-red-500 transition-colors p-1"
+                        title="Logout"
+                      >
+                        <LogOut size={18} />
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => setIsAuthModalOpen(true)}
+                        className="flex items-center gap-2 px-4 py-2 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500 hover:text-black transition-all text-[10px] font-black uppercase tracking-[0.2em]"
+                      >
+                        <LogIn size={14} />
+                        Login
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
