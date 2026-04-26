@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
-import { Award, Zap, Target, Camera, Edit2, Check, X } from 'lucide-react'
+import { Award, Zap, Target, Camera, Edit2, Check, X, Trash2 } from 'lucide-react'
 
 interface ProfileProps {
   profile: ProfileType | null
@@ -65,6 +65,22 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }
 
+  const handleAvatarDelete = async () => {
+    if (!profile || !profile.avatar_url) return
+    if (!confirm('Are you sure you want to delete your profile picture?')) return
+
+    try {
+      setIsUploading(true)
+      await StorageService.deleteAvatar(profile.id)
+      if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: null })
+    } catch (err: any) {
+      console.error('Delete failed:', err)
+      alert(`DELETE_FAILURE: ${err.message}`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const categories = Array.from(new Set(routines.map(r => r.category || 'General')))
   
   return (
@@ -87,6 +103,16 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           >
             <Camera size={14} className={isUploading ? 'animate-pulse' : ''} />
           </button>
+          {profile.avatar_url && (
+            <button 
+              onClick={handleAvatarDelete}
+              disabled={isUploading}
+              className="absolute bottom-4 -left-2 p-2 bg-black border border-gray-800 rounded-full text-red-500 hover:text-white hover:border-red-500 transition-all shadow-xl disabled:opacity-50"
+              title="Delete Profile Picture"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
           <input 
             type="file" 
             ref={fileInputRef} 

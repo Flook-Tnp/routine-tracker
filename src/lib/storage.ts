@@ -225,6 +225,14 @@ export const StorageService = {
     return data.publicUrl
   },
 
+  async deleteAvatar(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_url: null })
+      .eq('id', userId)
+    if (error) throw error
+  },
+
   async fetchPosts(groupId?: string): Promise<Post[]> {
     let query = supabase
       .from('posts')
