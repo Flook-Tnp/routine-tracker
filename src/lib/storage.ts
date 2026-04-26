@@ -234,12 +234,24 @@ export const StorageService = {
     const { data, error } = await supabase
       .from('group_members')
       .select(`
-        profiles (*)
+        profiles!group_members_user_id_fkey (*)
       `)
       .eq('group_id', groupId)
     
-    if (error) throw error
-    return data.map((d: any) => d.profiles) as Profile[]
+    if (error) {
+      // Fallback for different join syntax or if FK is named differently
+      const { data: retryData, error: retryError } = await supabase
+        .from('group_members')
+        .select(`
+          profiles (*)
+        `)
+        .eq('group_id', groupId)
+      
+      if (retryError) throw retryError
+      return (retryData?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
+    }
+    
+    return (data?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
   },
 
   async deletePost(postId: string): Promise<void> {

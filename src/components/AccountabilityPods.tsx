@@ -128,23 +128,29 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak }: Acco
                 <Users size={12} className="text-cyan-500" /> Neural_Members
               </h3>
               <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                {podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member, idx) => (
-                  <div key={member.id} className="bg-black/40 border border-gray-900 p-3 flex justify-between items-center group hover:border-gray-700 transition-all">
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-black text-gray-700 w-4">{String(idx + 1).padStart(2, '0')}</span>
-                      <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase">
-                        {member.username?.[0] || '?'}
+                {podMembers.length > 0 ? (
+                  podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member, idx) => (
+                    <div key={member.id} className="bg-black/40 border border-gray-900 p-3 flex justify-between items-center group hover:border-gray-700 transition-all">
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] font-black text-gray-700 w-4">{String(idx + 1).padStart(2, '0')}</span>
+                        <div className="w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase">
+                          {member.username?.[0] || '?'}
+                        </div>
+                        <span className="text-xs font-bold text-gray-300 uppercase">{member.username || 'Unknown_Entity'}</span>
                       </div>
-                      <span className="text-xs font-bold text-gray-300 uppercase">{member.username || 'Unknown_Entity'}</span>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1 text-orange-500">
-                        <Zap size={10} fill="currentColor" />
-                        <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1 text-orange-500">
+                          <Zap size={10} fill="currentColor" />
+                          <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
+                  ))
+                ) : (
+                  <div className="py-10 text-center border border-dashed border-gray-900">
+                    <p className="text-[8px] text-gray-700 uppercase tracking-widest">No neural signatures detected</p>
                   </div>
-                ))}
+                )}
               </div>
             </div>
 

@@ -128,7 +128,7 @@ CREATE TABLE groups (
 CREATE TABLE group_members (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(group_id, user_id)
 );
