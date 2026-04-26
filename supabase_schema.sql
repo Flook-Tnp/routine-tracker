@@ -667,3 +667,169 @@ BEGIN
   WHERE gm.group_id = target_group_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Tables for accountability pods (groups)
+CREATE TABLE IF NOT EXISTS groups (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  current_streak INT DEFAULT 0,
+  max_streak INT DEFAULT 0,
+  last_streak_date DATE
+);
+
+CREATE TABLE IF NOT EXISTS group_members (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(group_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS group_tasks (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS group_task_completions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  task_id UUID REFERENCES group_tasks(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  completed_date DATE DEFAULT CURRENT_DATE,
+  UNIQUE(task_id, user_id, completed_date)
+);
+
+-- Update existing tables for group context
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES groups(id) ON DELETE CASCADE;
+ALTER TABLE pings ADD COLUMN IF NOT EXISTS group_id UUID REFERENCES groups(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_posts_group_id ON posts(group_id);
+
+-- RPC for robust group member vitals and streak logic
+CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  total_xp BIGINT,
+  routines_total INT,
+  routines_completed_today INT,
+  group_tasks_total INT,
+  group_tasks_completed INT,
+  last_activity_date DATE,
+  pod_current_streak INT,
+  pod_max_streak INT
+) AS $$
+DECLARE
+  today DATE := CURRENT_DATE;
+  streak_current INT;
+  streak_max INT;
+  last_date DATE;
+  member_count INT;
+  active_member_count INT;
+  threshold FLOAT;
+  creator_id UUID;
+BEGIN
+  -- 1. Auto-Kick & Ownership Transfer Logic
+  SELECT created_by INTO creator_id FROM groups WHERE groups.id = target_group_id;
+
+  -- Delete inactive members (> 7 days), excluding the creator for now (handled below)
+  DELETE FROM group_members
+  WHERE group_id = target_group_id
+    AND user_id IN (
+      SELECT m.user_id
+      FROM group_members m
+      LEFT JOIN group_task_completions gtc ON gtc.user_id = m.user_id
+      WHERE m.group_id = target_group_id
+        AND m.user_id != creator_id
+      GROUP BY m.user_id, m.joined_at
+      HAVING (MAX(gtc.completed_date) < today - INTERVAL '7 days')
+         OR (MAX(gtc.completed_date) IS NULL AND m.joined_at < today - INTERVAL '7 days')
+    );
+
+  -- Check if creator themselves is inactive
+  IF EXISTS (
+    SELECT 1 FROM group_members m
+    LEFT JOIN group_task_completions gtc ON gtc.user_id = m.user_id
+    WHERE m.group_id = target_group_id AND m.user_id = creator_id
+    GROUP BY m.user_id, m.joined_at
+    HAVING (MAX(gtc.completed_date) < today - INTERVAL '7 days')
+       OR (MAX(gtc.completed_date) IS NULL AND m.joined_at < today - INTERVAL '7 days')
+  ) THEN
+    -- Find new owner (most active)
+    DECLARE
+      new_owner_id UUID;
+    BEGIN
+      SELECT m.user_id INTO new_owner_id
+      FROM group_members m
+      LEFT JOIN group_task_completions gtc ON gtc.user_id = m.user_id
+      WHERE m.group_id = target_group_id AND m.user_id != creator_id
+      GROUP BY m.user_id
+      ORDER BY MAX(gtc.completed_date) DESC NULLS LAST, (SELECT total_xp FROM profiles WHERE id = m.user_id) DESC
+      LIMIT 1;
+
+      IF new_owner_id IS NOT NULL THEN
+        UPDATE groups SET created_by = new_owner_id WHERE id = target_group_id;
+        DELETE FROM group_members WHERE group_id = target_group_id AND user_id = creator_id;
+      ELSE
+        -- No active members left, delete group
+        DELETE FROM groups WHERE id = target_group_id;
+        RETURN;
+      END IF;
+    END;
+  END IF;
+
+  -- 2. Refresh Streak Logic
+  SELECT COUNT(*)::INT INTO member_count FROM group_members WHERE group_id = target_group_id;
+  SELECT current_streak, max_streak, last_streak_date INTO streak_current, streak_max, last_date FROM groups WHERE groups.id = target_group_id;
+
+  -- Define threshold based on group size
+  IF member_count <= 2 THEN threshold := 1.0;
+  ELSIF member_count <= 9 THEN threshold := 0.6;
+  ELSE threshold := 0.4;
+  END IF;
+
+  -- Only calculate streak if tasks exist and we have > 1 member
+  IF member_count > 1 AND (last_date IS NULL OR last_date < today) AND (SELECT COUNT(*) FROM group_tasks WHERE group_id = target_group_id) > 0 THEN
+    SELECT COUNT(DISTINCT user_id)::INT INTO active_member_count
+    FROM group_task_completions gtc
+    JOIN group_tasks gt ON gtc.task_id = gt.id
+    WHERE gt.group_id = target_group_id AND gtc.completed_date = today - INTERVAL '1 day';
+
+    IF active_member_count::FLOAT / member_count >= threshold THEN
+      UPDATE groups 
+      SET current_streak = COALESCE(current_streak, 0) + 1,
+          max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
+          last_streak_date = today
+      WHERE id = target_group_id;
+    ELSIF last_date < today - INTERVAL '1 day' THEN
+      UPDATE groups SET current_streak = 0, last_streak_date = today WHERE id = target_group_id;
+    END IF;
+    
+    SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE id = target_group_id;
+  END IF;
+
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.username,
+    p.avatar_url,
+    p.total_xp,
+    COALESCE((SELECT COUNT(*)::INT FROM routines r WHERE r.user_id = p.id AND r.is_active = true), 0),
+    COALESCE((SELECT COUNT(*)::INT FROM routine_completions rc 
+     WHERE rc.user_id = p.id AND rc.completed_date = today), 0),
+    COALESCE((SELECT COUNT(*)::INT FROM group_tasks gt WHERE gt.group_id = target_group_id), 0),
+    COALESCE((SELECT COUNT(DISTINCT gtc.task_id)::INT FROM group_task_completions gtc 
+     JOIN group_tasks gt ON gtc.task_id = gt.id
+     WHERE gtc.user_id = p.id AND gt.group_id = target_group_id AND gtc.completed_date = today), 0),
+    (SELECT MAX(completed_date) FROM routine_completions rc WHERE rc.user_id = p.id),
+    COALESCE(streak_current, 0),
+    COALESCE(streak_max, 0)
+  FROM profiles p
+  JOIN group_members gm ON p.id = gm.user_id
+  WHERE gm.group_id = target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

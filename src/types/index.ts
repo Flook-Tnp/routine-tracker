@@ -54,6 +54,7 @@ export interface Post {
   type: 'manual' | 'milestone'
   metadata: Record<string, any>
   created_at: string
+  group_id?: string
   profiles?: { username: string, avatar_url?: string | null }
   comments?: Comment[]
   reactions?: Reaction[]
@@ -75,6 +76,18 @@ export interface Reaction {
   emoji: string
 }
 
+export interface Group {
+  id: string
+  name: string
+  description: string
+  created_by: string
+  created_at: string
+  current_streak?: number
+  max_streak?: number
+  last_streak_date?: string
+  group_members?: { user_id: string }[]
+}
+
 export interface AppNotification {
   id: string
   user_id: string
@@ -82,4 +95,33 @@ export interface AppNotification {
   content: string
   is_read: boolean
   created_at: string
+}
+
+export interface MemberVital {
+  id: string
+  username: string
+  avatar_url: string | null
+  total_xp: number
+  routines_total: number          // Personal routines
+  routines_completed_today: number // Personal routines done
+  group_tasks_total: number       // Shared pod tasks
+  group_tasks_completed: number   // Shared pod tasks done
+  last_activity_date: string | null
+  pod_current_streak?: number
+  pod_max_streak?: number
+}
+
+export interface GroupTask {
+  id: string
+  group_id: string
+  title: string
+  description?: string
+  created_at: string
+}
+
+export interface GroupTaskCompletion {
+  id: string
+  task_id: string
+  user_id: string
+  completed_date: string
 }
