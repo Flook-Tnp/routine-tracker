@@ -417,6 +417,15 @@ export const StorageService = {
 
     if (existing) {
       await supabase.from('group_task_completions').delete().eq('id', existing.id)
+      
+      // Decrement XP when unchecking
+      const { data: task } = await supabase.from('group_tasks').select('group_id').eq('id', taskId).single()
+      if (task) {
+        const { data: members } = await supabase.from('group_members').select('user_id').eq('group_id', task.group_id)
+        if (members && members.length > 1) {
+          await supabase.rpc('decrement_xp', { amount: 5, user_id: userId })
+        }
+      }
     } else {
       await supabase.from('group_task_completions').insert({
         task_id: taskId,
