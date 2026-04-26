@@ -51,6 +51,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       if (vitalsResult.status === 'fulfilled' && vitalsResult.value.length > 0) {
         setPodMembers(vitalsResult.value)
       } else {
+        console.warn('Vitals failed, using fallback')
+        if (vitalsResult.status === 'rejected') console.error(vitalsResult.reason)
         const basicMembers = await StorageService.fetchPodMembers(groupId)
         setPodMembers(basicMembers.map(m => ({
           id: m.id,
