@@ -93,3 +93,13 @@ export interface AppNotification {
   created_at: string
 }
 
+export interface MemberVital {
+  id: string
+  username: string
+  avatar_url: string | null
+  total_xp: number
+  routines_total: number
+  routines_completed_today: number
+  last_activity_date: string | null
+}
+

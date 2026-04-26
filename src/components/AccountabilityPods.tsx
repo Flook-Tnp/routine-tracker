@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell } from 'lucide-react'
-import type { Group, Profile } from '../types'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell, Activity } from 'lucide-react'
+import type { Group, Profile, MemberVital } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { SocialFeed } from './SocialFeed'
 
@@ -20,7 +20,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
-  const [podMembers, setPodMembers] = useState<Profile[]>([])
+  const [podMembers, setPodMembers] = useState<MemberVital[]>([])
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -36,7 +36,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const fetchMembers = useCallback(async (groupId: string) => {
     try {
       setLoading(true)
-      const data = await StorageService.fetchPodMembers(groupId)
+      const data = await StorageService.fetchMemberVitals(groupId)
       setPodMembers(data)
     } catch (err) {
       console.error('Error fetching members:', err)
@@ -122,6 +122,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Pod_Network...</div>
 
   if (selectedPod) {
+    const avgProgress = podMembers.length > 0 
+      ? podMembers.reduce((acc, m) => acc + (m.routines_total > 0 ? (m.routines_completed_today / m.routines_total) : 0), 0) / podMembers.length 
+      : 0
+
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-left-4 duration-500 pb-20">
         <button 
@@ -131,10 +135,23 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           <ChevronLeft size={14} /> Back_to_Network
         </button>
 
-        <section className="bg-gray-950 border border-gray-900 p-8 space-y-6">
+        <section className="bg-gray-950 border border-gray-900 p-8 space-y-8 relative overflow-hidden">
+          {/* Synergy Meter */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gray-900">
+            <div 
+              className="h-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.5)] transition-all duration-1000" 
+              style={{ width: `${avgProgress * 100}%` }}
+            />
+          </div>
+
           <div className="flex justify-between items-start">
             <div className="space-y-2">
-              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
+                <div className="px-2 py-0.5 border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-[8px] font-black uppercase tracking-widest animate-pulse">
+                  Synergy: {Math.round(avgProgress * 100)}%
+                </div>
+              </div>
               <p className="text-xs text-gray-500 font-mono leading-relaxed max-w-lg">{selectedPod.description}</p>
             </div>
             <div className="text-right">
@@ -143,56 +160,104 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-gray-900">
-            <div className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-4">
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Users size={12} className="text-cyan-500" /> Neural_Members
+                <Activity size={12} className="text-cyan-500" /> Neural_Vitals_Grid
               </h3>
-              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {podMembers.length > 0 ? (
-                  podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member, idx) => {
+                  podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
                     const isMe = member.id === session?.user?.id
+                    const progress = member.routines_total > 0 ? (member.routines_completed_today / member.routines_total) : 0
+                    
+                    // Determine Status
+                    const isStable = progress === 1
+                    const isCritical = !isStable && new Date().getHours() >= 20 // 8 PM
+                    const isDegrading = !isStable && !isCritical && new Date().getHours() >= 14 // 2 PM
+                    
+                    let statusLabel = 'STABLE'
+                    let statusColor = 'text-cyan-500'
+                    let borderColor = 'border-gray-900'
+                    let pulseClass = 'animate-pulse'
+
+                    if (isCritical) {
+                      statusLabel = 'CRITICAL'
+                      statusColor = 'text-red-500'
+                      borderColor = 'border-red-900/50'
+                      pulseClass = 'animate-[pulse_1s_infinite]'
+                    } else if (isDegrading) {
+                      statusLabel = 'DEGRADING'
+                      statusColor = 'text-orange-500'
+                      borderColor = 'border-orange-900/30'
+                    } else if (isStable) {
+                      pulseClass = ''
+                    }
+
                     return (
                       <div 
                         key={member.id} 
-                        onClick={() => !isMe && member.id && onSelectUser?.(member.id)}
-                        className={`bg-black/40 border border-gray-900 p-3 flex justify-between items-center group/member transition-all ${isMe ? 'cursor-default' : 'cursor-pointer hover:border-cyan-500/50'}`}
+                        className={`bg-black border ${borderColor} p-4 space-y-4 transition-all relative group/card ${!isMe && 'hover:border-cyan-500/30'}`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-black text-gray-700 w-4">{String(idx + 1).padStart(2, '0')}</span>
-                          <div className={`w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-gray-400 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/member:border-cyan-500/30'}`}>
-                            {member.avatar_url ? (
-                              <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
-                            ) : (
-                              member.username?.[0] || '?'
-                            )}
+                        <div className="flex justify-between items-start">
+                          <div 
+                            className={`flex items-center gap-3 ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+                            onClick={() => !isMe && onSelectUser?.(member.id)}
+                          >
+                            <div className={`w-10 h-10 bg-gray-900 border ${isStable ? 'border-cyan-500/50' : 'border-gray-800'} flex items-center justify-center overflow-hidden relative`}>
+                              {member.avatar_url ? (
+                                <img src={member.avatar_url} alt={member.username} className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold text-gray-500">{member.username?.[0]}</span>
+                              )}
+                              {!isStable && <div className={`absolute inset-0 border-2 ${statusColor.replace('text-', 'border-')}/20 ${pulseClass}`} />}
+                            </div>
+                            <div>
+                              <p className={`text-xs font-black uppercase tracking-tighter ${isMe ? 'text-white' : 'text-gray-300 group-hover/card:text-cyan-400'}`}>
+                                {member.username} {isMe && '(YOU)'}
+                              </p>
+                              <p className={`text-[7px] font-bold uppercase tracking-widest ${statusColor}`}>{statusLabel}</p>
+                            </div>
                           </div>
-                          <span className={`text-xs font-bold text-gray-300 uppercase transition-colors ${!isMe && 'group-hover/member:text-cyan-400'}`}>{member.username || 'Unknown_Entity'}</span>
-                        </div>
-                        <div className="flex items-center gap-4">
-                          {!isMe && session && (
+                          
+                          {!isMe && session && !isStable && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handlePing(member.id, member.username)
-                              }}
-                              className="p-1.5 text-gray-700 hover:text-yellow-500 transition-colors border border-transparent hover:border-yellow-500/30 bg-black/40"
-                              title="Ping User"
+                              onClick={() => handlePing(member.id, member.username)}
+                              className={`p-2 border ${isCritical ? 'border-red-500/30 text-red-500' : 'border-gray-800 text-gray-600'} hover:bg-white hover:text-black transition-all`}
+                              title="Transmit Nudge"
                             >
                               <Bell size={12} />
                             </button>
                           )}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[8px] font-bold uppercase tracking-widest text-gray-600">
+                            <span>Today_Sync</span>
+                            <span>{Math.round(progress * 100)}%</span>
+                          </div>
+                          <div className="h-1 bg-gray-900 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${isStable ? 'bg-cyan-500' : isCritical ? 'bg-red-500' : 'bg-orange-500'}`}
+                              style={{ width: `${progress * 100}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between items-end pt-2 border-t border-gray-900/50">
                           <div className="flex items-center gap-1 text-orange-500">
                             <Zap size={10} fill="currentColor" />
                             <span className="text-[10px] font-black">{(member.total_xp || 0).toLocaleString()}</span>
                           </div>
+                          <p className="text-[6px] text-gray-700 uppercase font-black">Last_Active: {member.last_activity_date || 'Unknown'}</p>
                         </div>
                       </div>
                     )
                   })
                 ) : (
-                  <div className="py-10 text-center border border-dashed border-gray-900">
-                    <p className="text-[8px] text-gray-700 uppercase tracking-widest">No neural signatures detected</p>
+                  <div className="col-span-full py-10 text-center border border-dashed border-gray-900">
+                    <p className="text-[8px] text-gray-700 uppercase tracking-widest">No active neural signatures</p>
                   </div>
                 )}
               </div>

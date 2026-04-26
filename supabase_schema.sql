@@ -345,3 +345,52 @@ BEGIN
   RETURN json_build_object('success', true, 'message', 'PING_TRANSMITTED');
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get pod member vitals (progress and status)
+CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  total_xp BIGINT,
+  routines_total INT,
+  routines_completed_today INT,
+  last_activity_date DATE
+) AS $$
+BEGIN
+  -- Logic to prune inactive members (older than 7 days)
+  DELETE FROM group_members
+  WHERE group_id = target_group_id
+    AND user_id IN (
+      SELECT m.user_id
+      FROM group_members m
+      LEFT JOIN routine_completions c ON c.user_id = m.user_id
+      WHERE m.group_id = target_group_id
+      GROUP BY m.user_id
+      HAVING MAX(c.completed_date) < CURRENT_DATE - INTERVAL '7 days'
+         OR (MAX(c.completed_date) IS NULL AND m.joined_at < CURRENT_DATE - INTERVAL '7 days')
+    );
+
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.username,
+    p.avatar_url,
+    p.total_xp,
+    (SELECT COUNT(*)::INT FROM routines r WHERE r.user_id = p.id AND r.is_active = true) as routines_total,
+    (SELECT COUNT(*)::INT FROM routine_completions rc 
+     WHERE rc.user_id = p.id AND rc.completed_date = CURRENT_DATE) as routines_completed_today,
+    (SELECT MAX(completed_date) FROM routine_completions rc WHERE rc.user_id = p.id) as last_activity_date
+  FROM profiles p
+  JOIN group_members gm ON p.id = gm.user_id
+  WHERE gm.group_id = target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Add joined_at to group_members if it doesn't exist
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='group_members' AND column_name='joined_at') THEN
+    ALTER TABLE group_members ADD COLUMN joined_at TIMESTAMP WITH TIME ZONE DEFAULT now();
+  END IF;
+END $$;

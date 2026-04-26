@@ -288,6 +288,13 @@ export const StorageService = {
     return (data?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
   },
 
+  async fetchMemberVitals(groupId: string): Promise<MemberVital[]> {
+    const { data, error } = await supabase
+      .rpc('get_pod_member_vitals', { target_group_id: groupId })
+    if (error) throw error
+    return data as MemberVital[]
+  },
+
   async deletePost(postId: string): Promise<void> {
     const { error } = await supabase
       .from('posts')
