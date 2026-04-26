@@ -214,9 +214,9 @@ DECLARE
   creator_id UUID;
 BEGIN
   -- 1. Auto-Kick & Context
-  SELECT created_by, current_streak, max_streak, last_streak_date 
-  INTO creator_id, streak_current, streak_max, last_date 
-  FROM groups WHERE groups.id = target_group_id;
+  SELECT current_streak, max_streak, last_streak_date, created_by 
+  INTO streak_current, streak_max, last_date, creator_id 
+  FROM groups g WHERE g.id = target_group_id;
 
   DELETE FROM group_members
   WHERE group_id = target_group_id
@@ -248,22 +248,22 @@ BEGIN
 
     IF active_member_count::FLOAT / member_count >= threshold THEN
       IF last_date IS NULL OR last_date < target_date THEN
-        UPDATE groups 
+        UPDATE groups AS g
         SET current_streak = COALESCE(current_streak, 0) + 1,
             max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
             last_streak_date = target_date
-        WHERE groups.id = target_group_id;
+        WHERE g.id = target_group_id;
         
-        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE groups.id = target_group_id;
+        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups g WHERE g.id = target_group_id;
       END IF;
     ELSE
       IF last_date = target_date THEN
-        UPDATE groups 
+        UPDATE groups AS g
         SET current_streak = GREATEST(COALESCE(current_streak, 1) - 1, 0),
             last_streak_date = CASE WHEN COALESCE(current_streak, 1) - 1 > 0 THEN target_date - INTERVAL '1 day' ELSE NULL END
-        WHERE groups.id = target_group_id;
+        WHERE g.id = target_group_id;
         
-        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups WHERE groups.id = target_group_id;
+        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups g WHERE g.id = target_group_id;
       END IF;
     END IF;
   END IF;
