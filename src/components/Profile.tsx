@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
 import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy } from 'lucide-react'
@@ -84,6 +84,43 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       setIsUploading(false)
     }
   }
+
+  // Permanently award badges if they don't exist
+  const checkMilestones = async () => {
+    if (isPublic || !profile) return
+    
+    const currentBadges = profile.badges || []
+    const newBadges = [...currentBadges]
+    let changed = false
+
+    const milestones = [
+      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 },
+      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 },
+      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 },
+      { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
+    ]
+
+    milestones.forEach(m => {
+      if (m.check && !currentBadges.some(b => b.id.toLowerCase() === m.id.toLowerCase())) {
+        newBadges.push({ id: m.id, name: m.name, icon: m.icon })
+        changed = true
+      }
+    })
+
+    if (changed) {
+      try {
+        await StorageService.updateProfile(profile.id, { badges: newBadges })
+        if (onProfileUpdate) onProfileUpdate({ ...profile, badges: newBadges })
+      } catch (err) {
+        console.error('Failed to permanently award badges:', err)
+      }
+    }
+  }
+
+  // Check milestones whenever stats change
+  useEffect(() => {
+    checkMilestones()
+  }, [dailyStreak, profile?.total_xp])
 
   const categoriesList = Array.from(new Set(routines.map(r => r.category || 'General')))
   
