@@ -852,14 +852,23 @@ function App() {
 
                   <div className="md:hidden flex items-center gap-3">
                     {session ? (
-                      <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase font-bold">
-                        <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-                          ) : (
-                            <User size={14} />
-                          )}
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-[10px] text-gray-500 uppercase font-bold">
+                          <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                            {profile?.avatar_url ? (
+                              <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                            ) : (
+                              <User size={14} />
+                            )}
+                          </div>
                         </div>
+                        <button 
+                          onClick={() => supabase.auth.signOut()}
+                          className="text-gray-600 hover:text-red-500 p-1"
+                          title="Logout"
+                        >
+                          <LogOut size={18} />
+                        </button>
                       </div>
                     ) : (
                       <button 

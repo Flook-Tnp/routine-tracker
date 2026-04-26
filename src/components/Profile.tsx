@@ -237,6 +237,19 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           })}
         </div>
       </section>
+
+      {!isPublic && (
+        <section className="pt-8 border-t border-gray-900">
+          <button 
+            onClick={() => {
+              import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())
+            }}
+            className="w-full py-4 bg-red-950/20 border border-red-900/50 text-red-500 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-500 hover:text-white transition-all active:scale-95"
+          >
+            [Terminate_Session]
+          </button>
+        </section>
+      )}
     </div>
   )
 }
