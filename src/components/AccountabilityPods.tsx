@@ -35,10 +35,13 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   const fetchMembers = useCallback(async (groupId: string) => {
     try {
+      setLoading(true)
       const data = await StorageService.fetchPodMembers(groupId)
       setPodMembers(data)
     } catch (err) {
       console.error('Error fetching members:', err)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
