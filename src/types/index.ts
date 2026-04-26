@@ -11,6 +11,7 @@ export interface RoutineCompletion {
   routine_id: string
   completed_date: string
   xp_earned?: number
+  created_at?: string
 }
 
 export interface Task {

@@ -93,15 +93,19 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     const newBadges = [...currentBadges]
     let changed = false
 
-    // Anti-Cheat: Count how many UNIQUE days the user actually performed work
-    // We look at the 'completions' provided to the app
+    // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
+    // Even if you retro-fill 7 days today, your 'uniqueLoggingDays' will only increase by 1.
     const routineCompletions = await StorageService.fetchCompletions(profile.id)
-    const uniquePhysicalDays = new Set(routineCompletions.map(c => c.completed_date)).size
+    const uniqueLoggingDays = new Set(
+      routineCompletions
+        .filter(c => c.created_at) // Only count entries with a timestamp
+        .map(c => c.created_at!.split('T')[0]) // Get just the YYYY-MM-DD of the logging moment
+    ).size
 
     const milestones = [
-      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && uniquePhysicalDays >= 7 },
-      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && uniquePhysicalDays >= 30 },
-      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && uniquePhysicalDays >= 100 },
+      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && uniqueLoggingDays >= 7 },
+      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && uniqueLoggingDays >= 30 },
+      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && uniqueLoggingDays >= 100 },
       { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
     ]
 
