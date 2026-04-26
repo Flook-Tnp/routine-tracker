@@ -192,11 +192,37 @@ export const StorageService = {
   async fetchLeaderboard(): Promise<Partial<Profile>[]> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, total_xp, badges')
+      .select('id, username, total_xp, lifetime_xp, avatar_url, badges')
       .order('total_xp', { ascending: false })
       .limit(10)
     if (error) throw error
     return data
+  },
+
+  async updateProfile(userId: string, updates: Partial<Profile>): Promise<void> {
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', userId)
+    if (error) throw error
+  },
+
+  async uploadAvatar(userId: string, file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${userId}-${Math.random()}.${fileExt}`
+    const filePath = `${fileName}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file)
+
+    if (uploadError) throw uploadError
+
+    const { data } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath)
+
+    return data.publicUrl
   },
 
   async fetchPosts(groupId?: string): Promise<Post[]> {
@@ -204,8 +230,8 @@ export const StorageService = {
       .from('posts')
       .select(`
         *,
-        profiles (username),
-        comments (*, profiles (username)),
+        profiles (username, avatar_url),
+        comments (*, profiles (username, avatar_url)),
         reactions (*)
       `)
       .order('created_at', { ascending: false })

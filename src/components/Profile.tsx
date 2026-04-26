@@ -1,14 +1,22 @@
+import { useState, useRef } from 'react'
+import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
-import { Award, Zap, Target } from 'lucide-react'
+import { Award, Zap, Target, Camera, Edit2, Check, X } from 'lucide-react'
 
 interface ProfileProps {
   profile: ProfileType | null
   routines: Routine[]
   dailyStreak: number
   weeklyStreak: number
+  onProfileUpdate?: (profile: ProfileType) => void
 }
 
-export function Profile({ profile, routines, dailyStreak, weeklyStreak }: ProfileProps) {
+export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate }: ProfileProps) {
+  const [isEditing, setIsEditing] = useState(false)
+  const [newUsername, setNewUsername] = useState(profile?.username || '')
+  const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
   if (!profile) return (
     <div className="text-center py-20 space-y-6">
       <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
@@ -25,29 +33,111 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak }: Profil
     </div>
   )
 
+  const handleUsernameUpdate = async () => {
+    if (!newUsername.trim() || newUsername === profile.username) {
+      setIsEditing(false)
+      return
+    }
+    try {
+      await StorageService.updateProfile(profile.id, { username: newUsername })
+      if (onProfileUpdate) onProfileUpdate({ ...profile, username: newUsername })
+      setIsEditing(false)
+    } catch (err: any) {
+      console.error('Update failed:', err)
+      alert(`UPDATE_FAILURE: ${err.message || 'Username might be taken'}`)
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      setIsUploading(true)
+      const url = await StorageService.uploadAvatar(profile.id, file)
+      await StorageService.updateProfile(profile.id, { avatar_url: url })
+      if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: url })
+    } catch (err: any) {
+      console.error('Upload failed:', err)
+      alert(`UPLOAD_FAILURE: ${err.message || 'Check Supabase Storage settings'}`)
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
   const categories = Array.from(new Set(routines.map(r => r.category || 'General')))
   
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <section className="text-center space-y-4">
-        <div className="inline-block p-1 border border-cyan-500/30 rounded-full mb-4">
-          <div className="w-20 h-20 bg-gray-900 rounded-full flex items-center justify-center text-3xl">
-            {profile.username?.[0]?.toUpperCase() || 'U'}
+        <div className="relative inline-block group">
+          <div className="p-1 border border-cyan-500/30 rounded-full mb-4 overflow-hidden">
+            <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center text-3xl overflow-hidden">
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+              ) : (
+                profile.username?.[0]?.toUpperCase() || 'U'
+              )}
+            </div>
           </div>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="absolute bottom-4 right-0 p-2 bg-black border border-gray-800 rounded-full text-cyan-500 hover:text-white hover:border-cyan-500 transition-all shadow-xl disabled:opacity-50"
+          >
+            <Camera size={14} className={isUploading ? 'animate-pulse' : ''} />
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleAvatarUpload} 
+            accept="image/*" 
+            className="hidden" 
+          />
         </div>
-        <h2 className="text-xl font-black text-white uppercase tracking-tighter">{profile.username}</h2>
-        
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex justify-center gap-2">
-            {profile.badges?.map((badge) => (
-              <div key={badge.id} className="px-2 py-1 bg-gray-900 border border-gray-800 text-[10px] uppercase font-bold text-cyan-400 flex items-center gap-1">
-                <span>{badge.icon}</span>
-                {badge.name}
-              </div>
-            ))}
-            {(!profile.badges || profile.badges.length === 0) && (
-              <p className="text-[8px] text-gray-600 uppercase tracking-widest">No badges earned yet</p>
-            )}
+
+        <div className="flex flex-col items-center gap-2">
+          {isEditing ? (
+            <div className="flex items-center gap-2 bg-gray-950 border border-cyan-500/30 px-3 py-1">
+              <input
+                autoFocus
+                type="text"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                className="bg-transparent text-lg font-black text-white uppercase tracking-tighter outline-none w-48"
+                onKeyDown={(e) => e.key === 'Enter' && handleUsernameUpdate()}
+              />
+              <button onClick={handleUsernameUpdate} className="text-cyan-500 hover:text-cyan-400">
+                <Check size={18} />
+              </button>
+              <button onClick={() => { setIsEditing(false); setNewUsername(profile.username); }} className="text-gray-600 hover:text-red-400">
+                <X size={18} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 group">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter">{profile.username}</h2>
+              <button 
+                onClick={() => setIsEditing(true)}
+                className="p-1 text-gray-700 hover:text-cyan-500 transition-colors opacity-0 group-hover:opacity-100"
+              >
+                <Edit2 size={14} />
+              </button>
+            </div>
+          )}
+          
+          <div className="flex flex-col items-center gap-4">
+            <div className="flex justify-center gap-2">
+              {profile.badges?.map((badge) => (
+                <div key={badge.id} className="px-2 py-1 bg-gray-900 border border-gray-800 text-[10px] uppercase font-bold text-cyan-400 flex items-center gap-1">
+                  <span>{badge.icon}</span>
+                  {badge.name}
+                </div>
+              ))}
+              {(!profile.badges || profile.badges.length === 0) && (
+                <p className="text-[8px] text-gray-600 uppercase tracking-widest">No badges earned yet</p>
+              )}
+            </div>
           </div>
         </div>
       </section>

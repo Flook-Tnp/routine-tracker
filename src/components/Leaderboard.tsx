@@ -45,7 +45,14 @@ export function Leaderboard() {
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[8px] font-bold text-cyan-500 uppercase overflow-hidden">
+                      {user.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
+                      ) : (
+                        user.username?.[0]
+                      )}
+                    </div>
                     <span className="text-xs text-gray-300 font-bold uppercase">{user.username}</span>
                     <div className="flex gap-1">
                       {user.badges?.map((badge) => (

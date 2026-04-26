@@ -819,10 +819,16 @@ function App() {
                       Login
                     </button>
                   )}
-                  {session && (
-                    <div className="flex items-center gap-1 text-[8px] text-gray-600 uppercase font-bold">
-                      <User size={10} />
-                      {session.user.email?.split('@')[0]}
+                  {session && profile && (
+                    <div className="flex items-center gap-2 text-[8px] text-gray-600 uppercase font-bold">
+                      <div className="w-4 h-4 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden">
+                        {profile.avatar_url ? (
+                          <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <User size={10} />
+                        )}
+                      </div>
+                      {profile.username}
                     </div>
                   )}
                 </div>
@@ -1250,6 +1256,7 @@ function App() {
         routines={routines} 
         dailyStreak={dailyStreak} 
         weeklyStreak={weeklyStreak} 
+        onProfileUpdate={setProfile}
       />
     )}      </div>
 
