@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, HelpCircle, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser } from 'lucide-react'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
@@ -762,12 +762,7 @@ function App() {
               <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-black text-white tracking-tighter uppercase">DISBY</h1>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setShowManual(true)}
-                    className="text-gray-700 hover:text-cyan-400 transition-colors"
-                  >
-                    <HelpCircle size={18} />
-                  </button>
+
                   <div className="relative">
                     <button 
                       onClick={handleToggleNotifications}
@@ -862,7 +857,6 @@ function App() {
                 <div className="flex md:hidden items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
-                    <button onClick={() => setShowManual(true)} className="text-gray-700 hover:text-cyan-400 p-1"><HelpCircle size={18} /></button>
                     <div className="relative">
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} /></button>
                       {showNotifications && (
