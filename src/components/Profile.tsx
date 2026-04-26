@@ -93,10 +93,15 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     const newBadges = [...currentBadges]
     let changed = false
 
+    // Anti-Cheat: Count how many UNIQUE days the user actually performed work
+    // We look at the 'completions' provided to the app
+    const routineCompletions = await StorageService.fetchCompletions(profile.id)
+    const uniquePhysicalDays = new Set(routineCompletions.map(c => c.completed_date)).size
+
     const milestones = [
-      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 },
-      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 },
-      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 },
+      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && uniquePhysicalDays >= 7 },
+      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && uniquePhysicalDays >= 30 },
+      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && uniquePhysicalDays >= 100 },
       { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
     ]
 

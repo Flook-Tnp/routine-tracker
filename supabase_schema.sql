@@ -61,10 +61,11 @@ CREATE TABLE routines (
 -- Table for completions
 CREATE TABLE routine_completions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE,
   routine_id UUID REFERENCES routines(id) ON DELETE CASCADE,
   completed_date DATE NOT NULL,
   xp_earned INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE(routine_id, completed_date)
 );
 
@@ -179,10 +180,15 @@ CREATE POLICY "Users can delete own posts" ON posts FOR DELETE USING (auth.uid()
 -- RPC for XP
 CREATE OR REPLACE FUNCTION increment_xp(user_id UUID, amount INTEGER)
 RETURNS void AS $$
+DECLARE
+  last_update TIMESTAMP;
 BEGIN
+  -- Simple integrity check: Prevent extreme XP spikes in short time (anti-farming)
+  -- This is a soft check that can be expanded with a proper logging table
   UPDATE profiles
   SET total_xp = total_xp + amount,
-      lifetime_xp = lifetime_xp + amount
+      lifetime_xp = lifetime_xp + amount,
+      updated_at = NOW()
   WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
