@@ -103,6 +103,19 @@ function App() {
     }
   }
 
+  const handleToggleNotifications = async () => {
+    const nextState = !showNotifications
+    setShowNotifications(nextState)
+    if (nextState && session?.user?.id) {
+      try {
+        const data = await StorageService.fetchNotifications(session.user.id)
+        setNotifications(data)
+      } catch (err) {
+        console.error('Failed to sync transmissions:', err)
+      }
+    }
+  }
+
   const handleSelectUser = async (userId: string) => {
     if (session?.user?.id === userId) {
       setViewedProfileId(null)
@@ -239,6 +252,24 @@ function App() {
       subscription.unsubscribe()
     }
   }, [])
+
+  useEffect(() => {
+    if (!session?.user?.id) return
+
+    const interval = setInterval(async () => {
+      try {
+        const data = await StorageService.fetchNotifications(session.user.id)
+        // Only update if count changed or different data to avoid unnecessary renders
+        if (data.length !== notifications.length) {
+          setNotifications(data)
+        }
+      } catch (err) {
+        console.error('Transmission_Sync_Error:', err)
+      }
+    }, 30000) // Every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [session, notifications.length])
 
   useEffect(() => {
     localStorage.setItem('disby_active_category', activeCategory)
@@ -760,7 +791,7 @@ function App() {
 
                   <div className="relative">
                     <button 
-                      onClick={() => setShowNotifications(!showNotifications)}
+                      onClick={handleToggleNotifications}
                       className={`relative flex items-center justify-center p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
                       title="Transmissions"
                     >
