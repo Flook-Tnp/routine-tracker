@@ -188,6 +188,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Master Function for Pod Vitals & Streaks
+DROP FUNCTION IF EXISTS get_pod_member_vitals(uuid, date);
+
 CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID, target_date DATE)
 RETURNS TABLE (
   id UUID,
@@ -226,7 +228,7 @@ BEGIN
         AND m.user_id != creator_id
       GROUP BY m.user_id
       HAVING (MAX(gtc.completed_date) < CURRENT_DATE - INTERVAL '7 days')
-         OR (MAX(gtc.completed_date) IS NULL AND m.joined_at < CURRENT_DATE - INTERVAL '7 days')
+         OR (MAX(gtc.completed_date) IS NULL AND MAX(m.joined_at) < CURRENT_DATE - INTERVAL '7 days')
     );
 
   SELECT COUNT(*)::INT INTO member_count FROM group_members WHERE group_id = target_group_id;
