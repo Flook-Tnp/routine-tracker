@@ -25,7 +25,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId }: Soc
       setPosts(data)
     } catch (err: any) {
       console.error('Error fetching posts:', err)
-      alert(`FEED_SYNC_ERROR: ${err.message || 'Check connection'}`)
+      alert(`FEED_SYNC_ERROR: ${err.message || 'Check connection'}. Make sure your database schema is up to date (run supabase_schema.sql).`)
     } finally {
       setLoading(false)
     }

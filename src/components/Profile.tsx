@@ -10,7 +10,12 @@ interface ProfileProps {
 }
 
 export function Profile({ profile, routines, dailyStreak, weeklyStreak, onSyncLocalData }: ProfileProps) {
-  if (!profile) return null
+  if (!profile) return (
+    <div className="text-center py-20 space-y-4">
+      <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
+      <p className="text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Neural_Identity...</p>
+    </div>
+  )
 
   const categories = Array.from(new Set(routines.map(r => r.category || 'General')))
   

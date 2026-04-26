@@ -130,7 +130,20 @@ function App() {
           // Fetch data separately so one failure doesn't block the others
           StorageService.fetchProfile(currentSession.user.id)
             .then(p => mounted && setProfile(p))
-            .catch(err => console.error('Profile fetch failed:', err))
+            .catch(async (err) => {
+              console.error('Profile fetch failed, attempting creation:', err)
+              if (currentSession.user.id) {
+                try {
+                  const newProfile = await StorageService.createProfile(
+                    currentSession.user.id, 
+                    currentSession.user.email?.split('@')[0] || 'User'
+                  )
+                  if (mounted) setProfile(newProfile)
+                } catch (createErr) {
+                  console.error('Profile creation failed:', createErr)
+                }
+              }
+            })
 
           const [routinesData, allCompletions, tasksData] = await Promise.all([
             StorageService.fetchRoutines(),

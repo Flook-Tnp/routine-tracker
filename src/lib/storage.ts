@@ -168,6 +168,16 @@ export const StorageService = {
     return data as Profile
   },
 
+  async createProfile(userId: string, username: string): Promise<Profile> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([{ id: userId, username, total_xp: 0, badges: [] }])
+      .select()
+      .single()
+    if (error) throw error
+    return data as Profile
+  },
+
   async fetchLeaderboard(): Promise<Partial<Profile>[]> {
     const { data, error } = await supabase
       .from('profiles')
