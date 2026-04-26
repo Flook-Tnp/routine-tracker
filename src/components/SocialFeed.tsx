@@ -9,10 +9,11 @@ interface SocialFeedProps {
   session: Session | null
   onShareStreak: () => void
   dailyStreak: number
+  groupId?: string
   onSelectUser?: (userId: string) => void
 }
 
-export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }: SocialFeedProps) {
+export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSelectUser }: SocialFeedProps) {
   const [posts, setPosts] = useState<Post[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -21,7 +22,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }
 
   const fetchPosts = useCallback(async () => {
     try {
-      const data = await StorageService.fetchPosts()
+      const data = await StorageService.fetchPosts(groupId)
       setPosts(data)
     } catch (err: any) {
       console.error('Error fetching posts:', err)
@@ -29,7 +30,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [groupId])
 
   useEffect(() => {
     let mounted = true
@@ -43,7 +44,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }
     e.preventDefault()
     if (!newPostContent.trim() || !session) return
     try {
-      await StorageService.createPost(newPostContent, session.user.id, 'manual', {})
+      await StorageService.createPost(newPostContent, session.user.id, 'manual', {}, groupId)
       setNewPostContent('')
       fetchPosts()
     } catch (err: any) {
@@ -89,20 +90,22 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, onSelectUser }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
-      <section className="space-y-4">
-        <div className="flex justify-between items-end">
-          <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
-          {session && dailyStreak > 0 && (
-            <button 
-              onClick={onShareStreak}
-              className="px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
-            >
-              <Plus size={10} />
-              Share_Active_Streak
-            </button>
-          )}
-        </div>
-      </section>
+      {!groupId && (
+        <section className="space-y-4">
+          <div className="flex justify-between items-end">
+            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
+            {session && dailyStreak > 0 && (
+              <button 
+                onClick={onShareStreak}
+                className="px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
+              >
+                <Plus size={10} />
+                Share_Active_Streak
+              </button>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="space-y-4">
         {session ? (
