@@ -243,7 +243,8 @@ return (
               </div>
             )}
           </div>
-        ))}
+        )
+      })}
 
         {posts.length === 0 && !loading && (
           <div className="py-20 text-center border border-dashed border-gray-900">
