@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
-import { Award, Zap, Target, Camera, Edit2, Check, X, Trash2 } from 'lucide-react'
+import { Award, Zap, Target, Camera, Edit2, Check, X, Trash2, Flame, Trophy } from 'lucide-react'
 
 interface ProfileProps {
   profile: ProfileType | null
@@ -194,15 +194,15 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           <p className="text-4xl font-black text-white tracking-tighter">{(profile.lifetime_xp || profile.total_xp).toLocaleString()}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
-          <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-          <Award size={24} className="text-cyan-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
+          <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+          <Flame size={24} fill="currentColor" className="text-orange-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
           <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Daily_Streak</p>
           <p className="text-4xl font-black text-white tracking-tighter">{dailyStreak}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
-          <div className="absolute inset-0 bg-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-          <Target size={24} className="text-purple-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(168,85,247,0.4)]" />
-          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Weekly_Goal</p>
+          <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+          <Trophy size={24} className="text-cyan-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
+          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Weekly_Streak</p>
           <p className="text-4xl font-black text-white tracking-tighter">{weeklyStreak}</p>
         </div>
       </div>
