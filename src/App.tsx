@@ -109,6 +109,7 @@ function App() {
             setCompletions(allCompletions)
             setTasks(tasksData)
             setLoading(false)
+            setCurrentView('tracker')
           }
         } catch (err) {
           console.error('PROTOCOL_ERROR: Data retrieval failed', err)
