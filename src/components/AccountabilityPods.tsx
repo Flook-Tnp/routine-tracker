@@ -167,6 +167,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                             )}
                           </div>
                           <span className={`text-xs font-bold text-gray-300 uppercase transition-colors ${!isMe && 'group-hover/member:text-cyan-400'}`}>{member.username || 'Unknown_Entity'}</span>
+                        </div>
                         <div className="flex items-center gap-4">
                           {!isMe && session && (
                             <button
