@@ -755,7 +755,7 @@ function App() {
       
       {/* Sticky Header Container */}
       <div className="sticky top-0 z-[60] bg-black/80 backdrop-blur-md border-b border-gray-900 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
-        <div className="max-w-2xl mx-auto px-4 md:px-8 py-6">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
           <header className="space-y-4 md:space-y-6">
             {/* Desktop Top Row: Title + Nav */}
             <div className="hidden md:flex justify-between items-center border-b border-gray-900/50 pb-4">
@@ -955,7 +955,7 @@ function App() {
                   {session && profile && (
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-white font-black uppercase tracking-widest">{profile.username}</span>
+                        <span className="text-[10px] text-white font-black uppercase tracking-widest truncate max-w-[120px]">{profile.username}</span>
                         <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-600 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">Logout_Link</button>
                       </div>
                       <div className="w-10 h-10 bg-gray-900 border border-gray-800 p-1 flex items-center justify-center overflow-hidden shadow-xl">
