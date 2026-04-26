@@ -3,6 +3,7 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   username TEXT UNIQUE,
   total_xp INTEGER DEFAULT 0,
+  lifetime_xp INTEGER DEFAULT 0,
   badges JSONB DEFAULT '[]'::jsonb,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -174,7 +175,9 @@ CREATE OR REPLACE FUNCTION increment_xp(user_id UUID, amount INTEGER)
 RETURNS void AS $$
 BEGIN
   UPDATE profiles
-  SET total_xp = total_xp + amount
+  SET 
+    total_xp = total_xp + amount,
+    lifetime_xp = lifetime_xp + amount
   WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -183,7 +186,9 @@ CREATE OR REPLACE FUNCTION decrement_xp(user_id UUID, amount INTEGER)
 RETURNS void AS $$
 BEGIN
   UPDATE profiles
-  SET total_xp = GREATEST(0, total_xp - amount)
+  SET 
+    total_xp = GREATEST(0, total_xp - amount),
+    lifetime_xp = GREATEST(0, lifetime_xp - amount)
   WHERE id = user_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

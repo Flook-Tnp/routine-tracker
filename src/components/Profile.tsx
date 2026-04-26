@@ -55,8 +55,8 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak }: Profil
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-gray-950 border border-gray-900 p-6 space-y-2 text-center">
           <Zap size={20} className="text-orange-500 mx-auto mb-2" />
-          <p className="text-[8px] text-gray-500 uppercase tracking-widest font-bold">Total_XP</p>
-          <p className="text-3xl font-black text-white">{profile.total_xp.toLocaleString()}</p>
+          <p className="text-[8px] text-gray-500 uppercase tracking-widest font-bold">Lifetime_XP</p>
+          <p className="text-3xl font-black text-white">{(profile.lifetime_xp || profile.total_xp).toLocaleString()}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-6 space-y-2 text-center">
           <Award size={20} className="text-cyan-400 mx-auto mb-2" />

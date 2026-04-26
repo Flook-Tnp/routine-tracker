@@ -34,6 +34,7 @@ export interface Profile {
   id: string
   username: string
   total_xp: number
+  lifetime_xp: number
   badges: Badge[]
   updated_at: string
 }
