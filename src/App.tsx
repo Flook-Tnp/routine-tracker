@@ -504,6 +504,55 @@ function App() {
     }
   }, [filteredRoutines, completions, selectedDateStr])
 
+  const { overallDailyStreak, overallWeeklyStreak } = useMemo(() => {
+    try {
+      if (routines.length === 0 || completions.length === 0) return { overallDailyStreak: 0, overallWeeklyStreak: 0 }
+      
+      const activeRoutineIds = new Set(routines.map(r => r.id))
+      const doneDates = new Set(
+        completions
+          .filter(c => activeRoutineIds.has(c.routine_id))
+          .map(c => c.completed_date)
+      )
+
+      // Calculate Overall Daily
+      let daily = 0
+      let checkDate = new Date()
+      const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
+      if (!isDateFinished(checkDate)) checkDate = subDays(checkDate, 1)
+      while (isDateFinished(checkDate)) {
+        daily++
+        checkDate = subDays(checkDate, 1)
+        if (daily > 10000) break 
+      }
+
+      // Calculate Overall Weekly
+      let weekly = 0
+      const isWeekSuccessful = (dateInWeek: Date) => {
+        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
+        const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
+        let activeDaysCount = 0
+        weekDays.forEach(d => {
+          const dStr = format(d, 'yyyy-MM-dd')
+          if (completions.some(c => c.completed_date === dStr && activeRoutineIds.has(c.routine_id))) activeDaysCount++
+        })
+        return activeDaysCount >= 3
+      }
+      let currentCheck = new Date()
+      if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
+      while (isWeekSuccessful(currentCheck)) {
+        weekly++
+        currentCheck = subDays(currentCheck, 7)
+        if (weekly > 500) break 
+      }
+
+      return { overallDailyStreak: daily, overallWeeklyStreak: weekly }
+    } catch (err) {
+      console.error('Error calculating overall streaks:', err)
+      return { overallDailyStreak: 0, overallWeeklyStreak: 0 }
+    }
+  }, [routines, completions])
+
   const dailyStreak = useMemo(() => {
     try {
       if (filteredRoutines.length === 0 || completions.length === 0) return 0
@@ -965,20 +1014,19 @@ function App() {
                 </div>
               </div>
 
-              {/* Stats & Profile Desktop Group */}
               <div className="flex items-center justify-between md:justify-end gap-6 md:gap-10 border-t md:border-t-0 border-gray-900 pt-4 md:pt-0">
                 <div className="flex gap-8">
                   <div className="text-center md:text-right">
                     <div className="flex items-center justify-center md:justify-end gap-1.5 text-orange-500">
                       <Flame size={20} fill="currentColor" className="drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-                      <span className="text-2xl md:text-3xl font-black tracking-tighter">{dailyStreak}</span>
+                      <span className="text-2xl md:text-3xl font-black tracking-tighter">{overallDailyStreak}</span>
                     </div>
                     <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">Daily</p>
                   </div>
                   <div className="text-center md:text-right">
                     <div className="flex items-center justify-center md:justify-end gap-1.5 text-cyan-400">
                       <Trophy size={20} className="drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
-                      <span className="text-2xl md:text-3xl font-black tracking-tighter">{weeklyStreak}</span>
+                      <span className="text-2xl md:text-3xl font-black tracking-tighter">{overallWeeklyStreak}</span>
                     </div>
                     <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">Weekly</p>
                   </div>
@@ -1438,13 +1486,12 @@ function App() {
         selectedDateStr={selectedDateStr}
       />
       ) : (
-      <ProfileComponent 
-        profile={viewedProfileId ? viewedData?.profile || null : profile} 
-        routines={viewedProfileId ? viewedData?.routines || [] : routines} 
-        dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak} 
-        weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : weeklyStreak} 
-        onProfileUpdate={viewedProfileId ? undefined : setProfile}
-        isPublic={!!viewedProfileId}
+      <ProfileComponent
+        profile={viewedProfileId ? viewedData?.profile || null : profile}
+        routines={viewedProfileId ? viewedData?.routines || [] : routines}
+        dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : overallDailyStreak}
+        weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : overallWeeklyStreak}
+        onProfileUpdate={viewedProfileId ? undefined : setProfile}        isPublic={!!viewedProfileId}
         onBack={() => {
           setViewedProfileId(null)
           setCurrentView(previousView)
