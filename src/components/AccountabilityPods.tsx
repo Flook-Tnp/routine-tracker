@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell, Activity } from 'lucide-react'
+import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell, Activity, Check } from 'lucide-react'
 import type { Group, MemberVital } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { SocialFeed } from './SocialFeed'
@@ -21,6 +21,28 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
   const [podMembers, setPodMembers] = useState<MemberVital[]>([])
+  const [groupTasks, setGroupTasks] = useState<GroupTask[]>([])
+  const [groupCompletions, setGroupCompletions] = useState<GroupTaskCompletion[]>([])
+  const [isAddingTask, setIsAddingTask] = useState(false)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+
+  const fetchGroupData = useCallback(async (groupId: string) => {
+    try {
+      setLoading(true)
+      const [vitals, tasks, completions] = await Promise.all([
+        StorageService.fetchMemberVitals(groupId),
+        StorageService.fetchGroupTasks(groupId),
+        StorageService.fetchGroupTaskCompletions(groupId, new Date().toISOString().split('T')[0])
+      ])
+      setPodMembers(vitals)
+      setGroupTasks(tasks)
+      setGroupCompletions(completions)
+    } catch (err) {
+      console.error('Error fetching group data:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -33,29 +55,58 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }, [])
 
-  const fetchMembers = useCallback(async (groupId: string) => {
-    try {
-      setLoading(true)
-      const data = await StorageService.fetchMemberVitals(groupId)
-      setPodMembers(data)
-    } catch (err) {
-      console.error('Error fetching members:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
   useEffect(() => {
     let mounted = true
     if (mounted) {
       if (selectedPod) {
-        fetchMembers(selectedPod.id)
+        fetchGroupData(selectedPod.id)
       } else {
         fetchGroups()
       }
     }
     return () => { mounted = false }
-  }, [fetchGroups, fetchMembers, selectedPod])
+  }, [fetchGroups, fetchGroupData, selectedPod])
+
+  const handleAddTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedPod || !newTaskTitle.trim()) return
+    try {
+      const newTask = await StorageService.createGroupTask(selectedPod.id, newTaskTitle)
+      setGroupTasks([...groupTasks, newTask])
+      setNewTaskTitle('')
+      setIsAddingTask(false)
+    } catch (err) {
+      console.error('Failed to add task:', err)
+    }
+  }
+
+  const handleDeleteTask = async (taskId: string) => {
+    if (!window.confirm('TERMINATE_OBJECTIVE: Are you sure?')) return
+    try {
+      await StorageService.deleteGroupTask(taskId)
+      setGroupTasks(groupTasks.filter(t => t.id !== taskId))
+    } catch (err) {
+      console.error('Failed to delete task:', err)
+    }
+  }
+
+  const handleToggleTask = async (taskId: string) => {
+    if (!session?.user?.id || !selectedPod) return
+    try {
+      const date = new Date().toISOString().split('T')[0]
+      await StorageService.toggleGroupTask(taskId, session.user.id, date)
+      
+      // Update local completions and refresh vitals to show synergy change
+      const [newCompletions, newVitals] = await Promise.all([
+        StorageService.fetchGroupTaskCompletions(selectedPod.id, date),
+        StorageService.fetchMemberVitals(selectedPod.id)
+      ])
+      setGroupCompletions(newCompletions)
+      setPodMembers(newVitals)
+    } catch (err) {
+      console.error('Failed to toggle task:', err)
+    }
+  }
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -275,7 +326,76 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
             <div className="space-y-4">
               <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2">
-                <Award size={12} className="text-orange-500" /> Pod_Pulse
+                <Award size={12} className="text-orange-500" /> Mission_Objectives
+              </h3>
+              
+              <div className="bg-gray-900/30 border border-gray-900 p-4 space-y-4">
+                {selectedPod.created_by === session?.user?.id && (
+                  <div className="border-b border-gray-800 pb-4">
+                    {isAddingTask ? (
+                      <form onSubmit={handleAddTask} className="flex gap-2">
+                        <input
+                          autoFocus
+                          type="text"
+                          value={newTaskTitle}
+                          onChange={(e) => setNewTaskTitle(e.target.value)}
+                          placeholder="ENTER_OBJECTIVE..."
+                          className="flex-1 bg-black border border-gray-800 px-3 py-1 text-[10px] font-mono text-gray-300 focus:outline-none focus:border-cyan-500"
+                        />
+                        <button type="submit" className="text-cyan-500 hover:text-white transition-colors">
+                          <Plus size={16} />
+                        </button>
+                        <button type="button" onClick={() => setIsAddingTask(false)} className="text-gray-600 hover:text-red-500">
+                          <X size={16} />
+                        </button>
+                      </form>
+                    ) : (
+                      <button 
+                        onClick={() => setIsAddingTask(true)}
+                        className="w-full flex items-center justify-center gap-2 py-2 border border-dashed border-gray-800 text-[8px] font-black uppercase text-gray-600 hover:text-cyan-500 hover:border-cyan-500/50 transition-all"
+                      >
+                        <Plus size={10} /> Add_New_Mission_Protocol
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  {groupTasks.length > 0 ? (
+                    groupTasks.map((task) => {
+                      const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
+                      return (
+                        <div key={task.id} className="flex items-center justify-between group/task bg-black/40 p-2 border border-gray-900 hover:border-gray-800 transition-all">
+                          <button 
+                            onClick={() => handleToggleTask(task.id)}
+                            className={`flex items-center gap-3 text-left transition-all ${isDone ? 'text-cyan-500' : 'text-gray-500 hover:text-gray-300'}`}
+                          >
+                            <div className={`w-4 h-4 border ${isDone ? 'bg-cyan-500 border-cyan-500' : 'border-gray-700'} flex items-center justify-center transition-all`}>
+                              {isDone && <Check size={10} className="text-black" />}
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-tight">{task.title}</span>
+                          </button>
+                          {selectedPod.created_by === session?.user?.id && (
+                            <button 
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="text-gray-800 hover:text-red-500 transition-colors opacity-0 group-hover/task:opacity-100"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })
+                  ) : (
+                    <div className="py-10 text-center">
+                      <p className="text-[8px] text-gray-700 uppercase tracking-widest">No mission protocols defined</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <h3 className="text-[10px] uppercase tracking-[0.2em] text-gray-400 font-bold flex items-center gap-2 pt-4">
+                <Users size={12} className="text-gray-500" /> Pod_Pulse
               </h3>
               <SocialFeed 
                 session={session} 

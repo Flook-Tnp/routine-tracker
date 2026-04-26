@@ -495,3 +495,103 @@ BEGIN
   WHERE gm.group_id = target_group_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 1. Table for group-specific objectives
+CREATE TABLE IF NOT EXISTS group_tasks (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- 2. Table for tracking group task completions
+CREATE TABLE IF NOT EXISTS group_task_completions (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  task_id UUID REFERENCES group_tasks(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  completed_date DATE DEFAULT CURRENT_DATE,
+  UNIQUE(task_id, user_id, completed_date)
+);
+
+-- 3. Redefine Vitals to focus on SHARED OBJECTIVES
+CREATE OR REPLACE FUNCTION get_pod_member_vitals(target_group_id UUID)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  avatar_url TEXT,
+  total_xp BIGINT,
+  routines_total INT, -- Total tasks in the group
+  routines_completed_today INT, -- Tasks this specific user did today
+  last_activity_date DATE,
+  pod_current_streak INT,
+  pod_max_streak INT
+) AS $$
+DECLARE
+  member_count INT;
+  sync_count INT; -- Number of members who did AT LEAST ONE task yesterday
+  threshold FLOAT;
+  last_date DATE;
+  today DATE := CURRENT_DATE;
+BEGIN
+  -- 1. Auto-Kick inactive (7 days)
+  DELETE FROM group_members
+  WHERE group_id = target_group_id
+    AND user_id IN (
+      SELECT m.user_id
+      FROM group_members m
+      LEFT JOIN group_task_completions c ON c.user_id = m.user_id
+      WHERE m.group_id = target_group_id
+        AND m.user_id != (SELECT created_by FROM groups WHERE id = target_group_id)
+      GROUP BY m.user_id, m.joined_at
+      HAVING (MAX(c.completed_date) < today - INTERVAL '7 days')
+         OR (MAX(c.completed_date) IS NULL AND m.joined_at < today - INTERVAL '7 days')
+    );
+
+  -- 2. Group Streak Logic (At least 1 task per person)
+  SELECT COUNT(*)::INT INTO member_count FROM group_members WHERE group_id = target_group_id;
+  
+  -- Solo = 100%, 2-5 = 80%, 6+ = 70% of members must be active
+  IF member_count <= 1 THEN threshold := 1.0;
+  ELSIF member_count <= 5 THEN threshold := 0.8;
+  ELSE threshold := 0.7;
+  END IF;
+
+  SELECT last_streak_date, current_streak INTO last_date, pod_current_streak FROM groups WHERE id = target_group_id;
+
+  IF (last_date IS NULL OR last_date < today) AND (SELECT COUNT(*) FROM group_tasks WHERE group_id = target_group_id) > 0 THEN
+    -- How many members did >= 1 task yesterday?
+    SELECT COUNT(DISTINCT user_id)::INT INTO sync_count
+    FROM group_task_completions gtc
+    JOIN group_tasks gt ON gtc.task_id = gt.id
+    WHERE gt.group_id = target_group_id AND gtc.completed_date = today - INTERVAL '1 day';
+
+    IF (sync_count::FLOAT / member_count) >= threshold THEN
+      UPDATE groups SET current_streak = current_streak + 1, max_streak = GREATEST(max_streak, current_streak + 1), last_streak_date = today WHERE id = target_group_id;
+    ELSIF last_date < today - INTERVAL '1 day' THEN
+      UPDATE groups SET current_streak = 0, last_streak_date = today WHERE id = target_group_id;
+    END IF;
+  END IF;
+
+  -- 3. Return members with their group task progress
+  RETURN QUERY
+  SELECT 
+    p.id,
+    p.username,
+    p.avatar_url,
+    p.total_xp,
+    (SELECT COUNT(*)::INT FROM group_tasks WHERE group_id = target_group_id),
+    (SELECT COUNT(DISTINCT gtc.task_id)::INT FROM group_task_completions gtc 
+     JOIN group_tasks gt ON gtc.task_id = gt.id
+     WHERE gtc.user_id = p.id AND gt.group_id = target_group_id AND gtc.completed_date = today),
+    (SELECT MAX(completed_date) FROM group_task_completions gtc 
+     JOIN group_tasks gt ON gtc.task_id = gt.id
+     WHERE gtc.user_id = p.id AND gt.group_id = target_group_id),
+    g.current_streak,
+    g.max_streak
+  FROM profiles p
+  JOIN group_members gm ON p.id = gm.user_id
+  JOIN groups g ON g.id = gm.group_id
+  WHERE gm.group_id = target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;

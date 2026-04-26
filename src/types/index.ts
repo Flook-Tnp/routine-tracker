@@ -105,3 +105,18 @@ export interface MemberVital {
   pod_max_streak?: number
 }
 
+export interface GroupTask {
+  id: string
+  group_id: string
+  title: string
+  description?: string
+  created_at: string
+}
+
+export interface GroupTaskCompletion {
+  id: string
+  task_id: string
+  user_id: string
+  completed_date: string
+}
+

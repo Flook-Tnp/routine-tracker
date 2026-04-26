@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital } from '../types'
+import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
@@ -386,6 +386,67 @@ export const StorageService = {
       .delete()
       .eq('id', groupId)
     if (error) throw error
+  },
+
+  async fetchGroupTasks(groupId: string): Promise<GroupTask[]> {
+    const { data, error } = await supabase
+      .from('group_tasks')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: true })
+    if (error) throw error
+    return data
+  },
+
+  async createGroupTask(groupId: string, title: string, description?: string): Promise<GroupTask> {
+    const { data, error } = await supabase
+      .from('group_tasks')
+      .insert({ group_id: groupId, title, description })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  },
+
+  async deleteGroupTask(taskId: string): Promise<void> {
+    const { error } = await supabase
+      .from('group_tasks')
+      .delete()
+      .eq('id', taskId)
+    if (error) throw error
+  },
+
+  async fetchGroupTaskCompletions(groupId: string, date: string): Promise<GroupTaskCompletion[]> {
+    const { data, error } = await supabase
+      .from('group_task_completions')
+      .select(`
+        *,
+        group_tasks!inner(group_id)
+      `)
+      .eq('group_tasks.group_id', groupId)
+      .eq('completed_date', date)
+    if (error) throw error
+    return data as any[]
+  },
+
+  async toggleGroupTask(taskId: string, userId: string, date: string): Promise<void> {
+    const { data: existing } = await supabase
+      .from('group_task_completions')
+      .select('id')
+      .eq('task_id', taskId)
+      .eq('user_id', userId)
+      .eq('completed_date', date)
+      .maybeSingle()
+
+    if (existing) {
+      await supabase.from('group_task_completions').delete().eq('id', existing.id)
+    } else {
+      await supabase.from('group_task_completions').insert({
+        task_id: taskId,
+        user_id: userId,
+        completed_date: date
+      })
+    }
   },
 
   async pingUser(targetUserId: string, groupId: string): Promise<{ success: boolean; message: string; next_available?: string }> {
