@@ -447,10 +447,10 @@ export const StorageService = {
     return (data?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
   },
 
-  async fetchMemberVitals(groupId: string): Promise<MemberVital[]> {
-    const date = new Date().toISOString().split('T')[0]
+  async fetchMemberVitals(groupId: string, date?: string): Promise<MemberVital[]> {
+    const targetDate = date || new Date().toISOString().split('T')[0]
     const { data, error } = await supabase
-      .rpc('get_pod_member_vitals', { target_group_id: groupId, target_date: date })
+      .rpc('get_pod_member_vitals', { target_group_id: groupId, target_date: targetDate })
     if (error) throw error
     return data as MemberVital[]
   },

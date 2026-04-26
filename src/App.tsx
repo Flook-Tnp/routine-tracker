@@ -1407,6 +1407,7 @@ function App() {
         onSelectUser={handleSelectUser}
         selectedPod={selectedPod}
         onSelectPod={setSelectedPod}
+        selectedDateStr={selectedDateStr}
       />
       ) : (
       <ProfileComponent 

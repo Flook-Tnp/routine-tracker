@@ -12,9 +12,10 @@ interface PodsProps {
   onSelectUser?: (userId: string) => void
   selectedPod: Group | null
   onSelectPod: (pod: Group | null) => void
+  selectedDateStr: string
 }
 
-export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod }: PodsProps) {
+export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod, selectedDateStr }: PodsProps) {
   const [groups, setGroups] = useState<Group[]>([])
   const [podMembers, setPodMembers] = useState<MemberVital[]>([])
   const [groupTasks, setGroupTasks] = useState<GroupTask[]>([])
@@ -37,13 +38,12 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }, [selectedPod])
 
-  const fetchGroupData = useCallback(async (groupId: string) => {
+  const fetchGroupData = useCallback(async (groupId: string, date: string) => {
     try {
       setLoading(true)
-      const date = new Date().toISOString().split('T')[0]
 
       const [vitalsResult, tasksResult, completionsResult] = await Promise.allSettled([
-        StorageService.fetchMemberVitals(groupId),
+        StorageService.fetchMemberVitals(groupId, date),
         StorageService.fetchGroupTasks(groupId),
         StorageService.fetchGroupTaskCompletions(groupId, date)
       ])
@@ -83,9 +83,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   useEffect(() => {
     if (selectedPod) {
-      fetchGroupData(selectedPod.id)
+      fetchGroupData(selectedPod.id, selectedDateStr)
     }
-  }, [selectedPod, fetchGroupData])
+  }, [selectedPod, selectedDateStr, fetchGroupData])
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -144,7 +144,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       setGroupTasks([...groupTasks, task])
       setNewTaskTitle('')
       setIsAddingTask(false)
-      fetchGroupData(selectedPod.id)
+      fetchGroupData(selectedPod.id, selectedDateStr)
     } catch (err) {
       console.error('Failed to add mission:', err)
     }
@@ -155,7 +155,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     try {
       await StorageService.deleteGroupTask(taskId)
       setGroupTasks(groupTasks.filter(t => t.id !== taskId))
-      if (selectedPod) fetchGroupData(selectedPod.id)
+      if (selectedPod) fetchGroupData(selectedPod.id, selectedDateStr)
     } catch (err) {
       console.error('Failed to delete mission:', err)
     }
@@ -163,18 +163,17 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   const handleToggleTask = async (taskId: string) => {
     if (!session || !selectedPod) return
-    const date = new Date().toISOString().split('T')[0]
     try {
-      await StorageService.toggleGroupTask(taskId, session.user.id, date)
+      await StorageService.toggleGroupTask(taskId, session.user.id, selectedDateStr)
       
       const existing = groupCompletions.find(c => c.task_id === taskId && c.user_id === session.user.id)
       if (existing) {
         setGroupCompletions(groupCompletions.filter(c => c.id !== existing.id))
       } else {
-        setGroupCompletions([...groupCompletions, { id: Math.random().toString(), task_id: taskId, user_id: session.user.id, completed_date: date }])
+        setGroupCompletions([...groupCompletions, { id: Math.random().toString(), task_id: taskId, user_id: session.user.id, completed_date: selectedDateStr }])
       }
       
-      setTimeout(() => fetchGroupData(selectedPod.id), 500)
+      setTimeout(() => fetchGroupData(selectedPod.id, selectedDateStr), 500)
     } catch (err) {
       console.error('Task synchronization failed:', err)
     }
