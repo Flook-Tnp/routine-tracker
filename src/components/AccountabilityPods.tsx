@@ -45,7 +45,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         console.warn('Vitals failed or empty, using fallback member fetch')
         const basicMembers = await StorageService.fetchPodMembers(groupId)
         setPodMembers(basicMembers.map(m => ({
-          ...m,
+          id: m.id,
+          username: m.username,
+          avatar_url: m.avatar_url || null,
+          total_xp: m.total_xp,
           routines_total: 0,
           routines_completed_today: 0,
           last_activity_date: null
