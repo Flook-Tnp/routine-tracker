@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
 import { Users, Plus, UserPlus, LogOut, ArrowRight, Trash2, ChevronLeft, Zap, Award, Bell, Activity } from 'lucide-react'
-import type { Group, Profile, MemberVital } from '../types'
+import type { Group, MemberVital } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { SocialFeed } from './SocialFeed'
 
