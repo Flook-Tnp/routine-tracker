@@ -23,6 +23,7 @@ function App() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
+  const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('leaderboard')
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
   const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
@@ -97,6 +98,7 @@ function App() {
     }
 
     try {
+      setPreviousView(currentView)
       setCurrentView('profile')
       setViewedProfileId(userId)
       setViewedData(null) // Loading state
@@ -1340,7 +1342,7 @@ function App() {
         isPublic={!!viewedProfileId}
         onBack={() => {
           setViewedProfileId(null)
-          setCurrentView('leaderboard')
+          setCurrentView(previousView)
         }}
       />
     )}      </div>
