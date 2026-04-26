@@ -29,24 +29,34 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const fetchGroupData = useCallback(async (groupId: string) => {
     try {
       setLoading(true)
-      // Use separate try/catch for vitals to ensure members show up even if RLS blocks tasks
-      try {
-        const vitals = await StorageService.fetchMemberVitals(groupId)
-        setPodMembers(vitals)
-      } catch (err) {
-        console.error('Vitals sync failed:', err)
+      const date = new Date().toISOString().split('T')[0]
+
+      // Parallel fetching with individual error handling
+      const [vitalsResult, tasksResult, completionsResult] = await Promise.allSettled([
+        StorageService.fetchMemberVitals(groupId),
+        StorageService.fetchGroupTasks(groupId),
+        StorageService.fetchGroupTaskCompletions(groupId, date)
+      ])
+
+      if (vitalsResult.status === 'fulfilled' && vitalsResult.value.length > 0) {
+        setPodMembers(vitalsResult.value)
+      } else {
+        // FALLBACK: If vitals fail or are empty, fetch basic profiles so the list isn't empty
+        console.warn('Vitals failed or empty, using fallback member fetch')
+        const basicMembers = await StorageService.fetchPodMembers(groupId)
+        setPodMembers(basicMembers.map(m => ({
+          ...m,
+          routines_total: 0,
+          routines_completed_today: 0,
+          last_activity_date: null
+        })))
       }
 
-      try {
-        const [tasks, completions] = await Promise.all([
-          StorageService.fetchGroupTasks(groupId),
-          StorageService.fetchGroupTaskCompletions(groupId, new Date().toISOString().split('T')[0])
-        ])
-        setGroupTasks(tasks)
-        setGroupCompletions(completions)
-      } catch (err) {
-        console.error('Mission Protocol sync failed:', err)
-      }
+      if (tasksResult.status === 'fulfilled') setGroupTasks(tasksResult.value)
+      if (completionsResult.status === 'fulfilled') setGroupCompletions(completionsResult.value)
+
+    } catch (err) {
+      console.error('Group data sync failed:', err)
     } finally {
       setLoading(false)
     }
@@ -100,11 +110,27 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   const handleToggleTask = async (taskId: string) => {
     if (!session?.user?.id || !selectedPod) return
+    
+    const date = new Date().toISOString().split('T')[0]
+    const isDone = groupCompletions.some(c => c.task_id === taskId && c.user_id === session.user.id)
+    
+    // OPTIMISTIC UPDATE: Update UI immediately
+    if (isDone) {
+      setGroupCompletions(prev => prev.filter(c => !(c.task_id === taskId && c.user_id === session.user.id)))
+    } else {
+      const tempCompletion: GroupTaskCompletion = { 
+        id: 'temp-' + Math.random(), 
+        task_id: taskId, 
+        user_id: session.user.id, 
+        completed_date: date 
+      }
+      setGroupCompletions(prev => [...prev, tempCompletion])
+    }
+
     try {
-      const date = new Date().toISOString().split('T')[0]
       await StorageService.toggleGroupTask(taskId, session.user.id, date)
       
-      // Update local completions and refresh vitals to show synergy change
+      // BACKGROUND SYNC: Get actual server state
       const [newCompletions, newVitals] = await Promise.all([
         StorageService.fetchGroupTaskCompletions(selectedPod.id, date),
         StorageService.fetchMemberVitals(selectedPod.id)
@@ -113,6 +139,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       setPodMembers(newVitals)
     } catch (err) {
       console.error('Failed to toggle task:', err)
+      // Rollback on error by re-fetching
+      fetchGroupData(selectedPod.id)
     }
   }
 
