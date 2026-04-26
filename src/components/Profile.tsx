@@ -131,6 +131,21 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     checkMilestones()
   }, [dailyStreak, profile?.total_xp])
 
+  // Count unique physical days for the UI check as well
+  const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
+  useEffect(() => {
+    if (profile?.id) {
+      StorageService.fetchCompletions(profile.id).then(completions => {
+        const count = new Set(
+          completions
+            .filter(c => c.created_at)
+            .map(c => c.created_at!.split('T')[0])
+        ).size
+        setUniqueLoggingDays(count)
+      })
+    }
+  }, [profile?.id, dailyStreak])
+
   const categoriesList = Array.from(new Set(routines.map(r => r.category || 'General')))
   
   return (
@@ -271,9 +286,9 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Achievement_Protocol</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { id: 'Streak_7', label: 'Streak 7', check: dailyStreak >= 7 },
-            { id: 'Streak_30', label: 'Streak 30', check: dailyStreak >= 30 },
-            { id: 'Streak_100', label: 'Streak 100', check: dailyStreak >= 100 },
+            { id: 'Streak_7', label: 'Streak 7', check: dailyStreak >= 7 && uniqueLoggingDays >= 7 },
+            { id: 'Streak_30', label: 'Streak 30', check: dailyStreak >= 30 && uniqueLoggingDays >= 30 },
+            { id: 'Streak_100', label: 'Streak 100', check: dailyStreak >= 100 && uniqueLoggingDays >= 100 },
             { id: 'XP_1000', label: 'XP 1000', check: (profile.total_xp || 0) >= 1000 }
           ].map(badge => {
             const isEarned = badge.check || profile.badges?.some((b) => b.id.toLowerCase() === badge.id.toLowerCase())
