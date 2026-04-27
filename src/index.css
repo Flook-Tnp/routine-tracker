@@ -38,6 +38,24 @@
   .nav-btn {
     @apply flex flex-col items-center gap-1.5 transition-all duration-300 active:scale-90 touch-none;
   }
+
+  /* Interaction Affordance */
+  .hud-link-active {
+    @apply relative transition-all duration-300 cursor-pointer;
+  }
+
+  .hud-link-active::after {
+    content: '';
+    @apply absolute -bottom-1 left-0 w-0 h-[1px] bg-cyan-500/50 transition-all duration-300;
+  }
+
+  .hud-link-active:hover::after {
+    @apply w-full;
+  }
+
+  .hud-link-active:hover {
+    @apply text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.3)];
+  }
 }
 
 /* Page Transition Effects */
@@ -48,4 +66,9 @@
 @keyframes view-enter {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toast-progress {
+  from { width: 100%; }
+  to { width: 0%; }
 }
