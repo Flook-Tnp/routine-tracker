@@ -18,6 +18,78 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   const [newUsername, setNewUsername] = useState(profile?.username || '')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  // Count unique physical days for the UI check as well
+  const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
+
+  // Update local state when profile changes (essential when switching between users)
+  useEffect(() => {
+    if (profile?.username) {
+      setNewUsername(profile.username)
+    }
+  }, [profile?.username])
+
+  // Count unique physical days for the UI check
+  useEffect(() => {
+    if (profile?.id) {
+      StorageService.fetchCompletions(profile.id).then(completions => {
+        if (!Array.isArray(completions)) return
+        const count = new Set(
+          completions
+            .filter(c => c && c.created_at)
+            .map(c => c.created_at!.split('T')[0])
+        ).size
+        setUniqueLoggingDays(count)
+      }).catch(err => console.error('Failed to fetch completions for streak check:', err))
+    }
+  }, [profile?.id, dailyStreak])
+
+  // Permanently award badges if they don't exist
+  const checkMilestones = async () => {
+    if (isPublic || !profile) return
+    
+    const currentBadges = profile.badges || []
+    const newBadges = [...currentBadges]
+    let changed = false
+
+    // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
+    const routineCompletions = await StorageService.fetchCompletions(profile.id)
+    const completionsCount = new Set(
+      routineCompletions
+        .filter(c => c && c.created_at)
+        .map(c => c.created_at!.split('T')[0])
+    ).size
+
+    const milestones = [
+      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && completionsCount >= 7 },
+      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && completionsCount >= 30 },
+      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && completionsCount >= 100 },
+      { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
+    ]
+
+    milestones.forEach(m => {
+      if (m.check && !currentBadges.some(b => b.id.toLowerCase() === m.id.toLowerCase())) {
+        newBadges.push({ id: m.id, name: m.name, icon: m.icon })
+        changed = true
+      }
+    })
+
+    if (changed) {
+      try {
+        await StorageService.updateProfile(profile.id, { badges: newBadges })
+        if (onProfileUpdate) onProfileUpdate({ ...profile, badges: newBadges })
+      } catch (err) {
+        console.error('Failed to permanently award badges:', err)
+      }
+    }
+  }
+
+  // Check milestones whenever stats change
+  useEffect(() => {
+    if (profile) {
+      checkMilestones()
+    }
+  }, [dailyStreak, profile?.total_xp])
 
   if (!profile) return (
     <div className="text-center py-20 space-y-6">
@@ -85,68 +157,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }
 
-  // Permanently award badges if they don't exist
-  const checkMilestones = async () => {
-    if (isPublic || !profile) return
-    
-    const currentBadges = profile.badges || []
-    const newBadges = [...currentBadges]
-    let changed = false
-
-    // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
-    // Even if you retro-fill 7 days today, your 'uniqueLoggingDays' will only increase by 1.
-    const routineCompletions = await StorageService.fetchCompletions(profile.id)
-    const uniqueLoggingDays = new Set(
-      routineCompletions
-        .filter(c => c.created_at) // Only count entries with a timestamp
-        .map(c => c.created_at!.split('T')[0]) // Get just the YYYY-MM-DD of the logging moment
-    ).size
-
-    const milestones = [
-      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && uniqueLoggingDays >= 7 },
-      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && uniqueLoggingDays >= 30 },
-      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && uniqueLoggingDays >= 100 },
-      { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
-    ]
-
-    milestones.forEach(m => {
-      if (m.check && !currentBadges.some(b => b.id.toLowerCase() === m.id.toLowerCase())) {
-        newBadges.push({ id: m.id, name: m.name, icon: m.icon })
-        changed = true
-      }
-    })
-
-    if (changed) {
-      try {
-        await StorageService.updateProfile(profile.id, { badges: newBadges })
-        if (onProfileUpdate) onProfileUpdate({ ...profile, badges: newBadges })
-      } catch (err) {
-        console.error('Failed to permanently award badges:', err)
-      }
-    }
-  }
-
-  // Check milestones whenever stats change
-  useEffect(() => {
-    checkMilestones()
-  }, [dailyStreak, profile?.total_xp])
-
-  // Count unique physical days for the UI check as well
-  const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
-  useEffect(() => {
-    if (profile?.id) {
-      StorageService.fetchCompletions(profile.id).then(completions => {
-        const count = new Set(
-          completions
-            .filter(c => c.created_at)
-            .map(c => c.created_at!.split('T')[0])
-        ).size
-        setUniqueLoggingDays(count)
-      })
-    }
-  }, [profile?.id, dailyStreak])
-
-  const categoriesList = Array.from(new Set(routines.map(r => r.category || 'General')))
+  const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
   
   return (
     <div className="space-y-12 view-enter">
@@ -219,7 +230,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             </div>
           ) : (
             <div className="flex items-center gap-3 group">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tighter md:text-4xl">{profile.username}</h2>
+              <h2 className="text-3xl font-black text-white uppercase tracking-tighter md:text-4xl">{profile.username || 'Anonymous_User'}</h2>
               {!isPublic && (
                 <button 
                   onClick={() => setIsEditing(true)}
@@ -252,19 +263,19 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Zap size={24} className="text-orange-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
           <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Lifetime_XP</p>
-          <p className="text-4xl font-black text-white tracking-tighter">{(profile.lifetime_xp || profile.total_xp).toLocaleString()}</p>
+          <p className="text-4xl font-black text-white tracking-tighter">{(profile.lifetime_xp || profile.total_xp || 0).toLocaleString()}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
           <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Flame size={24} fill="currentColor" className="text-orange-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
           <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Daily_Streak</p>
-          <p className="text-4xl font-black text-white tracking-tighter">{dailyStreak}</p>
+          <p className="text-4xl font-black text-white tracking-tighter">{dailyStreak || 0}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
           <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Trophy size={24} className="text-cyan-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
           <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Weekly_Streak</p>
-          <p className="text-4xl font-black text-white tracking-tighter">{weeklyStreak}</p>
+          <p className="text-4xl font-black text-white tracking-tighter">{weeklyStreak || 0}</p>
         </div>
       </div>
 

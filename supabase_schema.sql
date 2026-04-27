@@ -169,8 +169,8 @@ CREATE POLICY "Tasks viewable by members" ON group_tasks FOR SELECT USING (true)
 CREATE POLICY "Completions viewable by everyone" ON group_task_completions FOR SELECT USING (true);
 CREATE POLICY "Users can complete group tasks" ON group_task_completions FOR ALL USING (auth.uid() = user_id);
 
-CREATE POLICY "Routines manageable by owners" ON routines FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Completions manageable by owners" ON routine_completions FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Routines viewable by everyone" ON routines FOR SELECT USING (true); CREATE POLICY "Routines manageable by owners" ON routines FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Completions viewable by everyone" ON routine_completions FOR SELECT USING (true); CREATE POLICY "Completions manageable by owners" ON routine_completions FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Tasks manageable by owners" ON tasks FOR ALL USING (auth.uid() = user_id);
 
 CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);

@@ -1400,6 +1400,7 @@ function App() {
       />
       ) : (
       <ProfileComponent
+        key={viewedProfileId || session?.user?.id || 'guest'}
         profile={viewedProfileId ? viewedData?.profile || null : profile}
         routines={viewedProfileId ? viewedData?.routines || [] : routines}
         dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak}
