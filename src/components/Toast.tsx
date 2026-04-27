@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { X, Info, AlertTriangle, CheckCircle2, Zap } from 'lucide-react'
 
 export type ToastType = 'info' | 'error' | 'success' | 'warning' | 'milestone'
@@ -9,8 +9,6 @@ export interface Toast {
   type: ToastType
   duration?: number
 }
-
-let toastTimeout: ReturnType<typeof setTimeout>
 
 export function useToast() {
   const [toasts, setToasts] = useState<Toast[]>([])

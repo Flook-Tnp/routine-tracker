@@ -60,7 +60,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
                 <div className="md:px-6 md:py-4 flex-1">
                   <div 
                     className={`flex items-center gap-3 ${!isMe ? 'hud-link-active' : ''}`}
-                    onClick={() => !isMe && onSelectUser?.(user.id)}
+                    onClick={() => !isMe && user.id && onSelectUser?.(user.id)}
                   >
                     <div className={`w-8 h-8 md:w-6 md:h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
                       {user.avatar_url ? (
