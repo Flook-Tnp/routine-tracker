@@ -163,19 +163,37 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
   const handleToggleTask = async (taskId: string) => {
     if (!session || !selectedPod) return
+    
+    // 1. Optimistic Update for Checkbox
+    const existing = groupCompletions.find(c => c.task_id === taskId && c.user_id === session.user.id)
+    const oldCompletions = [...groupCompletions]
+    const oldVitals = [...podMembers]
+
+    if (existing) {
+      setGroupCompletions(groupCompletions.filter(c => c.id !== existing.id))
+      // Optimistically update vitals count
+      setPodMembers(podMembers.map(m => m.id === session.user.id ? { ...m, group_tasks_completed: Math.max(0, m.group_tasks_completed - 1) } : m))
+    } else {
+      const tempId = crypto.randomUUID()
+      setGroupCompletions([...groupCompletions, { id: tempId, task_id: taskId, user_id: session.user.id, completed_date: selectedDateStr }])
+      // Optimistically update vitals count
+      setPodMembers(podMembers.map(m => m.id === session.user.id ? { ...m, group_tasks_completed: m.group_tasks_completed + 1 } : m))
+    }
+
     try {
       await StorageService.toggleGroupTask(taskId, session.user.id, selectedDateStr)
+      // Silently refresh data in background without showing loading state
+      StorageService.fetchMemberVitals(selectedPod.id, selectedDateStr).then(vitals => {
+        if (vitals && vitals.length > 0) setPodMembers(vitals)
+      }).catch(console.error)
       
-      const existing = groupCompletions.find(c => c.task_id === taskId && c.user_id === session.user.id)
-      if (existing) {
-        setGroupCompletions(groupCompletions.filter(c => c.id !== existing.id))
-      } else {
-        setGroupCompletions([...groupCompletions, { id: Math.random().toString(), task_id: taskId, user_id: session.user.id, completed_date: selectedDateStr }])
-      }
-      
-      setTimeout(() => fetchGroupData(selectedPod.id, selectedDateStr), 500)
+      StorageService.fetchGroupTaskCompletions(selectedPod.id, selectedDateStr).then(setGroupCompletions).catch(console.error)
     } catch (err) {
       console.error('Task synchronization failed:', err)
+      // Rollback on error
+      setGroupCompletions(oldCompletions)
+      setPodMembers(oldVitals)
+      alert('SYNCHRONIZATION_ERROR: Please check your connection.')
     }
   }
 

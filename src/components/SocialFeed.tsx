@@ -55,23 +55,44 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
   const handleAddComment = async (postId: string) => {
     if (!newComment.trim() || !session) return
+    
+    const content = newComment
+    setNewComment('')
+    setCommentingOn(null)
+
     try {
-      await StorageService.addComment(postId, newComment, session.user.id)
-      setNewComment('')
-      setCommentingOn(null)
-      fetchPosts()
+      await StorageService.addComment(postId, content, session.user.id)
+      fetchPosts() // Sync with server
     } catch (err) {
       console.error('Error adding comment:', err)
+      setNewComment(content) // Restore on failure
     }
   }
 
   const handleToggleReaction = async (postId: string, emoji: string) => {
     if (!session) return
+
+    // Optimistic Update
+    const oldPosts = [...posts]
+    setPosts(posts.map(post => {
+      if (post.id !== postId) return post
+      
+      const reactions = post.reactions || []
+      const existing = reactions.find(r => r.user_id === session.user.id && r.emoji === emoji)
+      
+      if (existing) {
+        return { ...post, reactions: reactions.filter(r => r.id !== existing.id) }
+      } else {
+        return { ...post, reactions: [...reactions, { id: 'temp', post_id: postId, user_id: session.user.id, emoji }] }
+      }
+    }))
+
     try {
       await StorageService.toggleReaction(postId, emoji, session.user.id)
-      fetchPosts()
+      fetchPosts() // Sync actual IDs from server
     } catch (err: any) {
       console.error('Error toggling reaction:', err)
+      setPosts(oldPosts) // Rollback
     }
   }
 

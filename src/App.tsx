@@ -461,30 +461,36 @@ function App() {
     const currentStreak = dailyStreak 
     const xp = existing?.xp_earned ?? calculateXP(currentStreak)
 
+    // 1. Optimistic local update
+    const oldCompletions = [...completions]
+    if (existing) {
+      setCompletions(completions.filter(c => c.id !== existing.id))
+    } else {
+      const tempId = crypto.randomUUID()
+      setCompletions([...completions, { 
+        id: tempId, 
+        routine_id: routineId, 
+        completed_date: selectedDateStr,
+        xp_earned: xp 
+      }])
+    }
+
     if (session) {
       try {
         const result = await StorageService.toggleCompletion(routineId, selectedDateStr, xp, session.user.id, existing?.id)
+        
+        // Silently sync the actual result from server
         if (result) {
-          setCompletions([...completions, result])
-        } else {
-          setCompletions(completions.filter(c => c.id !== existing?.id))
+          setCompletions(prev => prev.map(c => c.routine_id === routineId && c.completed_date === selectedDateStr ? result : c))
         }
-        // Refresh profile
+
+        // Refresh profile in background without blocking
         StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
       } catch (err: any) {
         console.error('Error toggling completion:', err)
-        alert(`DATABASE_ERROR: ${err.message || 'Check if you ran the SQL script in Supabase'}`)
-      }
-    } else {
-      if (existing) {
-        setCompletions(completions.filter(c => c.id !== existing.id))
-      } else {
-        const guestCompletion: RoutineCompletion = {
-          id: crypto.randomUUID(),
-          routine_id: routineId,
-          completed_date: selectedDateStr
-        }
-        setCompletions([...completions, guestCompletion])
+        // Rollback on error
+        setCompletions(oldCompletions)
+        alert(`DATABASE_ERROR: ${err.message || 'Check connection'}`)
       }
     }
   }
