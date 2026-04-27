@@ -246,30 +246,44 @@ BEGIN
   END IF;
 
   -- 3. Live Streak Update
-  IF member_count > 1 THEN
+  IF member_count >= 1 THEN
     SELECT COUNT(DISTINCT user_id)::INT INTO active_member_count
     FROM group_task_completions gtc
     JOIN group_tasks gt ON gtc.task_id = gt.id
     WHERE gt.group_id = target_group_id AND gtc.completed_date = target_date;
 
-    IF active_member_count::FLOAT / member_count >= threshold THEN
+    IF active_member_count::FLOAT / member_count >= threshold AND active_member_count > 0 THEN
       IF last_date IS NULL OR last_date < target_date THEN
+        -- If the last success was yesterday, increment. Otherwise, reset to 1.
+        IF last_date = target_date - INTERVAL '1 day' THEN
+          streak_current := COALESCE(streak_current, 0) + 1;
+        ELSE
+          streak_current := 1;
+        END IF;
+
         UPDATE groups AS g
-        SET current_streak = COALESCE(current_streak, 0) + 1,
-            max_streak = GREATEST(COALESCE(max_streak, 0), COALESCE(current_streak, 0) + 1),
+        SET current_streak = streak_current,
+            max_streak = GREATEST(COALESCE(max_streak, 0), streak_current),
             last_streak_date = target_date
         WHERE g.id = target_group_id;
         
-        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups g WHERE g.id = target_group_id;
+        streak_max := GREATEST(COALESCE(streak_max, 0), streak_current);
       END IF;
     ELSE
+      -- Threshold NOT met for target_date
       IF last_date = target_date THEN
+        -- Someone unchecked a mission that was previously completing the goal for today
+        streak_current := GREATEST(COALESCE(streak_current, 1) - 1, 0);
         UPDATE groups AS g
-        SET current_streak = GREATEST(COALESCE(current_streak, 1) - 1, 0),
-            last_streak_date = CASE WHEN COALESCE(current_streak, 1) - 1 > 0 THEN target_date - INTERVAL '1 day' ELSE NULL END
+        SET current_streak = streak_current,
+            last_streak_date = target_date - INTERVAL '1 day'
         WHERE g.id = target_group_id;
-        
-        SELECT current_streak, max_streak INTO streak_current, streak_max FROM groups g WHERE g.id = target_group_id;
+      ELSIF last_date < target_date - INTERVAL '1 day' THEN
+        -- Streak was broken as the gap is more than one day
+        IF streak_current > 0 THEN
+          UPDATE groups AS g SET current_streak = 0 WHERE g.id = target_group_id;
+          streak_current := 0;
+        END IF;
       END IF;
     END IF;
   END IF;
