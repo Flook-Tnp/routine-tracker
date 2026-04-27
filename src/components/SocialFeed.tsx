@@ -161,10 +161,10 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
             <div key={post.id} className="bg-gray-950 border border-gray-900 p-6 space-y-4">
               <div className="flex justify-between items-start">
                 <div 
-                  className={`flex items-center gap-3 ${!isMe ? 'hud-link-active' : ''}`}
+                  className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
                   onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
                 >
-                  <div className={`w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
+                  <div className={`w-8 h-8 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/user:border-cyan-500/50'}`}>
                     {post.profiles?.avatar_url ? (
                       <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
                     ) : (
@@ -172,7 +172,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                     )}
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-white uppercase tracking-tighter transition-colors">{post.profiles?.username}</p>
+                    <p className={`text-xs font-bold text-white uppercase tracking-tighter transition-colors ${!isMe && 'group-hover/user:text-cyan-400'}`}>{post.profiles?.username}</p>
                     <p className="text-[8px] text-gray-600 uppercase font-bold">
                       {formatDistanceToNow(new Date(post.created_at))} ago
                     </p>
@@ -225,7 +225,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                   return (
                     <div key={comment.id} className="space-y-1">
                       <div 
-                        className={`flex items-center gap-2 ${!isCommentMe ? 'hud-link-active' : ''}`}
+                        className={`flex items-center gap-2 group/commenter ${isCommentMe ? 'cursor-default' : 'cursor-pointer'}`}
                         onClick={() => !isCommentMe && comment.user_id && onSelectUser?.(comment.user_id)}
                       >
                         <div className={`w-4 h-4 bg-gray-900 border border-gray-800 flex items-center justify-center text-[6px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-cyan-500/50'}`}>
@@ -235,7 +235,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                             comment.profiles?.username?.[0]
                           )}
                         </div>
-                        <span className="text-[9px] font-bold text-cyan-600 uppercase transition-colors">{comment.profiles?.username}</span>
+                        <span className={`text-[9px] font-bold text-cyan-600 uppercase transition-colors ${!isCommentMe && 'group-hover/commenter:text-cyan-400'}`}>{comment.profiles?.username}</span>
                         <span className="text-[7px] text-gray-700 font-bold uppercase">{formatDistanceToNow(new Date(comment.created_at))} ago</span>
                       </div>
                       <p className="text-[11px] text-gray-400 font-mono">{comment.content}</p>

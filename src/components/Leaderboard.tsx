@@ -58,10 +58,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
 
                 {/* User Info */}
                 <div className="md:px-6 md:py-4 flex-1">
-                  <div 
-                    className={`flex items-center gap-3 ${!isMe ? 'hud-link-active' : ''}`}
-                    onClick={() => !isMe && onSelectUser?.(user.id)}
-                  >
+                  <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 md:w-6 md:h-6 bg-gray-900 border border-gray-800 flex items-center justify-center text-[10px] font-bold text-cyan-500 uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-cyan-500/50'}`}>
                       {user.avatar_url ? (
                         <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
@@ -70,7 +67,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
                       )}
                     </div>
                     <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-3">
-                      <span className="text-sm md:text-xs text-gray-300 font-bold uppercase transition-colors">{user.username}</span>
+                      <span className={`text-sm md:text-xs text-gray-300 font-bold uppercase transition-colors ${!isMe && 'group-hover:text-cyan-400'}`}>{user.username}</span>
                       <div className="flex gap-1">
                         {user.badges?.map((badge) => (
                           <span key={badge.id} title={badge.name} className="text-xs md:text-[10px] cursor-help">{badge.icon}</span>

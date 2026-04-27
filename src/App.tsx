@@ -17,13 +17,10 @@ import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
-import { useToast, ToastContainer } from './components/Toast'
-import { ThemedDatePicker } from './components/ThemedDatePicker'
 import type { AppNotification } from './types'
 
 // Pods System Final Verification - Deployment Active
 function App() {
-  const { toasts, showToast, removeToast } = useToast()
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -149,7 +146,7 @@ function App() {
       })
     } catch (err) {
       console.error('Error fetching user data:', err)
-      showToast('PROTOCOL_ERROR: Failed to retrieve public profile data', 'error')
+      alert('PROTOCOL_ERROR: Failed to retrieve public profile data')
       setCurrentView('leaderboard')
     }
   }
@@ -295,11 +292,11 @@ function App() {
     try {
       const content = `PROTOCOL_MILESTONE: I have achieved a ${dailyStreak}-day streak in ${activeCategory}! 🔥`
       await StorageService.createPost(content, session.user.id, 'milestone', { streak: dailyStreak, category: activeCategory })
-      showToast('MILESTONE_TRANSMITTED: Achievement shared with community', 'milestone')
+      alert('MILESTONE_TRANSMITTED: Your achievement has been shared with the community.')
       setCurrentView('social')
     } catch (err: any) {
       console.error('Error sharing streak:', err)
-      showToast(`SHARE_FAILURE: ${err.message}`, 'error')
+      alert(`SHARE_FAILURE: ${err.message}`)
     }
   }
 
@@ -485,7 +482,6 @@ function App() {
         // Silently sync the actual result from server
         if (result) {
           setCompletions(prev => prev.map(c => c.routine_id === routineId && c.completed_date === selectedDateStr ? result : c))
-          showToast('PROTOCOL_SYNCHRONIZED', 'success', 2000)
         }
 
         // Refresh profile in background without blocking
@@ -494,7 +490,7 @@ function App() {
         console.error('Error toggling completion:', err)
         // Rollback on error
         setCompletions(oldCompletions)
-        showToast(`DATABASE_ERROR: ${err.message || 'Check connection'}`, 'error')
+        alert(`DATABASE_ERROR: ${err.message || 'Check connection'}`)
       }
     }
   }
@@ -513,13 +509,6 @@ function App() {
       percentage: Math.round((completed / total) * 100)
     }
   }, [filteredRoutines, completions, selectedDateStr])
-
-  // Success Celebration Effect
-  useEffect(() => {
-    if (dailyStats.percentage === 100 && dailyStats.total > 0) {
-      showToast(`${activeCategory.toUpperCase()}_PROTOCOL_OPTIMIZED: 100% Efficiency Reached`, 'milestone')
-    }
-  }, [dailyStats.percentage, dailyStats.total, activeCategory])
 
   const { dailyStreak, weeklyStreak } = useMemo(() => {
     try {
@@ -858,17 +847,10 @@ function App() {
                 </button>
                 {session && (
                   <button
-                    onClick={() => {
-                      if (currentView === 'profile' && viewedProfileId) {
-                        setViewedProfileId(null)
-                      } else {
-                        setViewedProfileId(null)
-                        setCurrentView('profile')
-                      }
-                    }}
-                    className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
+                    onClick={() => { setViewedProfileId(null); setCurrentView('profile'); }}
+                    className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                   >
-                    {currentView === 'profile' && viewedProfileId ? 'Back_to_Me' : 'Profile'}
+                    Profile
                   </button>
                 )}
               </div>
@@ -938,11 +920,13 @@ function App() {
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
                     </button>
                     {showDatePicker && (
-                      <ThemedDatePicker
-                        selectedDate={selectedDate}
-                        onChange={setSelectedDate}
-                        onClose={() => setShowDatePicker(false)}
-                      />
+                      <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-black border border-gray-800 p-4 shadow-2xl min-w-[240px]">
+                        <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-gray-900 text-white text-sm p-3 border border-gray-800 focus:outline-none focus:border-cyan-500 mb-4" />
+                        <div className="flex gap-2">
+                          <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-cyan-500 text-black font-black uppercase tracking-widest">Confirm</button>
+                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-gray-800 text-white font-black uppercase tracking-widest">Today</button>
+                        </div>
+                      </div>
                     )}
                   </div>
                   <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 text-gray-600 hover:text-cyan-400 border border-gray-900 md:border-0"><ChevronRight size={20} /></button>
@@ -1055,7 +1039,7 @@ function App() {
                   </button>
                 )}
                 {activeCategory === cat && !editingCategory && (
-                  <div className="flex animate-in slide-in-from-left-2 duration-200">
+                  <div className="flex">
                     {cat !== 'General' && (
                       <button 
                         onClick={() => {
@@ -1079,10 +1063,8 @@ function App() {
                               if (session) {
                                 try {
                                   await StorageService.deleteCategory(cat)
-                                  showToast('SECTION_TERMINATED', 'info')
                                 } catch (err) {
                                   console.error('Error deleting category:', err)
-                                  showToast('TERMINATION_FAILURE', 'error')
                                 }
                               }
                               setRoutines(routines.filter(r => r.category !== cat))
@@ -1437,8 +1419,6 @@ function App() {
       />
     )}      </div>
 
-      <ToastContainer toasts={toasts} onClose={removeToast} />
-
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
       {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}
       
@@ -1484,32 +1464,22 @@ function App() {
             <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
           </button>
           <button
-            onClick={() => {
-              if (currentView === 'pods' && selectedPod) {
-                setSelectedPod(null)
-              } else {
-                setCurrentView('pods')
-              }
-            }}
+            onClick={() => setCurrentView('pods')}
             className={`nav-btn ${currentView === 'pods' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <Users size={22} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{currentView === 'pods' && selectedPod ? 'Back' : 'Pods'}</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Pods</span>
           </button>
           {session && (
             <button
               onClick={() => {
-                if (currentView === 'profile' && viewedProfileId) {
-                  setViewedProfileId(null)
-                } else {
-                  setViewedProfileId(null)
-                  setCurrentView('profile')
-                }
+                setViewedProfileId(null)
+                setCurrentView('profile')
               }}
-              className={`nav-btn ${currentView === 'profile' ? 'text-cyan-400' : 'text-gray-600'}`}
+              className={`nav-btn ${currentView === 'profile' && !viewedProfileId ? 'text-cyan-400' : 'text-gray-600'}`}
             >
-              <CircleUser size={22} className={currentView === 'profile' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-              <span className="text-[8px] font-black uppercase tracking-widest">{currentView === 'profile' && viewedProfileId ? 'Back' : 'Profile'}</span>
+              <CircleUser size={22} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
+              <span className="text-[8px] font-black uppercase tracking-widest">Profile</span>
             </button>
           )}
         </div>

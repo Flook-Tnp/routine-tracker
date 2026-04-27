@@ -328,10 +328,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   return (
                     <div key={member.id} className={`relative bg-black border ${isDone ? 'border-cyan-500/30 bg-cyan-500/[0.02]' : 'border-gray-900'} p-4 space-y-4 group/card transition-all hover:border-gray-700 shadow-sm`}>
                       <div className="flex items-center gap-3 pr-8">
-                        <div 
-                          className={`flex items-center gap-3 flex-1 min-w-0 ${!isMe ? 'hud-link-active' : ''}`} 
-                          onClick={() => !isMe && member.id && onSelectUser?.(member.id)}
-                        >
+                        <div className={`flex items-center gap-3 flex-1 min-w-0 ${!isMe && 'cursor-pointer active:scale-95 transition-transform'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
                           <div className="w-10 h-10 bg-gray-900 border border-gray-800 flex items-center justify-center overflow-hidden shadow-lg flex-shrink-0">
                             {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-sm font-black text-gray-600">{member.username?.[0]?.toUpperCase()}</span>}
                           </div>
