@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType } from '../types'
-import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy } from 'lucide-react'
+import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
+import Cropper from 'react-easy-crop'
+import getCroppedImg from '../lib/image'
 
 interface ProfileProps {
   profile: ProfileType | null
@@ -19,6 +21,12 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
+  // Cropping State
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+
   // Count unique physical days for the UI check as well
   const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
 
@@ -91,6 +99,10 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }, [dailyStreak, profile?.total_xp])
 
+  const onCropComplete = useCallback((_preventedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels)
+  }, [])
+
   if (!profile) return (
     <div className="text-center py-20 space-y-6">
       <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
@@ -123,16 +135,31 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isPublic) return
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const reader = new FileReader()
+    reader.addEventListener('load', () => {
+      setImageToCrop(reader.result as string)
+    })
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveCrop = async () => {
+    if (!imageToCrop || !croppedAreaPixels || !profile) return
+
     try {
       setIsUploading(true)
+      const croppedImageBlob = await getCroppedImg(imageToCrop, croppedAreaPixels)
+      if (!croppedImageBlob) throw new Error('Could not crop image')
+
+      const file = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' })
       const url = await StorageService.uploadAvatar(profile.id, file)
       await StorageService.updateProfile(profile.id, { avatar_url: url })
+      
       if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: url })
+      setImageToCrop(null)
     } catch (err: any) {
       console.error('Upload failed:', err)
       alert(`UPLOAD_FAILURE: ${err.message || 'Check Supabase Storage settings'}`)
@@ -169,6 +196,72 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           <X size={14} /> [Exit_Neural_Link]
         </button>
       )}
+
+      {/* Cropper Modal */}
+      {imageToCrop && (
+        <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+          <div className="w-full max-w-xl bg-gray-950 border border-gray-800 shadow-2xl relative overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-900 flex justify-between items-center bg-black/50">
+              <span className="text-[10px] uppercase font-black text-cyan-500 tracking-[0.3em] flex items-center gap-2">
+                <Scissors size={14} /> [Identity_Adjustment_Protocol]
+              </span>
+              <button onClick={() => setImageToCrop(null)} className="text-gray-600 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="relative h-[300px] md:h-[400px] bg-black">
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            </div>
+
+            <div className="p-6 space-y-6 bg-gray-950">
+              <div className="space-y-3">
+                <div className="flex justify-between text-[8px] uppercase font-black text-gray-600 tracking-widest">
+                  <span>Zoom_Magnitude</span>
+                  <span>{Math.round(zoom * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-1 bg-gray-900 rounded-none appearance-none cursor-pointer accent-cyan-500"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={handleSaveCrop}
+                  disabled={isUploading}
+                  className="flex-1 py-4 bg-cyan-500 text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isUploading ? 'SYNCHRONIZING...' : 'ESTABLISH_NEURAL_LINK'}
+                </button>
+                <button 
+                  onClick={() => setImageToCrop(null)}
+                  className="px-8 py-4 bg-gray-900 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-white transition-all active:scale-[0.98]"
+                >
+                  ABORT
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <section className="text-center space-y-6">
         <div className="relative inline-block">
           <div className="p-1.5 border border-cyan-500/30 rounded-full mb-2 overflow-hidden bg-gray-950">
@@ -204,7 +297,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           <input 
             type="file" 
             ref={fileInputRef} 
-            onChange={handleAvatarUpload} 
+            onChange={handleFileChange} 
             accept="image/*" 
             className="hidden" 
           />
