@@ -255,7 +255,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="{t('feed.add_comment')}"
+                  placeholder={t('feed.add_comment')}
                   className="flex-1 bg-black border border-gray-900 px-3 py-1 text-[10px] font-mono text-gray-400 focus:outline-none focus:border-cyan-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                 />

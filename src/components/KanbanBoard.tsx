@@ -45,7 +45,7 @@ export function KanbanBoard({
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="{t('board.new_task')}"
+            placeholder={t('board.new_task')}
             className="flex-1 input-primary text-sm font-mono"
           />
           <button type="submit" className="btn-primary">

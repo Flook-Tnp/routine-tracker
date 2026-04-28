@@ -266,7 +266,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                             type="text"
                             value={newTaskTitle}
                             onChange={(e) => setNewTaskTitle(e.target.value)}
-                            placeholder="{t('pods.new_mission')}"
+                            placeholder={t('pods.new_mission')}
                             className="flex-1 input-primary text-sm py-3"
                           />
                           <div className="flex gap-2">
@@ -276,7 +276,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                         </form>
                       ) : (
                         <button onClick={() => setIsAddingTask(true)} className="w-full py-4 border border-dashed border-gray-800 text-[10px] font-black uppercase text-gray-600 hover:text-cyan-500 hover:border-cyan-500/30 transition-all bg-black/20 flex items-center justify-center gap-2 active:scale-[0.98]">
-                          <Plus size={14} /> Add_Mission_Protocol
+                          <Plus size={14} /> {t('pods.add_mission')}
                         </button>
                       )}
                     </div>

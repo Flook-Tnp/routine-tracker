@@ -1163,11 +1163,11 @@ function App() {
                 type="text" 
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="{t('action.enter_category_name')}"
+                placeholder={t('action.enter_category_name')}
                 className="flex-1 input-primary text-[10px] uppercase tracking-widest py-3"
               />
               <button type="submit" className="bg-gray-800 text-white px-6 py-1 text-[10px] font-black hover:bg-cyan-600 transition-all uppercase tracking-widest">
-                CONFIRM
+                {t('common.confirm')}
               </button>
             </form>
           )}
