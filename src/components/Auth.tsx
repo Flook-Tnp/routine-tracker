@@ -8,22 +8,25 @@ interface AuthModalProps {
 
 export function AuthModal({ onClose }: AuthModalProps) {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(true)
+  const [email, setEmail] = useState(() => localStorage.getItem('disby_remember_email') || '')
+  const [password, setPassword] = useState(() => localStorage.getItem('disby_remember_password') || '')
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('disby_remember_me') !== 'false')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
 
-  // Load remembered credentials on mount
+  // Save credentials in real-time if Remember Me is checked
   useEffect(() => {
-    const savedEmail = localStorage.getItem('disby_remember_email')
-    const savedPassword = localStorage.getItem('disby_remember_password')
-    if (savedEmail && savedPassword) {
-      setEmail(savedEmail)
-      setPassword(savedPassword)
+    if (rememberMe) {
+      localStorage.setItem('disby_remember_email', email)
+      localStorage.setItem('disby_remember_password', password)
+      localStorage.setItem('disby_remember_me', 'true')
+    } else {
+      localStorage.removeItem('disby_remember_email')
+      localStorage.removeItem('disby_remember_password')
+      localStorage.setItem('disby_remember_me', 'false')
     }
-  }, [])
+  }, [email, password, rememberMe])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -38,14 +41,6 @@ export function AuthModal({ onClose }: AuthModalProps) {
           password,
         })
         if (error) throw error
-
-        if (rememberMe) {
-          localStorage.setItem('disby_remember_email', email)
-          localStorage.setItem('disby_remember_password', password)
-        } else {
-          localStorage.removeItem('disby_remember_email')
-          localStorage.removeItem('disby_remember_password')
-        }
 
         onClose()
       } else {
