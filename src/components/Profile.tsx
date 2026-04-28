@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { format, subDays } from 'date-fns'
 import { StorageService } from '../lib/storage'
-import type { Routine, Profile as ProfileType } from '../types'
+import type { Routine, Profile as ProfileType, RoutineCompletion } from '../types'
 import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../lib/image'
@@ -21,6 +22,9 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
+  const [completions, setCompletions] = useState<RoutineCompletion[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
   // Cropping State
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
@@ -40,12 +44,13 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   // Count unique physical days for the UI check
   useEffect(() => {
     if (profile?.id) {
-      StorageService.fetchCompletions(profile.id).then(completions => {
-        if (!Array.isArray(completions)) return
+      StorageService.fetchCompletions(profile.id).then(fetchedCompletions => {
+        if (!Array.isArray(fetchedCompletions)) return
+        setCompletions(fetchedCompletions)
         const count = new Set(
-          completions
-            .filter(c => c && c.created_at)
-            .map(c => c.created_at!.split('T')[0])
+          fetchedCompletions
+            .filter(c => c && c.completed_date)
+            .map(c => c.completed_date)
         ).size
         setUniqueLoggingDays(count)
       }).catch(err => console.error('Failed to fetch completions for streak check:', err))
@@ -98,6 +103,36 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       checkMilestones()
     }
   }, [dailyStreak, profile?.total_xp])
+
+  const categoryStreaks = useMemo(() => {
+    const streaks: Record<string, number> = {}
+    const cats = Array.from(new Set((routines || []).map(r => r.category || 'General')))
+    
+    cats.forEach(cat => {
+      const categoryRoutines = routines.filter(r => (r.category || 'General') === cat)
+      const categoryRoutineIds = new Set(categoryRoutines.map(r => r.id))
+      const doneDates = new Set(
+        completions
+          .filter(c => categoryRoutineIds.has(c.routine_id))
+          .map(c => c.completed_date)
+      )
+
+      let streak = 0
+      let checkDate = new Date()
+      const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
+
+      if (!isDateFinished(checkDate)) checkDate = subDays(checkDate, 1)
+      while (isDateFinished(checkDate)) {
+        streak++
+        checkDate = subDays(checkDate, 1)
+        if (streak > 10000) break 
+      }
+      streaks[cat] = streak
+    })
+    return streaks
+  }, [routines, completions])
+
+  const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
 
   const onCropComplete = useCallback((_preventedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -184,8 +219,6 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }
 
-  const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
-  
   return (
     <div className="space-y-12 view-enter">
       {isPublic && (
@@ -375,11 +408,29 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       <section className="space-y-4">
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Active_Neural_Sectors</h3>
         <div className="flex flex-wrap gap-2">
-          {categoriesList.map(cat => (
-            <span key={cat} className="px-4 py-2 bg-gray-950 border border-gray-800 text-[10px] uppercase tracking-widest text-gray-300 font-black shadow-sm">
-              {cat}
-            </span>
-          ))}
+          {categoriesList.map(cat => {
+            const isSelected = selectedCategory === cat
+            const streak = categoryStreaks[cat] || 0
+            return (
+              <button 
+                key={cat} 
+                onClick={() => setSelectedCategory(isSelected ? null : cat)}
+                className={`px-4 py-2 border text-[10px] uppercase tracking-widest font-black shadow-sm transition-all flex items-center gap-2 active:scale-95 ${
+                  isSelected 
+                    ? 'bg-cyan-500 border-cyan-500 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)]' 
+                    : 'bg-gray-950 border-gray-800 text-gray-300 hover:border-gray-600'
+                }`}
+              >
+                {cat}
+                {isSelected && (
+                  <span className="flex items-center gap-1 border-l border-black/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
+                    <Flame size={12} fill="currentColor" />
+                    {streak}
+                  </span>
+                )}
+              </button>
+            )
+          })}
           {categoriesList.length === 0 && (
             <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-bold">No active sectors established</p>
           )}
