@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { format, subDays } from 'date-fns'
+import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType, RoutineCompletion } from '../types'
 import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
@@ -104,8 +104,9 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     }
   }, [dailyStreak, profile?.total_xp])
 
-  const categoryStreaks = useMemo(() => {
+  const { categoryStreaks, categoryWeeklyStreaks } = useMemo(() => {
     const streaks: Record<string, number> = {}
+    const wStreaks: Record<string, number> = {}
     const cats = Array.from(new Set((routines || []).map(r => r.category || 'General')))
     
     cats.forEach(cat => {
@@ -117,6 +118,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           .map(c => c.completed_date)
       )
 
+      // Calculate Daily Streak
       let streak = 0
       let checkDate = new Date()
       const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
@@ -128,8 +130,29 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         if (streak > 10000) break 
       }
       streaks[cat] = streak
+
+      // Calculate Weekly Streak (3+ completions per week)
+      let wStreak = 0
+      const isWeekSuccessful = (dateInWeek: Date) => {
+        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay()))
+        const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
+        let activeDaysCount = 0
+        weekDays.forEach(d => {
+          if (doneDates.has(format(d, 'yyyy-MM-dd'))) activeDaysCount++
+        })
+        return activeDaysCount >= 3
+      }
+      
+      let currentCheck = new Date()
+      if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
+      while (isWeekSuccessful(currentCheck)) {
+        wStreak++
+        currentCheck = subDays(currentCheck, 7)
+        if (wStreak > 500) break
+      }
+      wStreaks[cat] = wStreak
     })
-    return streaks
+    return { categoryStreaks: streaks, categoryWeeklyStreaks: wStreaks }
   }, [routines, completions])
 
   const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
@@ -411,6 +434,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
           {categoriesList.map(cat => {
             const isSelected = selectedCategory === cat
             const streak = categoryStreaks[cat] || 0
+            const wStreak = categoryWeeklyStreaks[cat] || 0
             return (
               <button 
                 key={cat} 
@@ -423,10 +447,16 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
               >
                 {cat}
                 {isSelected && (
-                  <span className="flex items-center gap-1 border-l border-black/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
-                    <Flame size={12} fill="currentColor" />
-                    {streak}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="flex items-center gap-1 border-l border-black/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
+                      <Flame size={12} fill="currentColor" />
+                      {streak}
+                    </span>
+                    <span className="flex items-center gap-1 border-l border-black/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
+                      <Trophy size={12} />
+                      {wStreak}
+                    </span>
+                  </div>
                 )}
               </button>
             )
