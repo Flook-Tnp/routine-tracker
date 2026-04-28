@@ -137,7 +137,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
             <textarea
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
-              placeholder="{t('feed.placeholder')}"
+              placeholder={t('feed.placeholder')}
               className="w-full bg-gray-950 border border-gray-900 p-4 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500 h-24 resize-none"
             />
             <div className="flex justify-end">
@@ -146,7 +146,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 className="flex items-center gap-2 bg-white text-black px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-cyan-500 hover:text-white transition-all"
               >
                 <Send size={12} />
-                Transmit
+                {t('feed.post')}
               </button>
             </div>
           </form>
