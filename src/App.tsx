@@ -54,6 +54,41 @@ function App() {
   const [confirmDelete, setConfirmDelete] = useState<{ isOpen: boolean; title: string; message: string; onConfirm: () => void } | null>(null)
   const lastUserId = useRef<string | undefined>(undefined)
   const dateStripRef = useRef<HTMLDivElement>(null)
+  const notificationsRefDesktop = useRef<HTMLDivElement>(null)
+  const notificationsRefMobile = useRef<HTMLDivElement>(null)
+  const datePickerRef = useRef<HTMLDivElement>(null)
+
+  // Click outside handlers
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (showNotifications) {
+        const isOutsideDesktop = notificationsRefDesktop.current && !notificationsRefDesktop.current.contains(event.target as Node)
+        const isOutsideMobile = notificationsRefMobile.current && !notificationsRefMobile.current.contains(event.target as Node)
+        
+        // On mobile, the desktop ref won't exist or be visible, and vice-versa
+        // We only close if it's outside BOTH if both exist, or outside the one that exists
+        const outsideAllNotifications = (!notificationsRefDesktop.current || isOutsideDesktop) && 
+                                       (!notificationsRefMobile.current || isOutsideMobile)
+        
+        if (outsideAllNotifications) {
+          setShowNotifications(false)
+        }
+      }
+
+      if (showDatePicker) {
+        if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+          setShowDatePicker(false)
+        }
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('touchstart', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+      document.removeEventListener('touchstart', handleClickOutside)
+    }
+  }, [showNotifications, showDatePicker])
 
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
@@ -769,7 +804,7 @@ function App() {
                 <h1 className="text-2xl font-black text-white tracking-tighter uppercase">DISBY</h1>
                 <div className="flex items-center gap-2">
 
-                  <div className="relative">
+                  <div className="relative" ref={notificationsRefDesktop}>
                     <button 
                       onClick={handleToggleNotifications}
                       className={`relative p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
@@ -863,7 +898,7 @@ function App() {
                 <div className="flex md:hidden items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
-                    <div className="relative">
+                    <div className="relative" ref={notificationsRefMobile}>
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} /></button>
                       {showNotifications && (
                         <div className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
@@ -914,7 +949,7 @@ function App() {
                 {/* Date Controls */}
                 <div className="flex items-center gap-2">
                   <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 text-gray-600 hover:text-cyan-400 border border-gray-900 md:border-0"><ChevronLeft size={20} /></button>
-                  <div className="relative flex-1 md:flex-none">
+                  <div className="relative flex-1 md:flex-none" ref={datePickerRef}>
                     <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-cyan-400 bg-cyan-950/20 px-4 py-2 border border-cyan-500/30 hover:bg-cyan-900/40 text-xs font-bold uppercase tracking-widest transition-all">
                       <CalendarIcon size={16} />
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
