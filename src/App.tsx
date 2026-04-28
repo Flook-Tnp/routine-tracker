@@ -877,38 +877,38 @@ function App() {
                   onClick={() => setCurrentView('tracker')}
                   className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'tracker' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Tracker
+                  {t('nav.tracker')}
                 </button>
                 <button
                   onClick={() => setCurrentView('board')}
                   className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'board' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Board
+                  {t('nav.board')}
                 </button>
                 <button
                   onClick={() => setCurrentView('leaderboard')}
                   className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'leaderboard' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Rank
+                  {t('nav.rank')}
                 </button>
                 <button
                   onClick={() => setCurrentView('social')}
                   className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Global
+                  {t('nav.global')}
                 </button>
                 <button
                   onClick={() => setCurrentView('pods')}
                   className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                 >
-                  Pods
+                  {t('nav.pods')}
                 </button>
                 {session && (
                   <button
                     onClick={() => { setViewedProfileId(null); setCurrentView('profile'); }}
                     className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-cyan-500 text-black shadow-[0_0_10px_rgba(6,182,212,0.3)]' : 'text-gray-500 hover:text-gray-300'}`}
                   >
-                    Profile
+                    {t('nav.profile')}
                   </button>
                 )}
               </div>
