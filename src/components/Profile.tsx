@@ -16,6 +16,27 @@ interface ProfileProps {
   onBack?: () => void
 }
 
+const STREAK_MILESTONES = [
+  { id: 'Streak_3', name: 'Spark', count: 3, icon: '✨' },
+  { id: 'Streak_7', name: 'Ignition', count: 7, icon: '🔥' },
+  { id: 'Streak_30', name: 'Flame', count: 30, icon: '🔥' },
+  { id: 'Streak_100', name: 'Bonfire', count: 100, icon: '🔥' },
+  { id: 'Streak_365', name: 'Inferno', count: 365, icon: '🔥' },
+  { id: 'Streak_730', name: 'Supernova', count: 730, icon: '💥' },
+  { id: 'Streak_1000', name: 'Solar Flare', count: 1000, icon: '☀️' },
+  { id: 'Streak_1825', name: 'Stellar Core', count: 1825, icon: '💎' }
+]
+
+const XP_MILESTONES = [
+  { id: 'XP_1000', name: 'Initiate', count: 1000, icon: '💎' },
+  { id: 'XP_5000', name: 'Adept', count: 5000, icon: '💎' },
+  { id: 'XP_10000', name: 'Veteran', count: 10000, icon: '💎' },
+  { id: 'XP_25000', name: 'Elite', count: 25000, icon: '⚔️' },
+  { id: 'XP_50000', name: 'Master', count: 50000, icon: '🏆' },
+  { id: 'XP_100000', name: 'Grandmaster', count: 100000, icon: '👑' },
+  { id: 'XP_250000', name: 'Legend', count: 250000, icon: '🌌' }
+]
+
 export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
   const [isEditing, setIsEditing] = useState(false)
   const [newUsername, setNewUsername] = useState(profile?.username || '')
@@ -33,6 +54,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
 
   // Count unique physical days for the UI check as well
   const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
+  const [showTrophyRoom, setShowTrophyRoom] = useState<'streak' | 'xp' | null>(null)
 
   // Update local state when profile changes (essential when switching between users)
   useEffect(() => {
@@ -74,10 +96,8 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     ).size
 
     const milestones = [
-      { id: 'Streak_7', name: 'Streak 7', icon: '🔥', check: dailyStreak >= 7 && completionsCount >= 7 },
-      { id: 'Streak_30', name: 'Streak 30', icon: '🔥', check: dailyStreak >= 30 && completionsCount >= 30 },
-      { id: 'Streak_100', name: 'Streak 100', icon: '🔥', check: dailyStreak >= 100 && completionsCount >= 100 },
-      { id: 'XP_1000', name: 'XP 1000', icon: '💎', check: (profile.total_xp || 0) >= 1000 }
+      ...STREAK_MILESTONES.map(m => ({ ...m, check: dailyStreak >= m.count && completionsCount >= m.count })),
+      ...XP_MILESTONES.map(m => ({ ...m, check: (profile.total_xp || 0) >= m.count }))
     ]
 
     milestones.forEach(m => {
@@ -160,6 +180,20 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   const onCropComplete = useCallback((_preventedArea: any, croppedAreaPixels: any) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }, [])
+
+  // Achievement Logic: Evolving Badges
+  const streakProgress = useMemo(() => {
+    const highest = [...STREAK_MILESTONES].reverse().find(m => dailyStreak >= m.count && uniqueLoggingDays >= m.count)
+    const next = STREAK_MILESTONES.find(m => dailyStreak < m.count || uniqueLoggingDays < m.count)
+    return { current: highest, next }
+  }, [dailyStreak, uniqueLoggingDays])
+
+  const xpProgress = useMemo(() => {
+    const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
+    const highest = [...XP_MILESTONES].reverse().find(m => totalXp >= m.count)
+    const next = XP_MILESTONES.find(m => totalXp < m.count)
+    return { current: highest, next }
+  }, [profile?.lifetime_xp, profile?.total_xp])
 
   if (!profile) return (
     <div className="text-center py-20 space-y-6">
@@ -469,23 +503,82 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
 
       <section className="space-y-4">
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Achievement_Protocol</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { id: 'Streak_7', label: 'Streak 7', check: dailyStreak >= 7 && uniqueLoggingDays >= 7 },
-            { id: 'Streak_30', label: 'Streak 30', check: dailyStreak >= 30 && uniqueLoggingDays >= 30 },
-            { id: 'Streak_100', label: 'Streak 100', check: dailyStreak >= 100 && uniqueLoggingDays >= 100 },
-            { id: 'XP_1000', label: 'XP 1000', check: (profile.total_xp || 0) >= 1000 }
-          ].map(badge => {
-            const isEarned = badge.check || profile.badges?.some((b) => b.id.toLowerCase() === badge.id.toLowerCase())
-            return (
-              <div key={badge.id} className={`p-6 border text-center space-y-3 transition-all duration-500 ${isEarned ? 'bg-cyan-500/5 border-cyan-500/40 shadow-[0_0_20px_rgba(6,182,212,0.1)]' : 'bg-gray-950/30 border-gray-900 grayscale opacity-40 hover:grayscale-0 hover:opacity-100'}`}>
-                <div className="text-3xl mb-1">
-                  {badge.id.includes('Streak') ? '🔥' : '💎'}
-                </div>
-                <p className={`text-[10px] uppercase font-black tracking-widest ${isEarned ? 'text-cyan-400' : 'text-gray-500'}`}>{badge.label}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Streak Evolving Badge */}
+          <button 
+            onClick={() => setShowTrophyRoom('streak')}
+            className="group relative bg-gray-950/30 border border-gray-900 p-6 flex flex-col items-center gap-4 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/[0.02] overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Trophy size={12} className="text-cyan-500" />
+            </div>
+            
+            <div className="relative">
+              <div className="text-5xl mb-2 drop-shadow-[0_0_15px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform duration-500">
+                {streakProgress.current?.icon || '⏳'}
               </div>
-            )
-          })}
+            </div>
+
+            <div className="text-center space-y-1">
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">Consistancy_Protocol</p>
+              <h4 className="text-xl font-black text-white uppercase tracking-tighter">
+                {streakProgress.current?.name || 'Initiating...'}
+              </h4>
+            </div>
+
+            {streakProgress.next && (
+              <div className="w-full space-y-2 mt-2">
+                <div className="flex justify-between text-[8px] uppercase font-black tracking-widest text-gray-600">
+                  <span>Next: {streakProgress.next.name}</span>
+                  <span>{dailyStreak} / {streakProgress.next.count} Days</span>
+                </div>
+                <div className="h-1 w-full bg-gray-900 overflow-hidden">
+                  <div 
+                    className="h-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)] transition-all duration-1000"
+                    style={{ width: `${Math.min(100, (dailyStreak / streakProgress.next.count) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </button>
+
+          {/* XP Evolving Badge */}
+          <button 
+            onClick={() => setShowTrophyRoom('xp')}
+            className="group relative bg-gray-950/30 border border-gray-900 p-6 flex flex-col items-center gap-4 transition-all hover:border-cyan-500/50 hover:bg-cyan-500/[0.02] overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Trophy size={12} className="text-cyan-500" />
+            </div>
+
+            <div className="relative">
+              <div className="text-5xl mb-2 drop-shadow-[0_0_15px_rgba(6,182,212,0.3)] group-hover:scale-110 transition-transform duration-500">
+                {xpProgress.current?.icon || '💎'}
+              </div>
+            </div>
+
+            <div className="text-center space-y-1">
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">Accumulation_Protocol</p>
+              <h4 className="text-xl font-black text-white uppercase tracking-tighter">
+                {xpProgress.current?.name || 'Initiating...'}
+              </h4>
+            </div>
+
+            {xpProgress.next && (
+              <div className="w-full space-y-2 mt-2">
+                <div className="flex justify-between text-[8px] uppercase font-black tracking-widest text-gray-600">
+                  <span>Next: {xpProgress.next.name}</span>
+                  <span>{(profile?.lifetime_xp || profile?.total_xp || 0).toLocaleString()} / {xpProgress.next.count.toLocaleString()} XP</span>
+                </div>
+                <div className="h-1 w-full bg-gray-900 overflow-hidden">
+                  <div 
+                    className="h-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.5)] transition-all duration-1000"
+                    style={{ width: `${Math.min(100, ((profile?.lifetime_xp || profile?.total_xp || 0) / xpProgress.next.count) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </button>
         </div>
       </section>
 
@@ -500,6 +593,70 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             [Terminate_Session]
           </button>
         </section>
+      )}
+
+      {/* Trophy Room Modal */}
+      {showTrophyRoom && (
+        <div className="fixed inset-0 z-[110] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="w-full max-w-2xl bg-gray-950 border border-gray-900 shadow-2xl flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-gray-900 flex justify-between items-center bg-black/50">
+              <span className="text-[10px] uppercase font-black text-cyan-500 tracking-[0.3em] flex items-center gap-2">
+                <Trophy size={14} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
+              </span>
+              <button onClick={() => setShowTrophyRoom(null)} className="text-gray-600 hover:text-white transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
+              {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
+                const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
+                const isEarned = showTrophyRoom === 'streak' 
+                  ? (dailyStreak >= m.count && uniqueLoggingDays >= m.count)
+                  : (totalXp >= m.count)
+                
+                return (
+                  <div 
+                    key={m.id}
+                    className={`p-4 border flex items-center gap-6 transition-all duration-500 ${
+                      isEarned 
+                        ? 'bg-cyan-500/5 border-cyan-500/30' 
+                        : 'bg-gray-950/50 border-gray-900/50 opacity-40 grayscale'
+                    }`}
+                  >
+                    <div className="text-4xl">{m.icon}</div>
+                    <div className="flex-1">
+                      <h5 className={`text-sm font-black uppercase tracking-widest ${isEarned ? 'text-cyan-400' : 'text-gray-600'}`}>
+                        {m.name}
+                      </h5>
+                      <p className="text-[10px] text-gray-700 font-mono">
+                        Requirement: {m.count.toLocaleString()} {showTrophyRoom === 'streak' ? 'Days' : 'XP'}
+                      </p>
+                    </div>
+                    {isEarned ? (
+                      <div className="px-2 py-1 bg-cyan-500 text-black text-[8px] font-black uppercase tracking-widest">
+                        Unlocked
+                      </div>
+                    ) : (
+                      <div className="text-[8px] text-gray-800 font-black uppercase tracking-widest">
+                        Locked
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
+            <div className="p-4 border-t border-gray-900 bg-black/30">
+              <button 
+                onClick={() => setShowTrophyRoom(null)}
+                className="w-full py-3 bg-gray-900 text-gray-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-colors"
+              >
+                Close_Archive
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
