@@ -619,21 +619,19 @@ function App() {
       
       return filteredRoutines.map(routine => {
         const taskCompletions = completions.filter(c => c.routine_id === routine.id)
+        if (taskCompletions.length === 0) return { title: routine.title, percentage: 0, startDate: 'N/A', totalCompletions: 0, activeDays: 0 }
+
+        const dates = taskCompletions.map(c => parseISO(c.completed_date)).filter(d => !isNaN(d.getTime()))
+        if (dates.length === 0) return { title: routine.title, percentage: 0, startDate: 'N/A', totalCompletions: 0, activeDays: 0 }
         
-        // Use created_at as the start date, fallback to first completion or today if missing
-        const startDate = routine.created_at ? parseISO(routine.created_at) : (
-          taskCompletions.length > 0 
-            ? parseISO(taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date))
-            : new Date()
-        )
-        const start = startOfDay(startDate)
+        const firstDate = startOfDay(dates.reduce((a, b) => a < b ? a : b))
         const today = startOfDay(new Date())
-        const activeDays = eachDayOfInterval({ start, end: today }).length
+        const activeDays = eachDayOfInterval({ start: firstDate, end: today }).length
 
         return {
           title: routine.title,
           percentage: Math.round((taskCompletions.length / activeDays) * 100),
-          startDate: format(start, 'MMM d, yyyy'),
+          startDate: format(firstDate, 'MMM d, yyyy'),
           totalCompletions: taskCompletions.length,
           activeDays
         }
@@ -651,11 +649,12 @@ function App() {
       const totalPercentage = taskBreakdown.reduce((acc, task) => acc + task.percentage, 0)
       const averagePercentage = Math.round(totalPercentage / taskBreakdown.length)
       
-      // Calculate overall total days since the oldest relevant routine was created
-      const relevantRoutines = filteredRoutines
-      const dates = relevantRoutines.map(r => parseISO(r.created_at)).filter(d => !isNaN(d.getTime()))
-      const oldestDate = dates.length > 0 ? dates.reduce((a, b) => a < b ? a : b) : new Date()
-      const totalDays = eachDayOfInterval({ start: startOfDay(oldestDate), end: startOfDay(new Date()) }).length
+      const relevantCompletions = completions.filter(c => 
+        filteredRoutines.some(r => r.id === c.routine_id)
+      )
+      const dates = relevantCompletions.map(c => parseISO(c.completed_date)).filter(d => !isNaN(d.getTime()))
+      const firstDate = dates.length > 0 ? dates.reduce((a, b) => a < b ? a : b) : new Date()
+      const totalDays = eachDayOfInterval({ start: startOfDay(firstDate), end: startOfDay(new Date()) }).length
 
       return {
         totalDays,
@@ -665,7 +664,7 @@ function App() {
       console.error('Error in lifetimeStats:', err)
       return { totalDays: 0, percentage: 0 }
     }
-  }, [taskBreakdown, filteredRoutines])
+  }, [taskBreakdown, completions, filteredRoutines])
 
   const lifetimeChartData = useMemo(() => {
     try {
@@ -676,6 +675,21 @@ function App() {
       
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
+
+      const timelineCompletions = completions.filter(c => 
+        timelineRoutines.some(r => r.id === c.routine_id)
+      )
+
+      const dates = timelineCompletions.map(c => parseISO(c.completed_date)).filter(d => !isNaN(d.getTime()))
+      if (dates.length === 0) return []
+
+      const firstDate = startOfDay(dates.reduce((a, b) => a < b ? a : b))
+      const today = startOfDay(new Date())
+      
+      const daysInterval = eachDayOfInterval({
+        start: firstDate,
+        end: today
+      })
 
       const completionsByDate: Record<string, string[]> = {}
       const relevantCompletions = completions.filter(c => filteredRoutines.some(r => r.id === c.routine_id))
@@ -691,27 +705,11 @@ function App() {
       const routineStartDates: Record<string, string> = {}
       filteredRoutines.forEach(r => {
         cumulativeTaskCompletions[r.id] = 0
-        // Use created_at if available, otherwise fallback to first completion or today
-        if (r.created_at) {
-          routineStartDates[r.id] = r.created_at.split('T')[0]
-        } else {
-          const taskCompletions = relevantCompletions.filter(c => c.routine_id === r.id)
-          if (taskCompletions.length > 0) {
-            const first = taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date)
-            routineStartDates[r.id] = first
-          } else {
-            routineStartDates[r.id] = format(new Date(), 'yyyy-MM-dd')
-          }
+        const taskCompletions = relevantCompletions.filter(c => c.routine_id === r.id)
+        if (taskCompletions.length > 0) {
+          const first = taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date)
+          routineStartDates[r.id] = first
         }
-      })
-
-      const allStartDates = Object.values(routineStartDates).map(d => parseISO(d)).filter(d => !isNaN(d.getTime()))
-      const firstDate = startOfDay(allStartDates.length > 0 ? allStartDates.reduce((min, d) => d < min ? d : min) : new Date())
-      const today = startOfDay(new Date())
-      
-      const daysInterval = eachDayOfInterval({
-        start: firstDate,
-        end: today
       })
 
       daysInterval.forEach((date, index) => {
