@@ -547,16 +547,16 @@ function App() {
 
   const { dailyStreak, weeklyStreak } = useMemo(() => {
     try {
-      if (routines.length === 0 || completions.length === 0) return { dailyStreak: 0, weeklyStreak: 0 }
+      if (filteredRoutines.length === 0 || completions.length === 0) return { dailyStreak: 0, weeklyStreak: 0 }
       
-      const activeRoutineIds = new Set(routines.map(r => r.id))
+      const activeRoutineIds = new Set(filteredRoutines.map(r => r.id))
       const doneDates = new Set(
         completions
           .filter(c => activeRoutineIds.has(c.routine_id))
           .map(c => c.completed_date)
       )
 
-      // Calculate Overall Daily
+      // Calculate Category Daily
       let daily = 0
       let checkDate = new Date()
       const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
@@ -567,7 +567,7 @@ function App() {
         if (daily > 10000) break 
       }
 
-      // Calculate Overall Weekly
+      // Calculate Category Weekly
       let weekly = 0
       const isWeekSuccessful = (dateInWeek: Date) => {
         const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
@@ -589,10 +589,10 @@ function App() {
 
       return { dailyStreak: daily, weeklyStreak: weekly }
     } catch (err) {
-      console.error('Error calculating overall streaks:', err)
+      console.error('Error calculating category streaks:', err)
       return { dailyStreak: 0, weeklyStreak: 0 }
     }
-  }, [routines, completions])
+  }, [filteredRoutines, completions])
 
   const last7Days = useMemo(() => {
     return eachDayOfInterval({
