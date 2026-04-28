@@ -238,7 +238,7 @@ const translations = {
 
     // AccountabilityPods.tsx
     'pods.title': 'กลุ่มเพื่อนร่วมเป้าหมาย',
-    'pods.create': 'สร้างกลุ่มใหม่',
+    'pods.create': 'สร้างกลุ่มใหม่?',
     'pods.join': 'เข้าร่วมกลุ่ม',
 
     // Other

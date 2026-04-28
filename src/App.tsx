@@ -1552,4 +1552,3 @@ function App() {
 }
 
 export default App
-ult App
