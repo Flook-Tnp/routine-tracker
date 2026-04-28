@@ -1385,7 +1385,7 @@ function App() {
               type="text" 
               value={newRoutineTitle}
               onChange={(e) => setNewRoutineTitle(e.target.value)}
-              placeholder={`{t('action.new_habit', { category: activeCategory.toUpperCase() })}`}
+              placeholder={t('action.new_habit', { category: activeCategory.toUpperCase() })}
               className="flex-1 input-primary text-sm font-mono"
             />
             <button type="submit" className="btn-primary">
