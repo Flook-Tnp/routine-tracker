@@ -346,8 +346,8 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     let value: any = translations[language];
     
     // Attempt flat key first, then nested
-    if (translations[language][key as keyof typeof translations['en']]) {
-      value = translations[language][key as keyof typeof translations['en']];
+    if ((translations[language] as any)[key]) {
+      value = (translations[language] as any)[key];
     } else {
       // Nested object fallback
       for (const k of keys) {
@@ -362,7 +362,7 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     // Fallback to English if translation is missing in current language
     if (!value || value === key) {
-      value = translations['en'][key as keyof typeof translations['en']] || key;
+      value = (translations['en'] as any)[key] || key;
     }
 
     if (typeof value === 'string' && params) {
@@ -377,17 +377,6 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <I18nContext.Provider value={{ language, setLanguage, t }}>
       {children}
-    </I18nContext.Provider>
-  );
-};
-
-export const useTranslation = () => {
-  const context = useContext(I18nContext);
-  if (!context) {
-    throw new Error('useTranslation must be used within an I18nProvider');
-  }
-  return context;
-};ldren}
     </I18nContext.Provider>
   );
 };

@@ -1553,5 +1553,3 @@ function App() {
 }
 
 export default App
-App
-ult App
