@@ -677,21 +677,6 @@ function App() {
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      const timelineCompletions = completions.filter(c => 
-        timelineRoutines.some(r => r.id === c.routine_id)
-      )
-
-      const dates = timelineCompletions.map(c => parseISO(c.completed_date)).filter(d => !isNaN(d.getTime()))
-      if (dates.length === 0) return []
-
-      const firstDate = startOfDay(dates.reduce((a, b) => a < b ? a : b))
-      const today = startOfDay(new Date())
-      
-      const daysInterval = eachDayOfInterval({
-        start: firstDate,
-        end: today
-      })
-
       const completionsByDate: Record<string, string[]> = {}
       const relevantCompletions = completions.filter(c => filteredRoutines.some(r => r.id === c.routine_id))
       
