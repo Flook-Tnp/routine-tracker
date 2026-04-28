@@ -93,42 +93,51 @@ function App() {
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
     
-    const activeRoutineIds = new Set(userRoutines.map(r => r.id))
-    const doneDates = new Set(
-      userCompletions
-        .filter(c => activeRoutineIds.has(c.routine_id))
-        .map(c => c.completed_date)
-    )
+    // Calculate streaks for each category separately
+    const categories = Array.from(new Set(userRoutines.map(r => r.category || 'General')))
+    let maxDaily = 0
+    let maxWeekly = 0
 
-    let daily = 0
-    let checkDate = new Date()
-    const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
-    if (!isDateFinished(checkDate)) checkDate = subDays(checkDate, 1)
-    while (isDateFinished(checkDate)) {
-      daily++
-      checkDate = subDays(checkDate, 1)
-      if (daily > 10000) break 
-    }
+    categories.forEach(cat => {
+      const catRoutineIds = new Set(userRoutines.filter(r => (r.category || 'General') === cat).map(r => r.id))
+      const doneDates = new Set(
+        userCompletions
+          .filter(c => catRoutineIds.has(c.routine_id))
+          .map(c => c.completed_date)
+      )
 
-    let weekly = 0
-    const isWeekSuccessful = (dateInWeek: Date) => {
-      const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
-      const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
-      let activeDaysCount = 0
-      weekDays.forEach(d => {
-        if (userCompletions.some(c => c.completed_date === format(d, 'yyyy-MM-dd') && activeRoutineIds.has(c.routine_id))) activeDaysCount++
-      })
-      return activeDaysCount >= 3
-    }
-    let currentCheck = new Date()
-    if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
-    while (isWeekSuccessful(currentCheck)) {
-      weekly++
-      currentCheck = subDays(currentCheck, 7)
-      if (weekly > 500) break 
-    }
+      let daily = 0
+      let checkDate = new Date()
+      const isDateFinished = (date: Date) => doneDates.has(format(date, 'yyyy-MM-dd'))
+      if (!isDateFinished(checkDate)) checkDate = subDays(checkDate, 1)
+      while (isDateFinished(checkDate)) {
+        daily++
+        checkDate = subDays(checkDate, 1)
+        if (daily > 10000) break 
+      }
+      if (daily > maxDaily) maxDaily = daily
 
-    return { daily, weekly }
+      let weekly = 0
+      const isWeekSuccessful = (dateInWeek: Date) => {
+        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
+        const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
+        let activeDaysCount = 0
+        weekDays.forEach(d => {
+          if (userCompletions.some(c => c.completed_date === format(d, 'yyyy-MM-dd') && catRoutineIds.has(c.routine_id))) activeDaysCount++
+        })
+        return activeDaysCount >= 3
+      }
+      let currentCheck = new Date()
+      if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
+      while (isWeekSuccessful(currentCheck)) {
+        weekly++
+        currentCheck = subDays(currentCheck, 7)
+        if (weekly > 500) break 
+      }
+      if (weekly > maxWeekly) maxWeekly = weekly
+    })
+
+    return { daily: maxDaily, weekly: maxWeekly }
   }
 
   const dismissNotification = async (id: string) => {
