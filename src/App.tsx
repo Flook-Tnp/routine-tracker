@@ -1176,9 +1176,8 @@ function App() {
         <section className="space-y-3">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">Execution_Progress</span>
-              <p className="text-[8px] text-gray-700 uppercase tracking-widest">{activeCategory}_PROTOCOL_STABILITY</p>
-            </div>
+              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">{t('stats.progress')}</span>
+              <p className="text-[8px] text-gray-700 uppercase tracking-widest">{activeCategory} {t('stats.consistency')}</p>            </div>
             <span className={`text-sm font-black tracking-tighter ${dailyStats.percentage === 100 ? "text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)]" : "text-gray-500"}`}>
               {dailyStats.completed}/{dailyStats.total} <span className="text-[10px] opacity-50 ml-1">({dailyStats.percentage}%)</span>
             </span>
@@ -1221,11 +1220,11 @@ function App() {
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.thirty_days')}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-950/30 border border-gray-900 p-6 text-center space-y-1">
-              <p className="text-[8px] text-gray-600 uppercase tracking-widest">Perfect_Days</p>
+              <p className="text-[8px] text-gray-600 uppercase tracking-widest">{t('stats.perfect_days')}</p>
               <p className="text-3xl font-black text-white tracking-tight">{thirtyDayStats.perfectDays}</p>
             </div>
             <div className="bg-gray-950/30 border border-gray-900 p-6 text-center space-y-1">
-              <p className="text-[8px] text-gray-600 uppercase tracking-widest">Avg_Efficiency</p>
+              <p className="text-[8px] text-gray-600 uppercase tracking-widest">{t('stats.avg_efficiency')}</p>
               <p className="text-3xl font-black text-cyan-400 tracking-tight">{thirtyDayStats.avg}%</p>
             </div>
           </div>
@@ -1553,3 +1552,4 @@ function App() {
 }
 
 export default App
+ult App
