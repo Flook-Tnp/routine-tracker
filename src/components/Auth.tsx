@@ -22,27 +22,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
     if (savedEmail && savedPassword) {
       setEmail(savedEmail)
       setPassword(savedPassword)
-      // Attempt auto-login if in sign-in view
-      if (view === 'sign_in') {
-        handleAutoLogin(savedEmail, savedPassword)
-      }
     }
   }, [])
-
-  async function handleAutoLogin(e: string, p: string) {
-    setLoading(true)
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: e,
-        password: p,
-      })
-      if (!error) onClose()
-    } catch (err) {
-      console.error('Auto-login failed')
-    } finally {
-      setLoading(false)
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -126,6 +107,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <input
                 required
                 type="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="identity@neural.link"
@@ -141,6 +123,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <input
                 required
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
