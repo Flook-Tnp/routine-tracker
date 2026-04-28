@@ -23,7 +23,6 @@ import type { AppNotification } from './types'
 function App() {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
   const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('leaderboard')
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
@@ -956,7 +955,7 @@ function App() {
                         <button onClick={() => supabase.auth.signOut()} className="text-gray-600 p-1"><LogOut size={18} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => setIsAuthModalOpen(true)} className="p-2 text-cyan-400 border border-cyan-500/30"><LogIn size={18} /></button>
+                      <div className="p-2 text-gray-800"><LogIn size={18} /></div>
                     )}
                   </div>
                 </div>
@@ -1014,7 +1013,7 @@ function App() {
                     </div>
                   )}
                   {!session && (
-                    <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-2 px-6">Login</button>
+                    <div className="text-gray-800 py-2 px-6 uppercase text-[10px] font-black tracking-widest">Disconnected</div>
                   )}
                 </div>
               </div>
@@ -1056,7 +1055,11 @@ function App() {
       </div>
 
       <div key={currentView} className="max-w-2xl mx-auto p-4 md:p-8 pt-4 pb-24 md:pb-8 space-y-8 view-enter">
-        {currentView === 'tracker' ? (
+        {!session ? (
+          <div className="py-12">
+            <AuthModal />
+          </div>
+        ) : currentView === 'tracker' ? (
           <>
             <section className="space-y-4">
           <div className="flex overflow-x-auto no-scrollbar md:flex-wrap gap-2 items-center -mx-4 px-4 md:mx-0 md:px-0">
@@ -1470,7 +1473,6 @@ function App() {
     )}      </div>
 
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
-      {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}
       
       {confirmDelete && (
         <ConfirmDialog
