@@ -102,9 +102,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <input
                 required
                 id="email"
-                name="email"
+                name="username"
                 type="email"
-                autoComplete="email"
+                autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="identity@neural.link"
