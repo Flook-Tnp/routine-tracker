@@ -10,8 +10,8 @@ const translations = {
     'nav.tracker': 'Tracker',
     'nav.board': 'Board',
     'nav.rank': 'Rank',
-    'nav.global': 'Global',
-    'nav.pods': 'Pods',
+    'nav.global': 'Community',
+    'nav.pods': 'Groups',
     'nav.profile': 'Profile',
     'streak.daily': 'Daily',
     'streak.weekly': 'Weekly',
@@ -74,9 +74,9 @@ const translations = {
     'feed.placeholder': 'Share an achievement or thought...',
 
     // AccountabilityPods.tsx
-    'pods.title': 'Accountability Pods',
-    'pods.create': 'Create New Pod',
-    'pods.join': 'Join Pod',
+    'pods.title': 'Accountability Groups',
+    'pods.create': 'Create New Group',
+    'pods.join': 'Join Group',
     
     // Other
     'common.confirm': 'Confirm',
@@ -84,6 +84,79 @@ const translations = {
     'common.delete': 'Delete',
     'common.save': 'Save',
     'common.edit': 'Edit',
+
+    'action.new_category': 'New Category',
+    'action.enter_category_name': 'Enter category name...',
+    'action.overall_total': 'Overall Total',
+    'status.no_habits': 'No habits in {{category}}',
+    'action.today': 'Today',
+
+    'profile.saving': 'Saving...',
+    'danger.delete_avatar': 'Are you sure you want to delete your profile picture?',
+    'profile.anonymous': 'Anonymous User',
+    'profile.requirement': 'Requirement',
+    'profile.days': 'Days',
+    'profile.unlocked': 'Unlocked',
+    'profile.locked': 'Locked',
+    'profile.edit_picture': 'Edit Picture',
+    'action.back': 'Back',
+    'action.reload': 'Reload',
+    'action.exit': 'Exit',
+
+    'board.title': 'Task Board',
+    'board.subtitle': 'Manage Tasks',
+    'board.new_task': 'New Task...',
+    'board.col.todo': 'To Do',
+    'board.col.in_progress': 'In Progress',
+    'board.col.done': 'Done',
+    'board.complete_task': 'Complete Task',
+    'board.finalized': 'Finalized',
+    'board.empty': 'Empty',
+
+    'leaderboard.loading': 'Loading Rankings...',
+    'leaderboard.subtitle': 'Global Rank',
+    'leaderboard.rank': 'Rank',
+    'leaderboard.user': 'User',
+    'leaderboard.xp': 'XP',
+    'leaderboard.total_xp': 'Total XP',
+
+    'feed.loading': 'Loading Feed...',
+    'feed.login_prompt': 'Log in to join the community',
+    'feed.milestone': 'Milestone',
+    'feed.add_comment': 'Add a comment...',
+    'feed.empty': 'No posts yet',
+
+    'pods.loading': 'Loading Groups...',
+    'pods.squad_streak': 'Group Streak',
+    'pods.established': 'Established',
+    'pods.terminate': 'Delete Group',
+    'pods.leave': 'Leave Group',
+    'pods.missions': 'Missions',
+    'pods.new_mission': 'New Mission...',
+    'pods.establish': 'Create',
+    'pods.add_mission': 'Add Mission',
+    'pods.no_missions': 'No assigned missions',
+    'pods.feed': 'Group Feed',
+    'pods.vitals': 'Status',
+    'pods.synced': 'Synced',
+    'pods.offline': 'Offline',
+    'pods.missions_count': 'Missions',
+    'pods.subtitle': 'Overview',
+    'pods.name_label': 'Group Name',
+    'pods.desc_label': 'Description',
+    'pods.btn_create': 'Create',
+    'pods.members': 'Members',
+    'pods.day_streak': 'Day Streak',
+    'pods.enter': 'Enter Group',
+
+    'danger.delete_category': 'Delete category "{{cat}}" and all history?',
+    'danger.delete_routine': 'Delete "{{title}}" and all history?',
+
+    'manual.title': 'User Manual',
+    'manual.perf_logic': 'Performance Logic',
+    'manual.interface': 'Interface Controls',
+    'manual.data': 'Data Analytics',
+    'manual.close': 'Close Manual'
   },
   th: {
     // App.tsx
@@ -91,7 +164,7 @@ const translations = {
     'nav.tracker': 'ติดตาม',
     'nav.board': 'กระดาน',
     'nav.rank': 'อันดับ',
-    'nav.global': 'โลก',
+    'nav.global': 'ชุมชน',
     'nav.pods': 'กลุ่ม',
     'nav.profile': 'โปรไฟล์',
     'streak.daily': 'รายวัน',
@@ -117,7 +190,7 @@ const translations = {
     'auth.remember': 'จดจำฉัน',
     'auth.btn.login': 'เข้าสู่ระบบ',
     'auth.btn.signup': 'สมัครสมาชิก',
-    'auth.hint': 'คำแนะนำ: เพิ่มไปที่หน้าจอหลัก...',
+    'auth.hint': 'คำแนะนำ: เพิ่มไปที่หน้าจอหลัก เพื่อประสบการณ์ที่ดีที่สุด',
     'auth.processing': 'กำลังดำเนินการ...',
     'auth.error': 'เข้าสู่ระบบล้มเหลว',
     'auth.success': 'สร้างบัญชีแล้ว! โปรดยืนยันอีเมลของคุณ',
@@ -155,7 +228,7 @@ const translations = {
     'feed.placeholder': 'แบ่งปันความสำเร็จหรือความคิด...',
 
     // AccountabilityPods.tsx
-    'pods.title': 'กลุ่มรับผิดชอบร่วมกัน',
+    'pods.title': 'กลุ่มเพื่อนร่วมเป้าหมาย',
     'pods.create': 'สร้างกลุ่มใหม่',
     'pods.join': 'เข้าร่วมกลุ่ม',
 
@@ -184,7 +257,7 @@ const translations = {
     'action.reload': 'โหลดใหม่',
     'action.exit': 'ออก',
 
-    'board.title': 'กระดานงานโลก',
+    'board.title': 'กระดานงาน',
     'board.subtitle': 'จัดการงาน',
     'board.new_task': 'งานใหม่...',
     'board.col.todo': 'สิ่งที่ต้องทำ',
@@ -201,7 +274,7 @@ const translations = {
     'leaderboard.xp': 'XP',
     'leaderboard.total_xp': 'XP รวม',
 
-    'feed.loading': 'กำลังเชื่อมต่อฟีด...',
+    'feed.loading': 'กำลังโหลดฟีด...',
     'feed.login_prompt': 'เข้าสู่ระบบเพื่อเข้าร่วม',
     'feed.milestone': 'ความสำเร็จ',
     'feed.add_comment': 'เพิ่มความคิดเห็น...',
@@ -263,19 +336,24 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const keys = key.split('.');
     let value: any = translations[language];
     
-    // Attempt flat key first, then nested (though we used flat string keys in the object above for simplicity)
+    // Attempt flat key first, then nested
     if (translations[language][key as keyof typeof translations['en']]) {
       value = translations[language][key as keyof typeof translations['en']];
     } else {
-      // If we ever decide to nest the translation object
+      // Nested object fallback
       for (const k of keys) {
         if (value && value[k]) {
           value = value[k];
         } else {
-          value = key; // Fallback to key
+          value = key;
           break;
         }
       }
+    }
+
+    // Fallback to English if translation is missing in current language
+    if (!value || value === key) {
+      value = translations['en'][key as keyof typeof translations['en']] || key;
     }
 
     if (typeof value === 'string' && params) {
