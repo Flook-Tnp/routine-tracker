@@ -4,6 +4,7 @@ import { MessageSquare, Send, Trash2, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
+import { useTranslation } from '../lib/i18n'
 
 interface SocialFeedProps {
   session: Session | null
@@ -14,6 +15,8 @@ interface SocialFeedProps {
 }
 
 export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSelectUser }: SocialFeedProps) {
+  const { t } = useTranslation();
+
   const [posts, setPosts] = useState<Post[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [loading, setLoading] = useState(true)
@@ -107,14 +110,14 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     }
   }
 
-  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Connecting_to_Neural_Feed...</div>
+  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">{t('feed.loading')}</div>
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       {!groupId && (
         <section className="space-y-4">
           <div className="flex justify-between items-end">
-            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Community_Pulse</h2>
+            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('feed.title')}</h2>
             {session && dailyStreak > 0 && (
               <button 
                 onClick={onShareStreak}
@@ -134,7 +137,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
             <textarea
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
-              placeholder="SHARE_ACHIEVEMENT_OR_THOUGHT..."
+              placeholder="{t('feed.placeholder')}"
               className="w-full bg-gray-950 border border-gray-900 p-4 text-xs font-mono text-gray-300 focus:outline-none focus:border-cyan-500 h-24 resize-none"
             />
             <div className="flex justify-end">
@@ -149,7 +152,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
           </form>
         ) : (
           <div className="p-8 border border-dashed border-gray-900 text-center space-y-2">
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest">Login to participate in community discussion</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest">{t('feed.login_prompt')}</p>
           </div>
         )}
       </section>
@@ -252,7 +255,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="ADD_COMMENT..."
+                  placeholder="{t('feed.add_comment')}"
                   className="flex-1 bg-black border border-gray-900 px-3 py-1 text-[10px] font-mono text-gray-400 focus:outline-none focus:border-cyan-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                 />
@@ -270,7 +273,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
         {posts.length === 0 && !loading && (
           <div className="py-20 text-center border border-dashed border-gray-900">
-            <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">No transmissions detected in this sector.</p>
+            <p className="text-[10px] text-gray-600 uppercase tracking-widest font-bold">{t('feed.empty')}</p>
           </div>
         )}
       </div>

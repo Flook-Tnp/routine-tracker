@@ -1,15 +1,18 @@
 import { X } from 'lucide-react'
+import { useTranslation } from '../lib/i18n'
 
 interface ManualModalProps {
   onClose: () => void
 }
 
 export function ManualModal({ onClose }: ManualModalProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-black border border-gray-800 w-full max-w-2xl max-h-[80vh] flex flex-col shadow-[0_0_50px_rgba(0,0,0,1)]">
         <div className="p-4 border-b border-gray-800 flex justify-between items-center bg-gray-950">
-          <h2 className="text-xs font-black uppercase tracking-[0.3em] text-cyan-400">OPERATIONAL_MANUAL.v1</h2>
+          <h2 className="text-xs font-black uppercase tracking-[0.3em] text-cyan-400">{t('manual.title')}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
             <X size={20} />
           </button>

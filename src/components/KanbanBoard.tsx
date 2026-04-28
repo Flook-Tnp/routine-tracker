@@ -1,5 +1,6 @@
 import { Plus, ChevronLeft, ChevronRight, Trash2, Check } from 'lucide-react'
 import type { Task } from '../types'
+import { useTranslation } from '../lib/i18n'
 
 interface KanbanBoardProps {
   tasks: Task[]
@@ -22,6 +23,8 @@ export function KanbanBoard({
   selectedDateStr,
   finalizeTask
 }: KanbanBoardProps) {
+  const { t } = useTranslation();
+
   // Filter tasks by whether they are active or completed on the selected date
   const filteredTasks = tasks.filter(t => 
     t.completed_date === null || t.completed_date === selectedDateStr
@@ -32,8 +35,8 @@ export function KanbanBoard({
       <section className="space-y-4">
         <div className="flex justify-between items-end">
           <div className="space-y-1">
-            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">GLOBAL_TASK_BOARD</h2>
-            <p className="text-[8px] text-gray-600 uppercase tracking-widest">Protocol: Direct Management</p>
+            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('board.title')}</h2>
+            <p className="text-[8px] text-gray-600 uppercase tracking-widest">{t('board.subtitle')}</p>
           </div>
         </div>
 
@@ -42,7 +45,7 @@ export function KanbanBoard({
             type="text"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder="NEW_GLOBAL_ENTRY..."
+            placeholder="{t('board.new_task')}"
             className="flex-1 input-primary text-sm font-mono"
           />
           <button type="submit" className="btn-primary">
@@ -53,9 +56,9 @@ export function KanbanBoard({
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { id: 'todo' as const, label: 'BACKLOG', color: 'text-gray-500' },
-          { id: 'in-progress' as const, label: 'ACTIVE', color: 'text-orange-500' },
-          { id: 'done' as const, label: 'COMPLETE', color: 'text-cyan-400' }
+          { id: 'todo' as const, label: t('board.col.todo'), color: 'text-gray-500' },
+          { id: 'in-progress' as const, label: t('board.col.in_progress'), color: 'text-orange-500' },
+          { id: 'done' as const, label: t('board.col.done'), color: 'text-cyan-400' }
         ].map((col) => {
           const colTasks = filteredTasks.filter(t => t.status === col.id)
           
@@ -125,7 +128,7 @@ export function KanbanBoard({
                 
                 {colTasks.length === 0 && (
                   <div className="py-8 text-center border border-dashed border-gray-900 rounded">
-                    <span className="text-[8px] text-gray-800 uppercase tracking-widest">EMPTY</span>
+                    <span className="text-[8px] text-gray-800 uppercase tracking-widest">{t('board.empty')}</span>
                   </div>
                 )}
               </div>

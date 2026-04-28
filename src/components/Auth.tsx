@@ -1,12 +1,15 @@
 import { supabase } from '../lib/supabase'
 import { X, Mail, Lock, UserPlus, LogIn, ShieldCheck } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useTranslation } from '../lib/i18n'
 
 interface AuthModalProps {
   onClose: () => void
 }
 
 export function AuthModal({ onClose }: AuthModalProps) {
+  const { t } = useTranslation();
+
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in')
   const [email, setEmail] = useState(() => localStorage.getItem('disby_remember_email') || '')
   const [password, setPassword] = useState(() => localStorage.getItem('disby_remember_password') || '')
@@ -49,10 +52,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
           password,
         })
         if (error) throw error
-        setMessage('PROTOCOL_INITIALIZED: Verify email to finalize.')
+        setMessage(t('auth.success'))
       }
     } catch (err: any) {
-      setError(err.message || 'AUTHENTICATION_FAILURE')
+      setError(err.message || t('auth.error'))
     } finally {
       setLoading(false)
     }
@@ -71,10 +74,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
         <div className="mb-8 text-center space-y-6">
           <div className="space-y-2">
             <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
-              {view === 'sign_in' ? 'Initialize Session' : 'Create Protocol'}
+              {view === 'sign_in' ? t('auth.login.title') : t('auth.signup.title')}
             </h2>
             <p className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.2em]">
-              {view === 'sign_in' ? 'Accessing neural network...' : 'Registering new neural identity...'}
+              {view === 'sign_in' ? t('auth.login.subtitle') : t('auth.signup.subtitle')}
             </p>
           </div>
 
@@ -96,7 +99,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-5" method="POST">
           <div className="space-y-1">
-            <label htmlFor="email" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">Email_Address</label>
+            <label htmlFor="email" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">{t('auth.email')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
               <input
@@ -114,7 +117,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="password" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">Secure_Password</label>
+            <label htmlFor="password" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">{t('auth.password')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
               <input
@@ -137,7 +140,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 <div className={`w-4 h-4 border flex items-center justify-center transition-all ${rememberMe ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-950 border-gray-800 group-hover:border-gray-600'}`}>
                   {rememberMe && <ShieldCheck size={12} className="text-black" />}
                 </div>
-                <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">Persistent_Identity_Link</span>
+                <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">{t('auth.remember')}</span>
               </div>
             )}
             
@@ -163,7 +166,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
             type="submit"
             className="w-full bg-white text-black py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-cyan-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
-            {loading ? 'PROCESSING...' : view === 'sign_in' ? (
+            {loading ? t('auth.processing') : view === 'sign_in' ? (
               <><LogIn size={16} /> TRANSMIT_AUTH</>
             ) : (
               <><UserPlus size={16} /> INITIALIZE_NEW_ID</>

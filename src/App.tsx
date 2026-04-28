@@ -18,9 +18,11 @@ import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
 import type { AppNotification } from './types'
+import { useTranslation } from './lib/i18n'
 
 // Pods System Final Verification - Deployment Active
 function App() {
+  const { t, language, setLanguage } = useTranslation();
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
@@ -816,7 +818,7 @@ function App() {
             {/* Desktop Top Row: Title + Nav */}
             <div className="hidden md:flex justify-between items-center border-b border-gray-900/50 pb-4">
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-black text-white tracking-tighter uppercase">DISBY</h1>
+                <h1 className="text-2xl font-black text-white tracking-tighter uppercase">{t('app.title')}</h1>
                 <div className="flex items-center gap-2">
 
                   <div className="relative" ref={notificationsRefDesktop}>
@@ -825,6 +827,12 @@ function App() {
                       className={`relative p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700 hover:text-cyan-400'}`}
                     >
                       <Bell size={18} />
+                    </button>
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-cyan-400 transition-colors uppercase ml-2 border border-gray-800 px-2 bg-gray-950">
+                      {language}
+                    </button>
+                    {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
+                    <button className="hidden">
                       {notifications.length > 0 && (
                         <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border border-black">
                           {notifications.length}
@@ -834,7 +842,7 @@ function App() {
                     {showNotifications && (
                       <div className="absolute top-full left-0 mt-4 w-72 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
-                          <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
+                          <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                           <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
                             <X size={12} />
                           </button>
@@ -854,7 +862,7 @@ function App() {
                             ))
                           ) : (
                             <div className="p-8 text-center text-gray-700">
-                              <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
+                              <p className="text-[8px] uppercase font-black tracking-widest">{t('notifications.empty')}</p>
                             </div>
                           )}
                         </div>
@@ -912,13 +920,19 @@ function App() {
                 {/* Mobile Identity */}
                 <div className="flex md:hidden items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">DISBY</h1>
+                    <h1 className="text-2xl font-bold text-white tracking-tighter uppercase">{t('app.title')}</h1>
                     <div className="relative" ref={notificationsRefMobile}>
-                      <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} /></button>
+                      <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-700'}`}><Bell size={18} />
+                    </button>
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-cyan-400 transition-colors uppercase ml-2 border border-gray-800 px-2 bg-gray-950">
+                      {language}
+                    </button>
+                    {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
+                    <button className="hidden"></button>
                       {showNotifications && (
                         <div className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-black border border-gray-800 shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                           <div className="p-3 border-b border-gray-800 bg-gray-950 flex justify-between items-center">
-                            <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">Incoming_Transmissions</span>
+                            <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                             <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-white">
                               <X size={12} />
                             </button>
@@ -938,7 +952,7 @@ function App() {
                               ))
                             ) : (
                               <div className="p-8 text-center text-gray-700">
-                                <p className="text-[8px] uppercase font-black tracking-widest">No active links</p>
+                                <p className="text-[8px] uppercase font-black tracking-widest">{t('notifications.empty')}</p>
                               </div>
                             )}
                           </div>
@@ -973,8 +987,8 @@ function App() {
                       <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-black border border-gray-800 p-4 shadow-2xl min-w-[240px]">
                         <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-gray-900 text-white text-sm p-3 border border-gray-800 focus:outline-none focus:border-cyan-500 mb-4" />
                         <div className="flex gap-2">
-                          <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-cyan-500 text-black font-black uppercase tracking-widest">Confirm</button>
-                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-gray-800 text-white font-black uppercase tracking-widest">Today</button>
+                          <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-cyan-500 text-black font-black uppercase tracking-widest">{t('common.confirm')}</button>
+                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-gray-800 text-white font-black uppercase tracking-widest">{t('action.today')}</button>
                         </div>
                       </div>
                     )}
@@ -990,14 +1004,14 @@ function App() {
                       <Flame size={20} fill="currentColor" className="drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
                       <span className="text-2xl md:text-3xl font-black tracking-tighter">{dailyStreak}</span>
                     </div>
-                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">Daily</p>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">{t('streak.daily')}</p>
                   </div>
                   <div className="text-center md:text-right">
                     <div className="flex items-center justify-center md:justify-end gap-1.5 text-cyan-400">
                       <Trophy size={20} className="drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
                       <span className="text-2xl md:text-3xl font-black tracking-tighter">{weeklyStreak}</span>
                     </div>
-                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">Weekly</p>
+                    <p className="text-[9px] text-gray-600 uppercase tracking-widest font-black">{t('streak.weekly')}</p>
                   </div>
                 </div>
 
@@ -1006,7 +1020,7 @@ function App() {
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end">
                         <span className="text-[10px] text-white font-black uppercase tracking-widest truncate max-w-[120px]">{profile.username}</span>
-                        <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-600 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">Logout_Link</button>
+                        <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-600 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">{t('auth.logout_nav')}</button>
                       </div>
                       <div className="w-10 h-10 bg-gray-900 border border-gray-800 p-1 flex items-center justify-center overflow-hidden shadow-xl">
                         {profile.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-700" />}
@@ -1014,7 +1028,7 @@ function App() {
                     </div>
                   )}
                   {!session && (
-                    <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-2 px-6">Login</button>
+                    <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-2 px-6">{t('auth.login_nav')}</button>
                   )}
                 </div>
               </div>
@@ -1107,8 +1121,8 @@ function App() {
                         onClick={() => {
                           setConfirmDelete({
                             isOpen: true,
-                            title: 'Danger Zone',
-                            message: `DELETE ENTIRE SECTION "${cat.toUpperCase()}" AND ALL ITS HISTORY?`,
+                            title: t('danger.zone'),
+                            message: t('danger.delete_category', { cat: cat.toUpperCase() }),
                             onConfirm: async () => {
                               if (session) {
                                 try {
@@ -1138,7 +1152,7 @@ function App() {
               onClick={() => setIsAddingCategory(!isAddingCategory)}
               className="flex-shrink-0 px-4 py-1.5 h-[34px] text-[10px] uppercase tracking-widest border border-dashed border-gray-800 text-gray-600 hover:text-cyan-400 hover:border-cyan-500/50 transition-all flex items-center gap-2"
             >
-              + NEW_SECTION
+              + {t('action.new_category')}
             </button>
           </div>
           
@@ -1149,7 +1163,7 @@ function App() {
                 type="text" 
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="ENTER_SECTION_NAME..."
+                placeholder="{t('action.enter_category_name')}"
                 className="flex-1 input-primary text-[10px] uppercase tracking-widest py-3"
               />
               <button type="submit" className="bg-gray-800 text-white px-6 py-1 text-[10px] font-black hover:bg-cyan-600 transition-all uppercase tracking-widest">
@@ -1371,7 +1385,7 @@ function App() {
               type="text" 
               value={newRoutineTitle}
               onChange={(e) => setNewRoutineTitle(e.target.value)}
-              placeholder={`NEW_${activeCategory.toUpperCase()}_PROTOCOL...`}
+              placeholder={`{t('action.new_habit', { category: activeCategory.toUpperCase() })}`}
               className="flex-1 input-primary text-sm font-mono"
             />
             <button type="submit" className="btn-primary">
@@ -1403,8 +1417,8 @@ function App() {
                   deleteRoutine={(id, title) => {
                     setConfirmDelete({
                       isOpen: true,
-                      title: 'Danger Zone',
-                      message: `DELETE "${title.toUpperCase()}" AND ALL HISTORY?`,
+                      title: t('danger.zone'),
+                      message: t('danger.delete_routine', { title: title.toUpperCase() }),
                       onConfirm: async () => {
                         if (session) {
                           try {
@@ -1490,35 +1504,35 @@ function App() {
             className={`nav-btn ${currentView === 'tracker' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <ListTodo size={22} className={currentView === 'tracker' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">Tracker</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.tracker')}</span>
           </button>
           <button
             onClick={() => setCurrentView('board')}
             className={`nav-btn ${currentView === 'board' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <LayoutDashboard size={22} className={currentView === 'board' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">Board</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.board')}</span>
           </button>
           <button
             onClick={() => setCurrentView('leaderboard')}
             className={`nav-btn ${currentView === 'leaderboard' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <Award size={22} className={currentView === 'leaderboard' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">Rank</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.rank')}</span>
           </button>
           <button
             onClick={() => setCurrentView('social')}
             className={`nav-btn ${currentView === 'social' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <Globe size={22} className={currentView === 'social' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">Global</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.global')}</span>
           </button>
           <button
             onClick={() => setCurrentView('pods')}
             className={`nav-btn ${currentView === 'pods' ? 'text-cyan-400' : 'text-gray-600'}`}
           >
             <Users size={22} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">Pods</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.pods')}</span>
           </button>
           {session && (
             <button
@@ -1529,7 +1543,7 @@ function App() {
               className={`nav-btn ${currentView === 'profile' && !viewedProfileId ? 'text-cyan-400' : 'text-gray-600'}`}
             >
               <CircleUser size={22} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]' : ''} />
-              <span className="text-[8px] font-black uppercase tracking-widest">Profile</span>
+              <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.profile')}</span>
             </button>
           )}
         </div>

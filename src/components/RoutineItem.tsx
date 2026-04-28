@@ -24,6 +24,7 @@ export function RoutineItem({
   updateRoutineTitle,
   deleteRoutine
 }: RoutineItemProps) {
+
   return (
     <div 
       onClick={() => toggleCompletion(routine.id)}

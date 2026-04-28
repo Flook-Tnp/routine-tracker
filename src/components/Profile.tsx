@@ -5,6 +5,7 @@ import type { Routine, Profile as ProfileType, RoutineCompletion } from '../type
 import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
 import Cropper from 'react-easy-crop'
 import getCroppedImg from '../lib/image'
+import { useTranslation } from '../lib/i18n'
 
 interface ProfileProps {
   profile: ProfileType | null
@@ -38,6 +39,8 @@ const XP_MILESTONES = [
 ]
 
 export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
+  const { t } = useTranslation();
+
   const [isEditing, setIsEditing] = useState(false)
   const [newUsername, setNewUsername] = useState(profile?.username || '')
   const [isUploading, setIsUploading] = useState(false)
@@ -199,7 +202,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     <div className="text-center py-20 space-y-6">
       <div className="w-10 h-10 border-2 border-cyan-500/20 border-t-cyan-500 rounded-full animate-spin mx-auto" />
       <div className="space-y-2">
-        <p className="text-[10px] uppercase tracking-widest text-gray-500">Synchronizing_Neural_Identity...</p>
+        <p className="text-[10px] uppercase tracking-widest text-gray-500">{t('profile.loading')}</p>
         <p className="text-[8px] text-gray-700 font-mono">Status: Establishing secure connection to profile sector</p>
       </div>
       <button 
@@ -317,7 +320,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             <div className="p-6 space-y-6 bg-gray-950">
               <div className="space-y-3">
                 <div className="flex justify-between text-[8px] uppercase font-black text-gray-600 tracking-widest">
-                  <span>Zoom_Magnitude</span>
+                  <span>{t('profile.zoom')}</span>
                   <span>{Math.round(zoom * 100)}%</span>
                 </div>
                 <input
@@ -338,7 +341,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                   disabled={isUploading}
                   className="flex-1 py-4 bg-cyan-500 text-black text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white transition-all active:scale-[0.98] disabled:opacity-50"
                 >
-                  {isUploading ? 'SYNCHRONIZING...' : 'ESTABLISH_NEURAL_LINK'}
+                  {isUploading ? t('profile.saving') : 'ESTABLISH_NEURAL_LINK'}
                 </button>
                 <button 
                   onClick={() => setImageToCrop(null)}
@@ -434,7 +437,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                 </div>
               ))}
               {(!profile.badges || profile.badges.length === 0) && (
-                <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-bold">NO_BADGES_IDENTIFIED</p>
+                <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-bold">{t('profile.no_badges')}</p>
               )}
             </div>
           </div>
@@ -445,25 +448,25 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
           <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Zap size={24} className="text-orange-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Lifetime_XP</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">{t('profile.lifetime_xp')}</p>
           <p className="text-4xl font-black text-white tracking-tighter">{(profile.lifetime_xp || profile.total_xp || 0).toLocaleString()}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
           <div className="absolute inset-0 bg-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Flame size={24} fill="currentColor" className="text-orange-500 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(249,115,22,0.4)]" />
-          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Daily_Streak</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">{t('profile.daily_streak')}</p>
           <p className="text-4xl font-black text-white tracking-tighter">{dailyStreak || 0}</p>
         </div>
         <div className="bg-gray-950 border border-gray-900 p-8 space-y-2 text-center relative group overflow-hidden">
           <div className="absolute inset-0 bg-cyan-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
           <Trophy size={24} className="text-cyan-400 mx-auto mb-2 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
-          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">Weekly_Streak</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black">{t('profile.weekly_streak')}</p>
           <p className="text-4xl font-black text-white tracking-tighter">{weeklyStreak || 0}</p>
         </div>
       </div>
 
       <section className="space-y-4">
-        <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Active_Neural_Sectors</h3>
+        <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">{t('profile.categories')}</h3>
         <div className="flex flex-wrap gap-2">
           {categoriesList.map(cat => {
             const isSelected = selectedCategory === cat
@@ -496,13 +499,13 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             )
           })}
           {categoriesList.length === 0 && (
-            <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-bold">No active sectors established</p>
+            <p className="text-[10px] text-gray-700 uppercase tracking-[0.2em] font-bold">{t('profile.no_categories')}</p>
           )}
         </div>
       </section>
 
       <section className="space-y-4">
-        <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">Achievement_Protocol</h3>
+        <h3 className="text-[11px] uppercase tracking-[0.3em] text-gray-600 font-black border-b border-gray-900 pb-3">{t('profile.achievements')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Streak Evolving Badge */}
           <button 
@@ -520,7 +523,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             </div>
 
             <div className="text-center space-y-1">
-              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">Consistancy_Protocol</p>
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">{t('profile.consistency')}</p>
               <h4 className="text-xl font-black text-white uppercase tracking-tighter">
                 {streakProgress.current?.name || 'Initiating...'}
               </h4>
@@ -558,7 +561,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
             </div>
 
             <div className="text-center space-y-1">
-              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">Accumulation_Protocol</p>
+              <p className="text-[10px] uppercase font-black tracking-[0.2em] text-gray-500">{t('profile.experience')}</p>
               <h4 className="text-xl font-black text-white uppercase tracking-tighter">
                 {xpProgress.current?.name || 'Initiating...'}
               </h4>

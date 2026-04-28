@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { StorageService } from '../lib/storage'
 import { Trophy, Medal } from 'lucide-react'
 import type { Profile } from '../types'
+import { useTranslation } from '../lib/i18n'
 
 interface LeaderboardProps {
   onSelectUser?: (userId: string) => void
@@ -9,6 +10,8 @@ interface LeaderboardProps {
 }
 
 export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
+  const { t } = useTranslation();
+
   const [leaderboard, setLeaderboard] = useState<Partial<Profile>[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -18,21 +21,21 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">Retrieving_Global_Standings...</div>
+  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500">{t('leaderboard.loading')}</div>
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <section className="space-y-4 text-center">
-        <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Global_Leaderboard</h2>
-        <p className="text-[8px] text-gray-600 uppercase tracking-widest">Quarterly Reset: Q2 2026</p>
+        <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('leaderboard.title')}</h2>
+        <p className="text-[8px] text-gray-600 uppercase tracking-widest">{t('leaderboard.subtitle')}</p>
       </section>
 
       <div className="bg-gray-950/50 border border-gray-900 overflow-hidden">
         {/* Header - Hidden on mobile */}
         <div className="hidden md:grid grid-cols-[80px_1fr_120px] border-b border-gray-900 text-[9px] uppercase tracking-widest text-gray-500 font-bold bg-gray-900/20">
-          <div className="px-6 py-4">Rank</div>
-          <div className="px-6 py-4">Protocol_Id</div>
-          <div className="px-6 py-4 text-right">Accumulated_XP</div>
+          <div className="px-6 py-4">{t('leaderboard.rank')}</div>
+          <div className="px-6 py-4">{t('leaderboard.user')}</div>
+          <div className="px-6 py-4 text-right">{t('leaderboard.xp')}</div>
         </div>
 
         <div className="divide-y divide-gray-900/50">
@@ -81,7 +84,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
                 <div className="md:px-6 md:py-4 text-right flex-shrink-0">
                   <div className="flex flex-col items-end">
                     <span className="text-sm md:text-xs font-black text-cyan-400 tracking-tight">{user.total_xp?.toLocaleString()}</span>
-                    <span className="md:hidden text-[8px] text-gray-700 uppercase font-bold">Total XP</span>
+                    <span className="md:hidden text-[8px] text-gray-700 uppercase font-bold">{t('leaderboard.total_xp')}</span>
                   </div>
                 </div>
               </div>

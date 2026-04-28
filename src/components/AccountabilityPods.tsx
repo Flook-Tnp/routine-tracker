@@ -4,6 +4,7 @@ import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame } from '
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
+import { useTranslation } from '../lib/i18n'
 
 interface PodsProps {
   session: Session | null
@@ -16,6 +17,8 @@ interface PodsProps {
 }
 
 export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod, selectedDateStr }: PodsProps) {
+  const { t } = useTranslation();
+
   const [groups, setGroups] = useState<Group[]>([])
   const [podMembers, setPodMembers] = useState<MemberVital[]>([])
   const [groupTasks, setGroupTasks] = useState<GroupTask[]>([])
@@ -208,7 +211,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }
 
-  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500 font-mono">Synchronizing...</div>
+  if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-500 font-mono">{t('pods.loading')}</div>
 
   if (selectedPod) {
     return (
@@ -233,7 +236,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               <p className="text-sm text-gray-500 leading-relaxed max-w-lg">{selectedPod.description}</p>
             </div>
             <div className="w-full md:w-auto text-left md:text-right flex flex-col md:items-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-900 md:border-none">
-              <p className="text-[8px] text-gray-600 uppercase font-black tracking-widest">Protocol_Established {new Date(selectedPod.created_at).toLocaleDateString()}</p>
+              <p className="text-[8px] text-gray-600 uppercase font-black tracking-widest">{t('pods.established')} {new Date(selectedPod.created_at).toLocaleDateString()}</p>
               {selectedPod.created_by === session?.user?.id ? (
                 <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[10px] font-black text-red-900 hover:text-red-500 uppercase tracking-widest flex items-center gap-2 active:scale-95">
                   <Trash2 size={14} /> Terminate_Pod
@@ -263,12 +266,12 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                             type="text"
                             value={newTaskTitle}
                             onChange={(e) => setNewTaskTitle(e.target.value)}
-                            placeholder="ENTER_NEW_MISSION..."
+                            placeholder="{t('pods.new_mission')}"
                             className="flex-1 input-primary text-sm py-3"
                           />
                           <div className="flex gap-2">
-                            <button type="submit" className="flex-1 btn-primary py-3">Establish</button>
-                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-gray-800 text-gray-400 text-[10px] font-black uppercase hover:text-white transition-all active:scale-95">Abort</button>
+                            <button type="submit" className="flex-1 btn-primary py-3">{t('pods.establish')}</button>
+                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-gray-800 text-gray-400 text-[10px] font-black uppercase hover:text-white transition-all active:scale-95">{t('action.cancel')}</button>
                           </div>
                         </form>
                       ) : (
@@ -302,7 +305,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                     })}
                     {groupTasks.length === 0 && (
                       <div className="text-center py-12 border border-dashed border-gray-900 rounded">
-                        <p className="text-[10px] text-gray-700 uppercase font-black tracking-widest">NO_MISSIONS_ASSIGNED</p>
+                        <p className="text-[10px] text-gray-700 uppercase font-black tracking-widest">{t('pods.no_missions')}</p>
                       </div>
                     )}
                   </div>
@@ -310,7 +313,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               </div>
 
               <div className="pt-4">
-                <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black mb-6">Pod_Pulse_Feed</h3>
+                <h3 className="text-[11px] uppercase tracking-[0.2em] text-gray-400 font-black mb-6">{t('pods.feed')}</h3>
                 <div className="border-l-2 border-gray-900 pl-4 md:pl-6">
                   <SocialFeed session={session} groupId={selectedPod.id} dailyStreak={dailyStreak} onShareStreak={onShareStreak} onSelectUser={onSelectUser} />
                 </div>
@@ -373,8 +376,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     <div className="space-y-8 view-enter pt-2 font-mono">
       <section className="flex justify-between items-end px-1">
         <div className="space-y-1">
-          <h2 className="text-[11px] uppercase tracking-[0.3em] text-gray-500 font-black">Accountability_Network</h2>
-          <p className="text-[8px] text-gray-700 uppercase font-black tracking-widest">Global_Pods_Overview</p>
+          <h2 className="text-[11px] uppercase tracking-[0.3em] text-gray-500 font-black">{t('pods.title')}</h2>
+          <p className="text-[8px] text-gray-700 uppercase font-black tracking-widest">{t('pods.subtitle')}</p>
         </div>
         {session && (
           <button onClick={() => setIsCreating(!isCreating)} className="btn-primary py-2 px-4 flex items-center gap-2">
@@ -386,16 +389,16 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       {isCreating && (
         <form onSubmit={handleCreateGroup} className="bg-gray-950 border border-cyan-500/30 p-6 space-y-5 animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="space-y-2">
-            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">Pod_Identifier</label>
+            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">{t('pods.name_label')}</label>
             <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., NEURAL_LEARNERS" className="w-full input-primary text-sm py-3" />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">Protocol_Objectives</label>
+            <label className="text-[10px] uppercase text-gray-600 font-black tracking-widest">{t('pods.desc_label')}</label>
             <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Define your mission objectives..." className="w-full input-primary text-sm py-3 h-28 resize-none" />
           </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 btn-primary py-4">Establish_Link</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-gray-900 text-gray-500 py-4 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all active:scale-95">Abort</button>
+            <button type="submit" className="flex-1 btn-primary py-4">{t('pods.btn_create')}</button>
+            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-gray-900 text-gray-500 py-4 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all active:scale-95">{t('action.cancel')}</button>
           </div>
         </form>
       )}
@@ -415,9 +418,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               </div>
               <div className="pt-2">
                 {isMember ? (
-                  <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-gray-900 text-cyan-400 border border-gray-800 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">Enter_Dashboard</button>
+                  <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-gray-900 text-cyan-400 border border-gray-800 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.enter')}</button>
                 ) : (
-                  <button onClick={() => handleJoinGroup(group.id)} className="w-full py-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">Join_Pod_Protocol</button>
+                  <button onClick={() => handleJoinGroup(group.id)} className="w-full py-4 bg-cyan-500/10 text-cyan-500 border border-cyan-500/30 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.join')}</button>
                 )}
               </div>
             </div>
