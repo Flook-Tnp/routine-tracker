@@ -99,13 +99,14 @@ export function AuthModal({ onClose }: AuthModalProps) {
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" method="POST">
           <div className="space-y-1">
             <label className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">Email_Address</label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
               <input
                 required
+                name="email"
                 type="email"
                 autoComplete="email"
                 value={email}
@@ -122,6 +123,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
               <input
                 required
+                name="password"
                 type="password"
                 autoComplete="current-password"
                 value={password}
@@ -132,14 +134,20 @@ export function AuthModal({ onClose }: AuthModalProps) {
             </div>
           </div>
 
-          {view === 'sign_in' && (
-            <div className="flex items-center gap-3 py-1 ml-1 group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
-              <div className={`w-4 h-4 border flex items-center justify-center transition-all ${rememberMe ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-950 border-gray-800 group-hover:border-gray-600'}`}>
-                {rememberMe && <ShieldCheck size={12} className="text-black" />}
+          <div className="flex flex-col gap-3">
+            {view === 'sign_in' && (
+              <div className="flex items-center gap-3 py-1 ml-1 group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
+                <div className={`w-4 h-4 border flex items-center justify-center transition-all ${rememberMe ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-950 border-gray-800 group-hover:border-gray-600'}`}>
+                  {rememberMe && <ShieldCheck size={12} className="text-black" />}
+                </div>
+                <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">Persistent_Identity_Link</span>
               </div>
-              <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">Persistent_Identity_Link</span>
-            </div>
-          )}
+            )}
+            
+            <p className="text-[8px] text-gray-700 uppercase font-black tracking-widest ml-1">
+              Hint: Add to Home Screen for maximum session stability.
+            </p>
+          </div>
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] uppercase font-bold text-center">
