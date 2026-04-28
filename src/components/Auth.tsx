@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase'
-import { X, Mail, Lock, UserPlus, LogIn } from 'lucide-react'
-import { useState } from 'react'
+import { X, Mail, Lock, UserPlus, LogIn, ShieldCheck } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 interface AuthModalProps {
   onClose: () => void
@@ -10,9 +10,39 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [view, setView] = useState<'sign_in' | 'sign_up'>('sign_in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+
+  // Load remembered credentials on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('disby_remember_email')
+    const savedPassword = localStorage.getItem('disby_remember_password')
+    if (savedEmail && savedPassword) {
+      setEmail(savedEmail)
+      setPassword(savedPassword)
+      // Attempt auto-login if in sign-in view
+      if (view === 'sign_in') {
+        handleAutoLogin(savedEmail, savedPassword)
+      }
+    }
+  }, [])
+
+  async function handleAutoLogin(e: string, p: string) {
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: e,
+        password: p,
+      })
+      if (!error) onClose()
+    } catch (err) {
+      console.error('Auto-login failed')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -27,6 +57,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
           password,
         })
         if (error) throw error
+
+        if (rememberMe) {
+          localStorage.setItem('disby_remember_email', email)
+          localStorage.setItem('disby_remember_password', password)
+        } else {
+          localStorage.removeItem('disby_remember_email')
+          localStorage.removeItem('disby_remember_password')
+        }
+
         onClose()
       } else {
         const { error } = await supabase.auth.signUp({
@@ -110,6 +149,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
             </div>
           </div>
 
+          {view === 'sign_in' && (
+            <div className="flex items-center gap-3 py-1 ml-1 group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
+              <div className={`w-4 h-4 border flex items-center justify-center transition-all ${rememberMe ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-950 border-gray-800 group-hover:border-gray-600'}`}>
+                {rememberMe && <ShieldCheck size={12} className="text-black" />}
+              </div>
+              <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">Persistent_Identity_Link</span>
+            </div>
+          )}
+
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] uppercase font-bold text-center">
               {error}
@@ -138,3 +186,4 @@ export function AuthModal({ onClose }: AuthModalProps) {
     </div>
   )
 }
+
