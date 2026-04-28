@@ -1,6 +1,7 @@
 import { Minimize2, Maximize2 } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line, Brush } from 'recharts'
 import type { Routine } from '../types'
+import { useTranslation } from '../lib/i18n'
 
 interface FullscreenChartProps {
   isChartFullscreen: boolean
@@ -23,6 +24,8 @@ export function FullscreenChart({
   setHiddenRoutines,
   filteredRoutines
 }: FullscreenChartProps) {
+  const { t } = useTranslation()
+
   if (!isChartFullscreen) {
     return (
       <button 
@@ -46,7 +49,7 @@ export function FullscreenChart({
     <div className="fixed inset-0 z-[110] bg-black flex flex-col p-4 md:p-8">
       <div className="flex justify-between items-center mb-8">
         <div className="space-y-1">
-          <h2 className="text-xl font-bold text-white tracking-tighter uppercase">LIFETIME_DATA_ANALYSIS</h2>
+          <h2 className="text-xl font-bold text-white tracking-tighter uppercase">{t('chart.lifetime_analysis')}</h2>
           <p className="text-[10px] text-gray-500 uppercase tracking-widest">{activeCategory} Section • {lifetimeStats.totalDays} Days</p>
         </div>
         <button 

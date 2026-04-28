@@ -1218,7 +1218,7 @@ function App() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">30_Day_Performance</h2>
+          <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.thirty_days')}</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-gray-950/30 border border-gray-900 p-6 text-center space-y-1">
               <p className="text-[8px] text-gray-600 uppercase tracking-widest">Perfect_Days</p>
@@ -1234,7 +1234,7 @@ function App() {
             <section className="space-y-6 border-t border-gray-900 pt-8">
             <div className="flex justify-between items-end">
               <div>
-                <h2 className="text-xs uppercase tracking-[0.3em] text-gray-500 font-bold">Lifetime_Performance</h2>
+                <h2 className="text-xs uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.lifetime')}</h2>
                 <p className="text-[10px] text-gray-600 uppercase mt-1">Total Days Tracked: {lifetimeStats.totalDays}</p>
               </div>
               <div className="flex items-center gap-4">
@@ -1553,3 +1553,5 @@ function App() {
 }
 
 export default App
+App
+ult App

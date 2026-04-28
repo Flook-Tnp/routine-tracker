@@ -152,6 +152,15 @@ const translations = {
     'danger.delete_category': 'Delete category "{{cat}}" and all history?',
     'danger.delete_routine': 'Delete "{{title}}" and all history?',
 
+    'stats.progress': 'Progress',
+    'stats.consistency': 'Consistency',
+    'stats.perfect_days': 'Perfect Days',
+    'stats.avg_efficiency': 'Average Efficiency',
+    'stats.thirty_days': '30 Day Performance',
+    'stats.lifetime': 'Lifetime Performance',
+    'stats.total_days': 'Total Days Tracked',
+    'chart.lifetime_analysis': 'Lifetime Data Analysis',
+
     'manual.title': 'User Manual',
     'manual.perf_logic': 'Performance Logic',
     'manual.interface': 'Interface Controls',
@@ -368,6 +377,17 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   return (
     <I18nContext.Provider value={{ language, setLanguage, t }}>
       {children}
+    </I18nContext.Provider>
+  );
+};
+
+export const useTranslation = () => {
+  const context = useContext(I18nContext);
+  if (!context) {
+    throw new Error('useTranslation must be used within an I18nProvider');
+  }
+  return context;
+};ldren}
     </I18nContext.Provider>
   );
 };
