@@ -62,35 +62,35 @@ export function AuthModal({ onClose }: AuthModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-black border border-cyan-500/50 p-8 shadow-[0_0_100px_rgba(6,182,212,0.2)]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/90 backdrop-blur-md">
+      <div className="relative w-full max-w-md bg-white border-2 border-border p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors p-2 z-[110]"
+          className="absolute top-4 right-4 text-ink/40 hover:text-accent transition-colors p-2 z-[110]"
         >
           <X size={24} />
         </button>
         
         <div className="mb-8 text-center space-y-6">
           <div className="space-y-2">
-            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">
+            <h2 className="text-3xl font-black text-ink tracking-tighter uppercase">
               {view === 'sign_in' ? t('auth.login.title') : t('auth.signup.title')}
             </h2>
-            <p className="text-[10px] text-cyan-500 font-bold uppercase tracking-[0.2em]">
+            <p className="text-[10px] text-accent font-bold uppercase tracking-[0.2em]">
               {view === 'sign_in' ? t('auth.login.subtitle') : t('auth.signup.subtitle')}
             </p>
           </div>
 
-          <div className="flex bg-gray-950 border border-gray-800 p-1 rounded-sm">
+          <div className="flex bg-canvas border border-border p-1 rounded-none">
             <button 
               onClick={() => setView('sign_in')}
-              className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${view === 'sign_in' ? 'bg-cyan-500 text-black' : 'text-gray-600 hover:text-gray-300'}`}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${view === 'sign_in' ? 'bg-accent text-white' : 'text-ink/40 hover:text-ink'}`}
             >
               Sign In
             </button>
             <button 
               onClick={() => setView('sign_up')}
-              className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${view === 'sign_up' ? 'bg-cyan-500 text-black' : 'text-gray-600 hover:text-gray-300'}`}
+              className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${view === 'sign_up' ? 'bg-accent text-white' : 'text-ink/40 hover:text-ink'}`}
             >
               Sign Up
             </button>
@@ -99,9 +99,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-5" method="POST">
           <div className="space-y-1">
-            <label htmlFor="email" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">{t('auth.email')}</label>
+            <label htmlFor="email" className="text-[9px] uppercase font-bold text-ink/40 tracking-widest ml-1">{t('auth.email')}</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30" size={16} />
               <input
                 required
                 id="email"
@@ -111,15 +111,15 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="identity@neural.link"
-                className="w-full bg-gray-950 border border-gray-800 pl-10 pr-4 py-3 text-xs font-mono text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-canvas border border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
               />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="password" className="text-[9px] uppercase font-bold text-gray-500 tracking-widest ml-1">{t('auth.password')}</label>
+            <label htmlFor="password" className="text-[9px] uppercase font-bold text-ink/40 tracking-widest ml-1">{t('auth.password')}</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-ink/30" size={16} />
               <input
                 required
                 id="password"
@@ -129,7 +129,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-gray-950 border border-gray-800 pl-10 pr-4 py-3 text-xs font-mono text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-canvas border border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
               />
             </div>
           </div>
@@ -137,26 +137,26 @@ export function AuthModal({ onClose }: AuthModalProps) {
           <div className="flex flex-col gap-3">
             {view === 'sign_in' && (
               <div className="flex items-center gap-3 py-1 ml-1 group cursor-pointer" onClick={() => setRememberMe(!rememberMe)}>
-                <div className={`w-4 h-4 border flex items-center justify-center transition-all ${rememberMe ? 'bg-cyan-500 border-cyan-500' : 'bg-gray-950 border-gray-800 group-hover:border-gray-600'}`}>
-                  {rememberMe && <ShieldCheck size={12} className="text-black" />}
+                <div className={`w-4 h-4 border-2 flex items-center justify-center transition-all ${rememberMe ? 'bg-accent border-accent' : 'bg-white border-border group-hover:border-accent'}`}>
+                  {rememberMe && <ShieldCheck size={12} className="text-white" />}
                 </div>
-                <span className="text-[10px] uppercase font-black tracking-widest text-gray-500 group-hover:text-gray-300 transition-colors">{t('auth.remember')}</span>
+                <span className="text-[10px] uppercase font-black tracking-widest text-ink/40 group-hover:text-ink transition-colors">{t('auth.remember')}</span>
               </div>
             )}
             
-            <p className="text-[8px] text-gray-700 uppercase font-black tracking-widest ml-1">
+            <p className="text-[8px] text-ink/20 uppercase font-black tracking-widest ml-1">
               Hint: Add to Home Screen for maximum session stability.
             </p>
           </div>
 
           {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 text-red-500 text-[10px] uppercase font-bold text-center">
+            <div className="p-3 bg-red-50 border-2 border-red-500 text-red-600 text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               {error}
             </div>
           )}
 
           {message && (
-            <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 text-cyan-500 text-[10px] uppercase font-bold text-center">
+            <div className="p-3 bg-accent-soft border-2 border-accent text-accent text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               {message}
             </div>
           )}
@@ -164,7 +164,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
           <button
             disabled={loading}
             type="submit"
-            className="w-full bg-white text-black py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-cyan-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full bg-black text-white py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
           >
             {loading ? t('auth.processing') : view === 'sign_in' ? (
               <><LogIn size={16} /> {t('auth.btn.login')}</>

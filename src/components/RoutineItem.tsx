@@ -28,16 +28,16 @@ export function RoutineItem({
   return (
     <div 
       onClick={() => toggleCompletion(routine.id)}
-      className={`group flex items-center justify-between p-4 md:p-5 border transition-all duration-300 cursor-pointer ${
+      className={`group flex items-center justify-between p-4 md:p-5 border-2 transition-all duration-300 cursor-pointer font-mono ${
         isCompleted 
-          ? 'bg-cyan-950/20 border-cyan-500/40 text-cyan-400 shadow-[inset_0_0_30px_rgba(6,182,212,0.1)]' 
-          : 'bg-gray-950 border-gray-900 hover:border-gray-700 text-gray-400'
+          ? 'bg-accent-soft border-accent text-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+          : 'bg-white border-border hover:border-accent text-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]'
       }`}
     >
       <div className="flex items-center gap-4 flex-1">
         {isCompleted 
-          ? <CheckCircle2 size={24} className="text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.6)] flex-shrink-0" /> 
-          : <Circle size={24} className="text-gray-800 flex-shrink-0" />
+          ? <CheckCircle2 size={24} className="text-accent flex-shrink-0" /> 
+          : <Circle size={24} className="text-border/10 flex-shrink-0" />
         }
         {editingRoutineId === routine.id ? (
           <input
@@ -48,7 +48,7 @@ export function RoutineItem({
             onBlur={() => updateRoutineTitle(routine.id)}
             onKeyDown={(e) => e.key === 'Enter' && updateRoutineTitle(routine.id)}
             onClick={(e) => e.stopPropagation()}
-            className="bg-black border-b border-cyan-500 text-base tracking-tight text-white focus:outline-none font-mono w-full"
+            className="bg-canvas border-b-2 border-accent text-base tracking-tight text-ink focus:outline-none font-black uppercase w-full px-2"
           />
         ) : (
           <span 
@@ -57,7 +57,7 @@ export function RoutineItem({
               setEditingRoutineId(routine.id)
               setEditingRoutineTitle(routine.title)
             }}
-            className={`text-sm md:text-base font-medium tracking-tight ${isCompleted ? 'line-through opacity-50' : ''}`}
+            className={`text-sm md:text-base font-black uppercase tracking-tight ${isCompleted ? 'line-through opacity-50' : ''}`}
           >
             {routine.title}
           </span>
@@ -70,7 +70,7 @@ export function RoutineItem({
             setEditingRoutineId(routine.id)
             setEditingRoutineTitle(routine.title)
           }}
-          className="p-2 hover:text-cyan-400 transition-colors bg-gray-900/50 rounded-sm border border-gray-800 md:border-transparent"
+          className="p-2 hover:text-accent transition-colors bg-canvas border border-border"
           title="Rename"
         >
           <Pencil size={16} />
@@ -80,7 +80,7 @@ export function RoutineItem({
             e.stopPropagation()
             deleteRoutine(routine.id, routine.title)
           }}
-          className="p-2 hover:text-red-500 transition-colors bg-gray-900/50 rounded-sm border border-gray-800 md:border-transparent"
+          className="p-2 hover:text-red-600 transition-colors bg-canvas border border-border"
           title="Delete"
         >
           <Trash2 size={16} />
