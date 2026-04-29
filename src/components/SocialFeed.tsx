@@ -124,7 +124,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 className="px-3 py-1 bg-orange-500/10 text-orange-500 border border-orange-500/30 hover:bg-orange-500 hover:text-black transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
               >
                 <Plus size={10} />
-                Share_Active_Streak
+                {t('feed.share_streak')}
               </button>
             )}
           </div>

@@ -21,7 +21,7 @@ export function ManualModal({ onClose }: ManualModalProps) {
           <section className="space-y-4">
             <h3 className="text-white border-b border-gray-900 pb-2 text-xs uppercase font-bold tracking-widest flex items-center gap-2">
               <div className="w-1 h-1 bg-cyan-500" />
-              Performance_Logic
+              {t('manual.perf_logic')}
             </h3>
             <div className="grid gap-4">
               <div className="bg-gray-950 p-4 border-l-2 border-orange-500">

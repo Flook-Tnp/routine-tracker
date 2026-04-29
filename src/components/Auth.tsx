@@ -167,9 +167,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
             className="w-full bg-white text-black py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-cyan-500 hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             {loading ? t('auth.processing') : view === 'sign_in' ? (
-              <><LogIn size={16} /> TRANSMIT_AUTH</>
+              <><LogIn size={16} /> {t('auth.btn.login')}</>
             ) : (
-              <><UserPlus size={16} /> INITIALIZE_NEW_ID</>
+              <><UserPlus size={16} /> {t('auth.btn.signup')}</>
             )}
           </button>
         </form>

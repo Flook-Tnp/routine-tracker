@@ -118,7 +118,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   }
 
   const handleLeaveGroup = async (groupId: string) => {
-    if (!session || !window.confirm('LEAVE_POD?')) return
+    if (!session || !window.confirm('LEAVE_GROUP?')) return
     try {
       await StorageService.leaveGroup(groupId, session.user.id)
       onSelectPod(null)
@@ -129,7 +129,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   }
 
   const handleDeleteGroup = async (groupId: string) => {
-    if (!session || !window.confirm('TERMINATE_POD?')) return
+    if (!session || !window.confirm('DELETE_GROUP?')) return
     try {
       await StorageService.deleteGroup(groupId)
       onSelectPod(null)
@@ -230,7 +230,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 <h2 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tighter">{selectedPod.name}</h2>
                 <div className="px-3 py-1.5 bg-orange-500/10 border border-orange-500/20 text-orange-500 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(249,115,22,0.1)]">
                   <Flame size={14} fill="currentColor" />
-                  Squad_Streak: {podMembers[0]?.pod_current_streak ?? 0}
+                  Group_Streak: {podMembers[0]?.pod_current_streak ?? 0}
                 </div>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed max-w-lg">{selectedPod.description}</p>
@@ -239,11 +239,11 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               <p className="text-[8px] text-gray-600 uppercase font-black tracking-widest">{t('pods.established')} {new Date(selectedPod.created_at).toLocaleDateString()}</p>
               {selectedPod.created_by === session?.user?.id ? (
                 <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[10px] font-black text-red-900 hover:text-red-500 uppercase tracking-widest flex items-center gap-2 active:scale-95">
-                  <Trash2 size={14} /> Terminate_Pod
+                  <Trash2 size={14} /> Delete_Group
                 </button>
               ) : (
                 <button onClick={() => handleLeaveGroup(selectedPod.id)} className="text-[10px] font-black text-gray-700 hover:text-white uppercase tracking-widest active:scale-95">
-                  Leave_Pod
+                  Leave_Group
                 </button>
               )}
             </div>
@@ -381,7 +381,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         </div>
         {session && (
           <button onClick={() => setIsCreating(!isCreating)} className="btn-primary py-2 px-4 flex items-center gap-2">
-            <Plus size={14} /> Initialize_Pod
+            <Plus size={14} /> {t('pods.create')}
           </button>
         )}
       </section>
