@@ -26,17 +26,7 @@ export function FullscreenChart({
 }: FullscreenChartProps) {
   const { t } = useTranslation()
 
-  if (!isChartFullscreen) {
-    return (
-      <button 
-        onClick={() => setIsChartFullscreen(true)}
-        className="p-2 bg-white border-2 border-border text-ink/40 hover:text-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-        title="Fullscreen View"
-      >
-        <Maximize2 size={16} />
-      </button>
-    )
-  }
+  if (!isChartFullscreen) return null
 
   const toggleRoutine = (title: string) => {
     const next = new Set(hiddenRoutines)
