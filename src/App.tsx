@@ -988,7 +988,7 @@ function App() {
                         <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-white text-ink text-sm p-3 border border-border focus:outline-none focus:border-accent mb-4" />
                         <div className="flex gap-2">
                           <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-accent text-white font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{t('common.confirm')}</button>
-                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-gray-100 text-ink border border-border font-black uppercase tracking-widest">{t('action.today')}</button>
+                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-canvas text-ink border border-border font-black uppercase tracking-widest">{t('action.today')}</button>
                         </div>
                       </div>
                     )}
@@ -1197,25 +1197,24 @@ function App() {
           </div>
         </section>
 
-        <section className="bg-gray-950/50 border border-gray-900 p-4">
+        <section className="bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
           <div className="grid grid-cols-7 gap-2 h-16 items-end">
             {last7Days.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-2">
-                <div className="w-full bg-gray-900 h-10 relative border border-gray-800 overflow-hidden">
-                  <div 
+                <div className="w-full bg-canvas h-10 relative border border-border overflow-hidden">
+                  <div
                     className="absolute bottom-0 left-0 right-0 transition-all duration-500"
-                    style={{ 
-                      height: `${day.percentage}%`, 
-                      backgroundColor: day.percentage === 100 ? '#06b6d4' : '#374151' 
+                    style={{
+                      height: `${day.percentage}%`,
+                      backgroundColor: day.percentage === 100 ? '#7C3AED' : '#000000'
                     }}
                   />
                 </div>
-                <span className="text-[8px] uppercase text-gray-600 font-bold">{day.label}</span>
+                <span className="text-[8px] uppercase text-ink/40 font-black tracking-widest">{day.label}</span>
               </div>
             ))}
           </div>
         </section>
-
         <section className="space-y-4">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.thirty_days')}</h2>
           <div className="grid grid-cols-2 gap-4">
@@ -1274,7 +1273,7 @@ function App() {
                     else next.add(r.title)
                     setHiddenRoutines(next)
                   }}
-                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-gray-100 text-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-border bg-white text-gray-400'}`}
+                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-border bg-white text-gray-400'}`}
                   style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 40%, 40%)` : undefined, borderLeftWidth: '4px' }}
                 >
                   {r.title}
@@ -1362,7 +1361,7 @@ function App() {
                     <span className="text-xl font-black text-accent">{task.percentage}%</span>
                   </div>
                   
-                  <div className="h-1 bg-gray-100 overflow-hidden">
+                  <div className="h-1 bg-canvas overflow-hidden">
                     <div 
                       className="h-full transition-all duration-1000"
                       style={{ width: `${task.percentage}%`, backgroundColor: task.percentage > 80 ? '#7C3AED' : '#000000' }}
