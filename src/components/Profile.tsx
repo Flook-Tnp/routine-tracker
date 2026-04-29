@@ -596,54 +596,69 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       )}
       {/* Trophy Room Modal */}
       {showTrophyRoom && (
-        <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
-          <div className="w-full max-w-2xl bg-white border-2 border-border shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b-2 border-border flex justify-between items-center bg-canvas">
-              <span className="text-[10px] uppercase font-black text-accent tracking-[0.3em] flex items-center gap-2">
-                <Trophy size={14} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
+        <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+          <div className="w-full max-w-4xl bg-white border-2 border-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col max-h-[90vh]">
+            <div className="p-4 md:p-6 border-b-2 border-border flex justify-between items-center bg-canvas">
+              <span className="text-[10px] md:text-xs uppercase font-black text-accent tracking-[0.3em] flex items-center gap-2">
+                <Trophy size={16} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
               </span>
-              <button onClick={() => setShowTrophyRoom(null)} className="text-ink/40 hover:text-accent transition-colors">
-                <X size={20} />
+              <button onClick={() => setShowTrophyRoom(null)} className="text-ink/40 hover:text-accent transition-colors p-2">
+                <X size={24} />
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
-              {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
-                const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
-                const isEarned = showTrophyRoom === 'streak' 
-                  ? (dailyStreak >= m.count && uniqueLoggingDays >= m.count)
-                  : (totalXp >= m.count)
-                
-                return (
-                  <div 
-                    key={m.id}
-                    className={`p-6 border-2 flex items-center gap-6 transition-all duration-500 ${
-                      isEarned 
-                        ? 'bg-white border-accent shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]' 
-                        : 'bg-canvas/50 border-dashed border-border/20 opacity-30 grayscale'
-                    }`}
-                  >
-                    <div className={`text-5xl transition-transform duration-700 ${isEarned ? 'scale-100' : 'scale-90'}`}>{m.icon}</div>
-                    <div className="flex-1">
-                      <h5 className={`text-sm font-black uppercase tracking-widest ${isEarned ? 'text-accent' : 'text-ink/40'}`}>
-                        {m.name}
-                      </h5>
-                      <p className="text-[10px] text-ink/60 font-black">
-                        {isEarned ? 'Archive Verified' : 'Locked Objective'}: {m.count.toLocaleString()} {showTrophyRoom === 'streak' ? 'Days' : 'XP'}
-                      </p>
+            <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+                {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
+                  const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
+                  const isEarned = showTrophyRoom === 'streak' 
+                    ? (dailyStreak >= m.count && uniqueLoggingDays >= m.count)
+                    : (totalXp >= m.count)
+                  
+                  return (
+                    <div 
+                      key={m.id}
+                      className={`relative p-6 border-2 flex flex-col items-center text-center gap-4 transition-all duration-500 ${
+                        isEarned 
+                          ? 'bg-white border-accent shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]' 
+                          : 'bg-canvas/30 border-dashed border-border/20 opacity-40'
+                      }`}
+                    >
+                      <div className={`text-6xl transition-transform duration-700 ${isEarned ? 'scale-110' : 'scale-90 grayscale'}`}>
+                        {m.icon}
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <h5 className={`text-xs font-black uppercase tracking-widest ${isEarned ? 'text-ink' : 'text-ink/40'}`}>
+                          {m.name}
+                        </h5>
+                        <p className="text-[9px] text-ink/60 font-black uppercase tracking-tighter">
+                          {isEarned ? 'Protocol_Verified' : `Target: ${m.count.toLocaleString()} ${showTrophyRoom === 'streak' ? 'Days' : 'XP'}`}
+                        </p>
+                      </div>
+
+                      {isEarned ? (
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-accent text-white rounded-full flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                          <Check size={12} strokeWidth={4} />
+                        </div>
+                      ) : (
+                        <div className="mt-2 w-full h-1 bg-border/10 overflow-hidden">
+                           <div 
+                             className="h-full bg-ink/10 transition-all duration-1000"
+                             style={{ width: `${Math.min(100, ( (showTrophyRoom === 'streak' ? dailyStreak : totalXp) / m.count) * 100)}%` }}
+                           />
+                        </div>
+                      )}
+
+                      <div className={`px-2 py-1 text-[7px] font-black uppercase tracking-widest border ${
+                        isEarned ? 'bg-accent text-white border-accent' : 'bg-white text-ink/20 border-border/10'
+                      }`}>
+                        {isEarned ? 'UNLOCKED' : 'LOCKED'}
+                      </div>
                     </div>
-                    {isEarned ? (
-                      <div className="px-3 py-1.5 bg-accent text-white text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                        Unlocked
-                      </div>
-                    ) : (
-                      <div className="px-3 py-1.5 bg-white border border-border/10 text-ink/20 text-[8px] font-black uppercase tracking-widest">
-                        Locked
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
             
             <div className="p-4 border-t-2 border-border bg-canvas">
