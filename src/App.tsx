@@ -1305,18 +1305,19 @@ function App() {
                    tickLine={false}
                    axisLine={false}
                    domain={[0, 100]}
+                   ticks={[0, 25, 50, 75, 100]}
                    tickFormatter={(val) => `${Math.round(val)}%`}
                   />
                   <Tooltip
                    contentStyle={{ backgroundColor: '#fff', border: '2px solid #000', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
                    itemStyle={{ padding: '0px', color: '#000' }}
-                   cursor={{ stroke: '#000' }}
+                   cursor={{ stroke: '#000', strokeWidth: 2 }}
                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                    formatter={(val: any) => [`${Number(val || 0).toFixed(1)}%`, '']}
                   />
                   {!hiddenRoutines.has('Total') && (
                    <Area
-                     type="monotone"
+                     type="linear"
                      dataKey="Total"
                      stroke="#7C3AED"
                      strokeWidth={3}
@@ -1324,19 +1325,19 @@ function App() {
                      fill="url(#colorTotal)"
                      dot={false}
                      activeDot={{ r: 4, fill: '#7C3AED', stroke: '#fff', strokeWidth: 2 }}
-                     animationDuration={1500}
+                     animationDuration={1000}
                    />
                   )}
                   {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
                    <Line
                      key={r.id}
-                     type="monotone"
+                     type="linear"
                      dataKey={r.title}
                      stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
-                     strokeWidth={1.5}
+                     strokeWidth={2}
                      dot={false}
                      opacity={0.6}
-                     animationDuration={1500}
+                     animationDuration={1000}
                    />
                   ))}                  <Brush 
                     dataKey="name" 

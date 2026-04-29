@@ -84,6 +84,7 @@ export function FullscreenChart({
               tickLine={false}
               axisLine={false}
               domain={[0, 100]}
+              ticks={[0, 25, 50, 75, 100]}
               tickFormatter={(val) => `${Math.round(val)}%`}
             />
             <Tooltip
@@ -94,7 +95,7 @@ export function FullscreenChart({
             />
             {!hiddenRoutines.has('Total') && (
               <Area
-                type="monotone"
+                type="linear"
                 dataKey="Total"
                 stroke="#7C3AED"
                 strokeWidth={4}
@@ -107,7 +108,7 @@ export function FullscreenChart({
             {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
               <Line
                 key={r.id}
-                type="monotone"
+                type="linear"
                 dataKey={r.title}
                 stroke={`hsl(${(i * 60) % 360}, 60%, 45%)`}
                 strokeWidth={2}
@@ -123,7 +124,7 @@ export function FullscreenChart({
               travellerWidth={20}
             >
               <AreaChart data={lifetimeChartData}>
-                <Area type="monotone" dataKey="Total" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.1} dot={false} />
+                <Area type="linear" dataKey="Total" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.1} dot={false} />
               </AreaChart>
             </Brush>
           </AreaChart>
