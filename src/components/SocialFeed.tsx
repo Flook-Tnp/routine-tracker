@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { MessageSquare, Send, Trash2, Plus } from 'lucide-react'
+import { MessageSquare, Send, Trash2, Plus, Globe } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from '../lib/i18n'
+import { EmptyState } from './EmptyState'
 
 interface SocialFeedProps {
   session: Session | null
@@ -272,9 +273,15 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       })}
 
         {posts.length === 0 && !loading && (
-          <div className="py-20 text-center border border-dashed border-border bg-white/30">
-            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{t('feed.empty')}</p>
-          </div>
+          <EmptyState 
+            icon={Globe}
+            title={t('feed.empty')}
+            subtitle="The neural network is silent. Be the first to broadcast your achievements."
+            action={session && dailyStreak > 0 ? {
+              label: t('feed.share_streak'),
+              onClick: onShareStreak
+            } : undefined}
+          />
         )}
       </div>
     </div>

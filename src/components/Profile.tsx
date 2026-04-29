@@ -619,25 +619,25 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                     key={m.id}
                     className={`p-6 border-2 flex items-center gap-6 transition-all duration-500 ${
                       isEarned 
-                        ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
-                        : 'bg-canvas border-border/10 opacity-40 grayscale'
+                        ? 'bg-white border-accent shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]' 
+                        : 'bg-canvas/50 border-dashed border-border/20 opacity-30 grayscale'
                     }`}
                   >
-                    <div className="text-5xl">{m.icon}</div>
+                    <div className={`text-5xl transition-transform duration-700 ${isEarned ? 'scale-100' : 'scale-90'}`}>{m.icon}</div>
                     <div className="flex-1">
                       <h5 className={`text-sm font-black uppercase tracking-widest ${isEarned ? 'text-accent' : 'text-ink/40'}`}>
                         {m.name}
                       </h5>
                       <p className="text-[10px] text-ink/60 font-black">
-                        Requirement: {m.count.toLocaleString()} {showTrophyRoom === 'streak' ? 'Days' : 'XP'}
+                        {isEarned ? 'Archive Verified' : 'Locked Objective'}: {m.count.toLocaleString()} {showTrophyRoom === 'streak' ? 'Days' : 'XP'}
                       </p>
                     </div>
                     {isEarned ? (
-                      <div className="px-3 py-1.5 bg-accent text-white text-[8px] font-black uppercase tracking-widest">
+                      <div className="px-3 py-1.5 bg-accent text-white text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                         Unlocked
                       </div>
                     ) : (
-                      <div className="text-[8px] text-ink/20 font-black uppercase tracking-widest">
+                      <div className="px-3 py-1.5 bg-white border border-border/10 text-ink/20 text-[8px] font-black uppercase tracking-widest">
                         Locked
                       </div>
                     )}

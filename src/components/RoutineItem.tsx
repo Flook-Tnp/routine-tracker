@@ -36,7 +36,7 @@ export function RoutineItem({
     >
       <div className="flex items-center gap-4 flex-1">
         {isCompleted 
-          ? <CheckCircle2 size={24} className="text-accent flex-shrink-0" /> 
+          ? <CheckCircle2 size={24} className="text-accent flex-shrink-0 animate-success-pop" /> 
           : <Circle size={24} className="text-border/10 flex-shrink-0" />
         }
         {editingRoutineId === routine.id ? (

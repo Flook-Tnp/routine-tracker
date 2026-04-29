@@ -18,7 +18,7 @@
 
   /* Transition for theme change */
   * {
-    @apply transition-colors duration-300;
+    @apply transition-colors duration-200;
   }
 }
 
@@ -38,7 +38,7 @@
 
 @layer components {
   .input-primary {
-    @apply bg-white border-2 border-border px-4 py-2 focus:outline-none focus:border-accent text-ink transition-all duration-200 placeholder:text-gray-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)];
+    @apply bg-white border-2 border-border px-4 py-2 focus:outline-none focus:border-accent text-ink transition-all duration-200 placeholder:text-gray-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-[2px_2px_0px_0px_rgba(124,58,237,1)];
   }
   
   .btn-primary {
@@ -56,6 +56,30 @@
   .card-brutalist {
     @apply bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(124,58,237,1)] transition-all;
   }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-[10px] font-black uppercase tracking-widest text-ink/40 hover:text-ink hover:bg-canvas transition-all active:scale-95;
+  }
+}
+
+/* Animations */
+.animate-success-pop {
+  animation: success-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes success-pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 /* Page Transition Effects */
@@ -66,4 +90,20 @@
 @keyframes view-enter {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar for Brutalist feel */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-canvas border-l border-border;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-ink border-2 border-canvas;
+}
+
+/* Global Recharts Styling */
+.recharts-tooltip-wrapper {
+  @apply !shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] !border-2 !border-black;
 }

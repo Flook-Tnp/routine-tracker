@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from '../lib/i18n'
+import { EmptyState } from './EmptyState'
 
 interface PodsProps {
   session: Session | null
@@ -401,6 +402,18 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border-2 border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('common.cancel')}</button>
           </div>
         </form>
+      )}
+
+      {groups.length === 0 && !loading && (
+        <EmptyState 
+          icon={ShieldAlert}
+          title="NO_ACTIVE_PODS"
+          subtitle="You are currently a lone operative. Join or establish a new accountability group to synchronize performance."
+          action={session ? {
+            label: t('pods.create'),
+            onClick: () => setIsCreating(true)
+          } : undefined}
+        />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

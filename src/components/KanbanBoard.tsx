@@ -1,6 +1,7 @@
-import { Plus, ChevronLeft, ChevronRight, Trash2, Check } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Trash2, Check, LayoutDashboard } from 'lucide-react'
 import type { Task } from '../types'
 import { useTranslation } from '../lib/i18n'
+import { EmptyState } from './EmptyState'
 
 interface KanbanBoardProps {
   tasks: Task[]
@@ -110,7 +111,7 @@ export function KanbanBoard({
                           </button>
                         )}
                         {task.completed_date && (
-                          <span className="text-[9px] text-accent font-black uppercase tracking-widest bg-accent-soft px-3 py-1.5 border border-accent/20">
+                          <span className="text-[9px] text-accent font-black uppercase tracking-widest bg-accent-soft px-3 py-1.5 border border-accent/20 animate-success-pop">
                             Finalized
                           </span>
                         )}
@@ -127,8 +128,12 @@ export function KanbanBoard({
                 ))}
                 
                 {colTasks.length === 0 && (
-                  <div className="py-12 text-center border-2 border-dashed border-border/20">
-                    <span className="text-[9px] text-ink/20 font-black uppercase tracking-widest">{t('board.empty')}</span>
+                  <div className="py-6 animate-in fade-in duration-500">
+                    <EmptyState 
+                      icon={LayoutDashboard}
+                      title={t('board.empty')}
+                      subtitle="No active deployments in this sector."
+                    />
                   </div>
                 )}
               </div>

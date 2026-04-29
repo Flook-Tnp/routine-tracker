@@ -8,6 +8,7 @@ import { KanbanBoard } from './components/KanbanBoard'
 import { FullscreenChart } from './components/FullscreenChart'
 import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
+import { BrutalistDatePicker } from './components/BrutalistDatePicker'
 import { AuthModal } from './components/Auth'
 import { StorageService } from './lib/storage'
 import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile, Group } from './types'
@@ -17,6 +18,7 @@ import { Leaderboard } from './components/Leaderboard'
 import { Profile as ProfileComponent } from './components/Profile'
 import { SocialFeed } from './components/SocialFeed'
 import { AccountabilityPods } from './components/AccountabilityPods'
+import { EmptyState } from './components/EmptyState'
 import type { AppNotification } from './types'
 import { useTranslation } from './lib/i18n'
 
@@ -59,6 +61,7 @@ function App() {
   const notificationsRefDesktop = useRef<HTMLDivElement>(null)
   const notificationsRefMobile = useRef<HTMLDivElement>(null)
   const datePickerRef = useRef<HTMLDivElement>(null)
+  const routineInputRef = useRef<HTMLInputElement>(null)
 
   // Click outside handlers
   useEffect(() => {
@@ -984,13 +987,11 @@ function App() {
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
                     </button>
                     {showDatePicker && (
-                      <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-white border-2 border-border p-4 shadow-2xl min-w-[240px]">
-                        <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-white text-ink text-sm p-3 border-2 border-border focus:outline-none focus:border-accent mb-4" />
-                        <div className="flex gap-2">
-                          <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-accent text-white font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{t('common.confirm')}</button>
-                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-canvas text-ink border-2 border-border font-black uppercase tracking-widest">{t('action.today')}</button>
-                        </div>
-                      </div>
+                      <BrutalistDatePicker 
+                        selectedDate={selectedDate}
+                        onSelect={setSelectedDate}
+                        onClose={() => setShowDatePicker(false)}
+                      />
                     )}
                   </div>
                   <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={20} /></button>
@@ -1182,7 +1183,7 @@ function App() {
               {dailyStats.completed}/{dailyStats.total} <span className="text-[10px] opacity-50 ml-1">({dailyStats.percentage}%)</span>
             </span>
           </div>
-          <div className="h-4 bg-white border-2 border-border rounded-none overflow-hidden p-[2px] relative group">
+          <div className={`h-4 bg-white border-2 border-border rounded-none overflow-hidden p-[2px] relative group ${dailyStats.percentage === 100 ? 'ring-2 ring-accent ring-offset-2 animate-success-pop' : ''}`}>
             <div 
               className="h-full bg-accent transition-all duration-1000 ease-out relative"
               style={{ width: `${dailyStats.percentage}%` }}
@@ -1191,6 +1192,11 @@ function App() {
                 <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" />
               )}
             </div>
+            {dailyStats.percentage === 100 && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-[7px] font-black text-white uppercase tracking-[0.4em] drop-shadow-md">MISSION_COMPLETE</span>
+              </div>
+            )}
             {/* Background Grid Pattern */}
             <div className="absolute inset-0 opacity-5 pointer-events-none" 
                  style={{ backgroundImage: 'linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
@@ -1376,8 +1382,9 @@ function App() {
 
         <section className="space-y-4">
           <form onSubmit={addRoutine} className="flex gap-2">
-            <input 
-              type="text" 
+            <input
+              ref={routineInputRef}
+              type="text"
               value={newRoutineTitle}
               onChange={(e) => setNewRoutineTitle(e.target.value)}
               placeholder={t('action.new_habit', { category: activeCategory.toUpperCase() })}
@@ -1390,11 +1397,16 @@ function App() {
 
           <div className="space-y-2">
             {filteredRoutines.length === 0 && (
-              <div className="text-center py-10 border border-dashed border-border text-gray-400 text-[10px] tracking-widest bg-white">
-                NO_PROTOCOLS_IN_{activeCategory.toUpperCase()}
-              </div>
-            )}
-            {filteredRoutines.map(routine => {
+              <EmptyState 
+                icon={ListTodo}
+                title={t('status.no_habits', { category: activeCategory })}
+                subtitle="Initialize your first habit mission to begin tracking performance."
+                action={session ? {
+                  label: "INITIALIZE_FIRST_HABIT",
+                  onClick: () => routineInputRef.current?.focus()
+                } : undefined}
+              />
+            )}            {filteredRoutines.map(routine => {
               const isCompleted = completions.some(
                 c => c.routine_id === routine.id && c.completed_date === selectedDateStr
               )
@@ -1502,42 +1514,43 @@ function App() {
         filteredRoutines={filteredRoutines}
       />
 
-      {/* Mobile Bottom Navigation */}      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t border-border px-2 py-3 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
-        <div className="flex justify-around items-center max-w-lg mx-auto">
+      {/* Mobile Bottom Navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t-4 border-black px-1 py-1 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+        <div className="flex justify-between items-stretch h-16 max-w-lg mx-auto">
           <button
             onClick={() => setCurrentView('tracker')}
-            className={`nav-btn ${currentView === 'tracker' ? 'text-accent' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'tracker' ? 'bg-black text-white' : 'text-ink/40'}`}
           >
-            <ListTodo size={22} className={currentView === 'tracker' ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.tracker')}</span>
+            <ListTodo size={20} className={currentView === 'tracker' ? 'animate-success-pop' : ''} />
+            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.tracker')}</span>
           </button>
           <button
             onClick={() => setCurrentView('board')}
-            className={`nav-btn ${currentView === 'board' ? 'text-accent' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'board' ? 'bg-black text-white' : 'text-ink/40'}`}
           >
-            <LayoutDashboard size={22} className={currentView === 'board' ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.board')}</span>
+            <LayoutDashboard size={20} className={currentView === 'board' ? 'animate-success-pop' : ''} />
+            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.board')}</span>
           </button>
           <button
             onClick={() => setCurrentView('leaderboard')}
-            className={`nav-btn ${currentView === 'leaderboard' ? 'text-accent' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'leaderboard' ? 'bg-black text-white' : 'text-ink/40'}`}
           >
-            <Award size={22} className={currentView === 'leaderboard' ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.rank')}</span>
+            <Award size={20} className={currentView === 'leaderboard' ? 'animate-success-pop' : ''} />
+            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.rank')}</span>
           </button>
           <button
             onClick={() => setCurrentView('social')}
-            className={`nav-btn ${currentView === 'social' ? 'text-accent' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'social' ? 'bg-black text-white' : 'text-ink/40'}`}
           >
-            <Globe size={22} className={currentView === 'social' ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.global')}</span>
+            <Globe size={20} className={currentView === 'social' ? 'animate-success-pop' : ''} />
+            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.global')}</span>
           </button>
           <button
             onClick={() => setCurrentView('pods')}
-            className={`nav-btn ${currentView === 'pods' ? 'text-accent' : 'text-gray-400'}`}
+            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'pods' ? 'bg-black text-white' : 'text-ink/40'}`}
           >
-            <Users size={22} className={currentView === 'pods' ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-            <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.pods')}</span>
+            <Users size={20} className={currentView === 'pods' ? 'animate-success-pop' : ''} />
+            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.pods')}</span>
           </button>
           {session && (
             <button
@@ -1545,10 +1558,10 @@ function App() {
                 setViewedProfileId(null)
                 setCurrentView('profile')
               }}
-              className={`nav-btn ${currentView === 'profile' && !viewedProfileId ? 'text-accent' : 'text-gray-400'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-black text-white' : 'text-ink/40'}`}
             >
-              <CircleUser size={22} className={currentView === 'profile' && !viewedProfileId ? 'drop-shadow-[0_0_8px_rgba(124,58,237,0.4)]' : ''} />
-              <span className="text-[8px] font-black uppercase tracking-widest">{t('nav.profile')}</span>
+              <CircleUser size={20} className={currentView === 'profile' && !viewedProfileId ? 'animate-success-pop' : ''} />
+              <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.profile')}</span>
             </button>
           )}
         </div>
