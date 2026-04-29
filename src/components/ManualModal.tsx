@@ -10,7 +10,7 @@ export function ManualModal({ onClose }: ManualModalProps) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white border-2 border-border w-full max-w-2xl max-h-[80vh] flex flex-col shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] font-mono">
+      <div className="bg-white border-2 border-border w-full max-w-5xl max-h-[90vh] flex flex-col shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] font-mono">
         <div className="p-4 border-b-2 border-border flex justify-between items-center bg-canvas">
           <h2 className="text-xs font-black uppercase tracking-[0.3em] text-accent">{t('manual.title')}</h2>
           <button onClick={onClose} className="text-ink/40 hover:text-accent transition-colors">

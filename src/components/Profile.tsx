@@ -596,19 +596,19 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       )}
       {/* Trophy Room Modal */}
       {showTrophyRoom && (
-        <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="w-full max-w-4xl bg-white border-2 border-border shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col max-h-[90vh]">
-            <div className="p-4 md:p-6 border-b-2 border-border flex justify-between items-center bg-canvas">
-              <span className="text-[10px] md:text-xs uppercase font-black text-accent tracking-[0.3em] flex items-center gap-2">
-                <Trophy size={16} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
+        <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
+          <div className="w-full h-full md:h-auto md:max-w-6xl bg-white border-none md:border-2 md:border-border shadow-none md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col md:max-h-[90vh]">
+            <div className="p-6 md:p-8 border-b-2 border-border flex justify-between items-center bg-canvas">
+              <span className="text-xs md:text-sm uppercase font-black text-accent tracking-[0.4em] flex items-center gap-3">
+                <Trophy size={20} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
               </span>
               <button onClick={() => setShowTrophyRoom(null)} className="text-ink/40 hover:text-accent transition-colors p-2">
-                <X size={24} />
+                <X size={32} />
               </button>
             </div>
 
-            <div className="p-4 md:p-8 overflow-y-auto custom-scrollbar">
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="p-6 md:p-12 overflow-y-auto custom-scrollbar flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                 {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
                   const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
                   const isEarned = showTrophyRoom === 'streak' 

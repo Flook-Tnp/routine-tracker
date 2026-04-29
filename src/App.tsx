@@ -827,12 +827,12 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas text-ink font-mono selection:bg-accent/30 pb-20">
+    <div className="min-h-screen bg-canvas text-ink font-mono selection:bg-accent/30">
       
-      {/* Sticky Header Container */}
-      <div className="sticky top-0 z-[60] bg-white/80 backdrop-blur-md border-b border-border shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-6">
-          <header className="space-y-4 md:space-y-6">
+      {/* Integrated Header Container */}
+      <div className="bg-white border-b-2 border-border">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
+          <header className="space-y-6 md:space-y-8">
             {/* Desktop Top Row: Title + Nav */}
             <div className="hidden md:flex justify-between items-center border-b border-border/50 pb-4">
               <div className="flex items-center gap-4">
@@ -1085,7 +1085,7 @@ function App() {
         </div>
       </div>
 
-      <div key={currentView} className="max-w-2xl mx-auto p-4 md:p-8 pt-4 pb-24 md:pb-8 space-y-8 view-enter">
+      <div key={currentView} className="max-w-5xl mx-auto p-4 md:p-8 pt-8 pb-32 space-y-12 view-enter">
         {currentView === 'tracker' ? (
           <>
             <section className="space-y-4">
