@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser } from 'lucide-react'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser, Maximize2 } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
