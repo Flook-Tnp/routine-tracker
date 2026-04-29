@@ -65,7 +65,7 @@ const translations = {
     'board.login': 'Log In',
 
     // Leaderboard.tsx
-    'leaderboard.title': 'Global Leaderboard',
+    'leaderboard.title': 'Leaderboard',
 
     // SocialFeed.tsx
     'feed.title': 'Community Feed',
@@ -114,7 +114,7 @@ const translations = {
     'board.empty': 'Empty',
 
     'leaderboard.loading': 'Loading Rankings...',
-    'leaderboard.subtitle': 'Global Rank',
+    'leaderboard.subtitle': 'Rank',
     'leaderboard.rank': 'Rank',
     'leaderboard.user': 'User',
     'leaderboard.xp': 'XP',
@@ -228,7 +228,7 @@ const translations = {
     'board.login': 'เข้าสู่ระบบ',
 
     // Leaderboard.tsx
-    'leaderboard.title': 'กระดานผู้นำระดับโลก',
+    'leaderboard.title': 'กระดานผู้นำ',
 
     // SocialFeed.tsx
     'feed.title': 'ฟีดชุมชน',
@@ -277,7 +277,7 @@ const translations = {
     'board.empty': 'ว่างเปล่า',
 
     'leaderboard.loading': 'กำลังโหลดอันดับ...',
-    'leaderboard.subtitle': 'อันดับโลก',
+    'leaderboard.subtitle': 'อันดับ',
     'leaderboard.rank': 'อันดับ',
     'leaderboard.user': 'ผู้ใช้',
     'leaderboard.xp': 'XP',
