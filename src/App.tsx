@@ -663,11 +663,21 @@ function App() {
     try {
       if (taskBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
       
-      const totalPercentage = taskBreakdown.reduce((acc, task) => acc + task.percentage, 0)
-      const averagePercentage = Math.round(totalPercentage / taskBreakdown.length)
+      const showTotal = !hiddenRoutines.has('Total')
+      const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
+      const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
+      
+      const relevantBreakdown = taskBreakdown.filter(t => 
+        showTotal || !hiddenRoutines.has(t.title)
+      )
+
+      if (relevantBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
+
+      const totalPercentage = relevantBreakdown.reduce((acc, task) => acc + task.percentage, 0)
+      const averagePercentage = Math.round(totalPercentage / relevantBreakdown.length)
       
       // Calculate overall total days since the oldest relevant routine was created or completed
-      const relevantRoutines = filteredRoutines
+      const relevantRoutines = timelineRoutines
       const creationDates = relevantRoutines.map(r => parseISO(r.created_at)).filter(d => !isNaN(d.getTime()))
       
       const relevantCompletions = completions.filter(c => 
@@ -687,7 +697,7 @@ function App() {
       console.error('Error in lifetimeStats:', err)
       return { totalDays: 0, percentage: 0 }
     }
-  }, [taskBreakdown, filteredRoutines, completions])
+  }, [taskBreakdown, filteredRoutines, completions, hiddenRoutines])
 
   const lifetimeChartData = useMemo(() => {
     try {
@@ -723,7 +733,7 @@ function App() {
         routineStartDates[r.id] = created < firstComp ? created : firstComp
       })
 
-      const allStartDates = Object.values(routineStartDates).map(d => parseISO(d)).filter(d => !isNaN(d.getTime()))
+      const allStartDates = timelineRoutines.map(r => parseISO(routineStartDates[r.id])).filter(d => !isNaN(d.getTime()))
       const firstDate = startOfDay(allStartDates.length > 0 ? allStartDates.reduce((min, d) => d < min ? d : min) : new Date())
       const today = startOfDay(new Date())
       
@@ -1354,7 +1364,7 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {taskBreakdown.map((task, index) => (
+              {taskBreakdown.filter(t => !hiddenRoutines.has(t.title)).map((task, index) => (
                 <div key={index} className="bg-white border-2 border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
