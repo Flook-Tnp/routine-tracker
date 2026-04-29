@@ -1,4 +1,5 @@
 import { X } from 'lucide-react'
+import { useTranslation } from '../lib/i18n'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -9,6 +10,7 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }: ConfirmDialogProps) {
+  const { t } = useTranslation()
   if (!isOpen) return null
 
   return (
@@ -28,13 +30,13 @@ export function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel }: C
             onClick={onConfirm}
             className="flex-1 bg-red-600 text-white border-2 border-border py-3 text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
           >
-            Confirm
+            {t('common.confirm')}
           </button>
           <button 
             onClick={onCancel}
             className="flex-1 bg-white text-ink border-2 border-border py-3 text-[10px] font-black uppercase tracking-widest hover:bg-canvas transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
           >
-            Abort
+            {t('common.cancel')}
           </button>
         </div>
       </div>

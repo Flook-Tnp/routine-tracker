@@ -341,13 +341,13 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                   disabled={isUploading}
                   className="flex-1 py-4 bg-accent text-white text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-black transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none disabled:opacity-50"
                 >
-                  {isUploading ? t('profile.saving') : 'ESTABLISH_NEURAL_LINK'}
+                  {isUploading ? t('profile.saving') : t('profile.save_picture')}
                 </button>
                 <button 
                   onClick={() => setImageToCrop(null)}
                   className="px-8 py-4 bg-canvas text-ink/40 text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none"
                 >
-                  ABORT
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

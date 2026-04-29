@@ -271,7 +271,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                           />
                           <div className="flex gap-2">
                             <button type="submit" className="flex-1 btn-primary py-3">{t('pods.establish')}</button>
-                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-white border border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('action.cancel')}</button>
+                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-white border border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('common.cancel')}</button>
                           </div>
                         </form>
                       ) : (
@@ -398,7 +398,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 btn-primary py-4">{t('pods.btn_create')}</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('action.cancel')}</button>
+            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('common.cancel')}</button>
           </div>
         </form>
       )}
