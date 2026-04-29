@@ -49,6 +49,7 @@ function App() {
   const [showManual, setShowManual] = useState(false)
   const [isChartFullscreen, setIsChartFullscreen] = useState(false)
   const [hiddenRoutines, setHiddenRoutines] = useState<Set<string>>(new Set())
+  const [authInitialView, setAuthInitialView] = useState<'sign_in' | 'sign_up' | 'forgot_password' | 'update_password'>('sign_in')
 
   const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null)
   const [editingRoutineTitle, setEditingRoutineTitle] = useState('')
@@ -304,7 +305,11 @@ function App() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setAuthInitialView('update_password')
+        setIsAuthModalOpen(true)
+      }
       handleSession(session)
     })
 
@@ -1501,7 +1506,15 @@ function App() {
     )}      </div>
 
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
-      {isAuthModalOpen && <AuthModal onClose={() => setIsAuthModalOpen(false)} />}
+      {isAuthModalOpen && (
+        <AuthModal 
+          onClose={() => {
+            setIsAuthModalOpen(false)
+            setAuthInitialView('sign_in')
+          }} 
+          initialView={authInitialView}
+        />
+      )}
       
       {confirmDelete && (
         <ConfirmDialog
