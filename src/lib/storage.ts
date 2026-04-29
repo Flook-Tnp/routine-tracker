@@ -312,7 +312,8 @@ export const StorageService = {
       .from('groups')
       .select(`
         *,
-        group_members (user_id)
+        group_members (user_id),
+        group_tasks (id, title)
       `)
     if (error) throw error
     return data as Group[]

@@ -87,6 +87,7 @@ export interface Group {
   max_streak?: number
   last_streak_date?: string
   group_members?: { user_id: string }[]
+  group_tasks?: { id: string, title: string }[]
 }
 
 export interface AppNotification {

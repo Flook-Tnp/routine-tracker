@@ -416,6 +416,28 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   {group.current_streak! > 0 && <span className="text-[9px] text-orange-500 font-black flex items-center gap-2 uppercase tracking-widest"><Flame size={14} fill="currentColor" /> {group.current_streak} Day_Streak</span>}
                 </div>
               </div>
+
+              {group.group_tasks && group.group_tasks.length > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-[10px] uppercase tracking-widest text-gray-500 font-black flex items-center gap-2">
+                    <Activity size={12} className="text-cyan-500" /> {t('pods.missions')}
+                  </h4>
+                  <div className="space-y-2">
+                    {group.group_tasks.slice(0, 3).map(task => (
+                      <div key={task.id} className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2 bg-gray-900/50 px-3 py-2 border-l border-gray-800">
+                        <div className="w-1 h-1 bg-cyan-500/50" />
+                        {task.title}
+                      </div>
+                    ))}
+                    {group.group_tasks.length > 3 && (
+                      <div className="text-[8px] text-gray-600 font-black uppercase tracking-widest pl-3">
+                        + {group.group_tasks.length - 3} MORE_OBJECTIVES
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="pt-2">
                 {isMember ? (
                   <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-gray-900 text-cyan-400 border border-gray-800 text-[10px] font-black uppercase hover:bg-cyan-500 hover:text-black transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.enter')}</button>
