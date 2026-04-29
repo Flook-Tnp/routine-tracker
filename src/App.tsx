@@ -872,41 +872,41 @@ function App() {
                 </div>
               </div>
 
-              <div className="flex gap-1 bg-gray-100 p-1 border border-border">
+              <div className="flex gap-1 bg-white p-1 border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <button
                   onClick={() => setCurrentView('tracker')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'tracker' ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'tracker' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                 >
                   {t('nav.tracker')}
                 </button>
                 <button
                   onClick={() => setCurrentView('board')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'board' ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'board' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                 >
                   {t('nav.board')}
                 </button>
                 <button
                   onClick={() => setCurrentView('leaderboard')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'leaderboard' ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'leaderboard' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                 >
                   {t('nav.rank')}
                 </button>
                 <button
                   onClick={() => setCurrentView('social')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'social' ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'social' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                 >
                   {t('nav.global')}
                 </button>
                 <button
                   onClick={() => setCurrentView('pods')}
-                  className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'pods' ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'pods' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                 >
                   {t('nav.pods')}
                 </button>
                 {session && (
                   <button
                     onClick={() => { setViewedProfileId(null); setCurrentView('profile'); }}
-                    className={`px-3 py-1 text-[10px] font-bold uppercase transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-accent text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'text-gray-500 hover:text-ink'}`}
+                    className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'profile' && !viewedProfileId ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
                   >
                     {t('nav.profile')}
                   </button>

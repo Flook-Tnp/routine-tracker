@@ -138,12 +138,12 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               value={newPostContent}
               onChange={(e) => setNewPostContent(e.target.value)}
               placeholder={t('feed.placeholder')}
-              className="w-full bg-white border border-border p-4 text-xs font-mono text-ink focus:outline-none focus:border-accent h-24 resize-none shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full bg-white border-2 border-border p-4 text-xs font-mono text-ink focus:outline-none focus:border-accent h-24 resize-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             />
             <div className="flex justify-end">
               <button 
                 type="submit" 
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:scale-95"
+                className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black"
               >
                 <Send size={12} />
                 {t('feed.post')}
@@ -161,7 +161,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
         {posts.map((post) => {
           const isMe = post.user_id === session?.user?.id
           return (
-            <div key={post.id} className="bg-white border border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(124,58,237,1)] transition-all">
+            <div key={post.id} className="bg-white border-2 border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(124,58,237,1)] transition-all">
               <div className="flex justify-between items-start">
                 <div 
                   className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
