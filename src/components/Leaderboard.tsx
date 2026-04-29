@@ -62,7 +62,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
                 {/* User Info */}
                 <div className="md:px-6 md:py-4 flex-1">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 md:w-6 md:h-6 bg-canvas border border-border flex items-center justify-center text-[10px] font-black text-accent uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-accent'}`}>
+                    <div className={`w-8 h-8 md:w-6 md:h-6 bg-canvas border-2 border-border flex items-center justify-center text-[10px] font-black text-accent uppercase overflow-hidden transition-colors ${!isMe && 'group-hover:border-accent'}`}>
                       {user.avatar_url ? (
                         <img src={user.avatar_url} alt={user.username} className="w-full h-full object-cover" />
                       ) : (

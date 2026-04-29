@@ -167,7 +167,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                   className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
                   onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
                 >
-                  <div className={`w-8 h-8 bg-canvas border border-border flex items-center justify-center text-[10px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/user:border-accent'}`}>
+                  <div className={`w-8 h-8 bg-canvas border-2 border-border flex items-center justify-center text-[10px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/user:border-accent'}`}>
                     {post.profiles?.avatar_url ? (
                       <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
                     ) : (
@@ -231,7 +231,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                         className={`flex items-center gap-2 group/commenter ${isCommentMe ? 'cursor-default' : 'cursor-pointer'}`}
                         onClick={() => !isCommentMe && comment.user_id && onSelectUser?.(comment.user_id)}
                       >
-                        <div className={`w-4 h-4 bg-canvas border border-border flex items-center justify-center text-[6px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-accent'}`}>
+                        <div className={`w-4 h-4 bg-canvas border-2 border-border flex items-center justify-center text-[6px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-accent'}`}>
                           {comment.profiles?.avatar_url ? (
                             <img src={comment.profiles.avatar_url} alt={comment.profiles.username} className="w-full h-full object-cover" />
                           ) : (
@@ -256,7 +256,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder={t('feed.add_comment')}
-                  className="flex-1 bg-canvas border border-border px-3 py-1 text-[10px] font-mono text-ink focus:outline-none focus:border-accent"
+                  className="flex-1 bg-canvas border-2 border-border px-3 py-1 text-[10px] font-mono text-ink focus:outline-none focus:border-accent"
                   onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
                 />
                 <button 

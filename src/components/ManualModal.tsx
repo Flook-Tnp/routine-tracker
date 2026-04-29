@@ -24,15 +24,15 @@ export function ManualModal({ onClose }: ManualModalProps) {
               {t('manual.perf_logic')}
             </h3>
             <div className="grid gap-4">
-              <div className="bg-canvas p-4 border-l-4 border-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-canvas p-4 border-l-4 border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-accent text-[10px] font-black uppercase mb-1">Daily Streak (Flame 🔥)</p>
                 <p className="text-[11px] leading-relaxed font-bold">Counts consecutive days with ≥1 completion in the active section. If today is not yet done, the streak stays alive by checking if yesterday was completed.</p>
               </div>
-              <div className="bg-canvas p-4 border-l-4 border-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-canvas p-4 border-l-4 border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-accent text-[10px] font-black uppercase mb-1">Weekly Streak (Trophy 🏆)</p>
                 <p className="text-[11px] leading-relaxed font-bold">A "Motivation Safety Net". A week (Sun-Sat) is successful if you are active on **at least 3 different days**. This preserves your progress even if you miss a day or two.</p>
               </div>
-              <div className="bg-canvas p-4 border-l-4 border-border/20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+              <div className="bg-canvas p-4 border-l-4 border-border/20 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                 <p className="text-ink/60 text-[10px] font-black uppercase mb-1">Efficiency & Fairness</p>
                 <p className="text-[11px] leading-relaxed font-bold">Scores are calculated from the day a task was **first created**. New tasks start at 100% and are not penalized for the history that existed before they were added.</p>
               </div>
@@ -46,7 +46,7 @@ export function ManualModal({ onClose }: ManualModalProps) {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-[10px]">
               <div className="space-y-2">
-                <p className="text-accent font-black uppercase border-b border-border/10 pb-1">Navigation</p>
+                <p className="text-accent font-black uppercase border-b-2 border-border/10 pb-1">Navigation</p>
                 <ul className="space-y-1 font-bold">
                   <li className="flex justify-between"><span>DATE_ARROWS</span> <span className="text-ink/40">+/- 1 DAY</span></li>
                   <li className="flex justify-between"><span>DATE_STRIP</span> <span className="text-ink/40">QUICK JUMP</span></li>
@@ -54,7 +54,7 @@ export function ManualModal({ onClose }: ManualModalProps) {
                 </ul>
               </div>
               <div className="space-y-2">
-                <p className="text-accent font-black uppercase border-b border-border/10 pb-1">Editing</p>
+                <p className="text-accent font-black uppercase border-b-2 border-border/10 pb-1">Editing</p>
                 <ul className="space-y-1 font-bold">
                   <li className="flex justify-between"><span>DOUBLE_CLICK</span> <span className="text-ink/40">RENAME MODE</span></li>
                   <li className="flex justify-between"><span>PENCIL_ICON</span> <span className="text-ink/40">EDIT TITLE</span></li>

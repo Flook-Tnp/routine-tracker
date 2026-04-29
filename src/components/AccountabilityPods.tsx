@@ -256,9 +256,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   <Activity size={14} className="text-accent" /> Mission_Objectives
                 </h3>
 
-                <div className="bg-canvas border border-border p-4 md:p-6 space-y-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div className="bg-canvas border-2 border-border p-4 md:p-6 space-y-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
                   {selectedPod.created_by === session?.user?.id && (
-                    <div className="border-b border-border/10 pb-6">
+                    <div className="border-b-2 border-border/10 pb-6">
                       {isAddingTask ? (
                         <form onSubmit={handleAddTask} className="flex flex-col md:flex-row gap-3">
                           <input
@@ -271,11 +271,11 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                           />
                           <div className="flex gap-2">
                             <button type="submit" className="flex-1 btn-primary py-3">{t('pods.establish')}</button>
-                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-white border border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('common.cancel')}</button>
+                            <button type="button" onClick={() => setIsAddingTask(false)} className="px-4 bg-white border-2 border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('common.cancel')}</button>
                           </div>
                         </form>
                       ) : (
-                        <button onClick={() => setIsAddingTask(true)} className="w-full py-4 border border-dashed border-border text-[10px] font-black uppercase text-ink/50 hover:text-accent hover:border-accent/30 transition-all bg-canvas flex items-center justify-center gap-2 active:scale-[0.98]">
+                        <button onClick={() => setIsAddingTask(true)} className="w-full py-4 border-2 border-dashed border-border text-[10px] font-black uppercase text-ink/50 hover:text-accent hover:border-accent/30 transition-all bg-canvas flex items-center justify-center gap-2 active:scale-[0.98]">
                           <Plus size={14} /> {t('pods.add_mission')}
                         </button>
                       )}
@@ -286,7 +286,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                     {groupTasks.map((task) => {
                       const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
                       return (
-                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border-2 transition-all ${isDone ? 'bg-accent-soft border-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border hover:border-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}>
+                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border-2 transition-all ${isDone ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border hover:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}`}>
                           <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
                             <div className={`w-7 h-7 md:w-6 md:h-6 border-2 transition-all flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-accent border-accent' : 'border-border bg-white'}`}>
                               {isDone && <Check size={16} className="text-white stroke-[4px]" />}
@@ -304,7 +304,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                       )
                     })}
                     {groupTasks.length === 0 && (
-                      <div className="text-center py-12 border border-dashed border-border">
+                      <div className="text-center py-12 border-2 border-dashed border-border">
                         <p className="text-[10px] text-ink/30 uppercase font-black tracking-widest">{t('pods.no_missions')}</p>
                       </div>
                     )}
@@ -329,10 +329,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   const isMe = member.id === session?.user?.id
                   const isDone = member.group_tasks_completed > 0
                   return (
-                    <div key={member.id} className={`relative bg-white border-2 ${isDone ? 'border-accent bg-accent-soft' : 'border-border'} p-4 space-y-4 group/card transition-all hover:border-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]`}>
+                    <div key={member.id} className={`relative bg-white border-2 ${isDone ? 'border-accent bg-accent-soft' : 'border-border'} p-4 space-y-4 group/card transition-all hover:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
                       <div className="flex items-center gap-3 pr-8">
                         <div className={`flex items-center gap-3 flex-1 min-w-0 ${!isMe && 'cursor-pointer active:scale-95 transition-transform'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
-                          <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center overflow-hidden shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                          <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
                             {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-sm font-black text-ink/30">{member.username?.[0]?.toUpperCase()}</span>}
                           </div>
                           <div className="min-w-0">
@@ -345,14 +345,14 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                       {!isMe && !isDone && (
                         <button 
                           onClick={() => handlePing(member.id, member.username)} 
-                          className="absolute top-4 right-4 p-2 border border-border text-ink hover:bg-accent hover:text-white transition-all active:scale-90 flex-shrink-0 bg-white" 
+                          className="absolute top-4 right-4 p-2 border-2 border-border text-ink hover:bg-accent hover:text-white transition-all active:scale-90 flex-shrink-0 bg-white" 
                           title="Ping Member"
                         >
                           <Bell size={14} />
                         </button>
                       )}
                       
-                      <div className="flex flex-col gap-2 pt-3 border-t border-border/10">
+                      <div className="flex flex-col gap-2 pt-3 border-t-2 border-border/10">
                         <div className={`text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5 ${isDone ? 'text-accent' : 'text-red-500 animate-pulse'}`}>
                           <div className={`w-1 h-1 rounded-full ${isDone ? 'bg-accent shadow-[0_0_5px_var(--color-accent)]' : 'bg-red-500'}`} />
                           {isDone ? 'SYNCED' : 'OFFLINE'}
@@ -398,7 +398,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           </div>
           <div className="flex gap-3 pt-2">
             <button type="submit" className="flex-1 btn-primary py-4">{t('pods.btn_create')}</button>
-            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('common.cancel')}</button>
+            <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border-2 border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('common.cancel')}</button>
           </div>
         </form>
       )}
@@ -407,7 +407,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         {groups.map((group) => {
           const isMember = group.group_members?.some(m => m.user_id === session?.user?.id)
           return (
-            <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]">
+            <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]">
               <div className="space-y-2">
                 <h3 className="text-xl md:text-2xl font-black text-ink uppercase tracking-tighter group-hover:text-accent transition-colors">{group.name}</h3>
                 <p className="text-xs text-ink/60 line-clamp-2 leading-relaxed">{group.description}</p>

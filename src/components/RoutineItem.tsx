@@ -30,7 +30,7 @@ export function RoutineItem({
       onClick={() => toggleCompletion(routine.id)}
       className={`group flex items-center justify-between p-4 md:p-5 border-2 transition-all duration-300 cursor-pointer font-mono ${
         isCompleted 
-          ? 'bg-accent-soft border-accent text-accent shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+          ? 'bg-accent-soft border-accent text-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
           : 'bg-white border-border hover:border-accent text-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]'
       }`}
     >
@@ -70,7 +70,7 @@ export function RoutineItem({
             setEditingRoutineId(routine.id)
             setEditingRoutineTitle(routine.title)
           }}
-          className="p-2 hover:text-accent transition-colors bg-canvas border border-border"
+          className="p-2 hover:text-accent transition-colors bg-canvas border-2 border-border"
           title="Rename"
         >
           <Pencil size={16} />
@@ -80,7 +80,7 @@ export function RoutineItem({
             e.stopPropagation()
             deleteRoutine(routine.id, routine.title)
           }}
-          className="p-2 hover:text-red-600 transition-colors bg-canvas border border-border"
+          className="p-2 hover:text-red-600 transition-colors bg-canvas border-2 border-border"
           title="Delete"
         >
           <Trash2 size={16} />

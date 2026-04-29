@@ -828,19 +828,19 @@ function App() {
                     >
                       <Bell size={18} />
                     </button>
-                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border border-border px-2 bg-white">
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
                       {language}
                     </button>
                     {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
                     <button className="hidden">
                       {notifications.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border border-border">
+                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-border">
                           {notifications.length}
                         </span>
                       )}
                     </button>
                     {showNotifications && (
-                      <div className="absolute top-full left-0 mt-4 w-72 bg-white border border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                      <div className="absolute top-full left-0 mt-4 w-72 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-3 border-b border-border bg-canvas flex justify-between items-center">
                           <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                           <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-ink">
@@ -924,13 +924,13 @@ function App() {
                     <div className="relative" ref={notificationsRefMobile}>
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-500'}`}><Bell size={18} />
                     </button>
-                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border border-border px-2 bg-white">
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
                       {language}
                     </button>
                     {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
                     <button className="hidden"></button>
                       {showNotifications && (
-                        <div className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-white border border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                           <div className="p-3 border-b border-border bg-canvas flex justify-between items-center">
                             <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                             <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-ink">
@@ -964,7 +964,7 @@ function App() {
                   <div className="flex items-center gap-3">
                     {session ? (
                       <div className="flex items-center gap-3">
-                        <div className="w-6 h-6 bg-white border border-border flex items-center justify-center overflow-hidden">
+                        <div className="w-6 h-6 bg-white border-2 border-border flex items-center justify-center overflow-hidden">
                           {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="text-gray-400" />}
                         </div>
                         <button onClick={() => supabase.auth.signOut()} className="text-gray-500 p-1 hover:text-red-500 transition-colors"><LogOut size={18} /></button>
@@ -977,23 +977,23 @@ function App() {
 
                 {/* Date Controls */}
                 <div className="flex items-center gap-2">
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 text-gray-500 hover:text-accent border border-border md:border-0"><ChevronLeft size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={20} /></button>
                   <div className="relative flex-1 md:flex-none" ref={datePickerRef}>
                     <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-accent bg-accent-soft px-4 py-2 border border-accent/30 hover:bg-accent-soft/80 text-xs font-bold uppercase tracking-widest transition-all">
                       <CalendarIcon size={16} />
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
                     </button>
                     {showDatePicker && (
-                      <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-white border border-border p-4 shadow-2xl min-w-[240px]">
-                        <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-white text-ink text-sm p-3 border border-border focus:outline-none focus:border-accent mb-4" />
+                      <div className="absolute top-full left-0 right-0 md:right-auto mt-2 z-50 bg-white border-2 border-border p-4 shadow-2xl min-w-[240px]">
+                        <input type="date" defaultValue={selectedDateStr} onChange={(e) => { const d = new Date(e.target.value); if(!isNaN(d.getTime())) setSelectedDate(d); }} onKeyDown={(e) => e.key === 'Enter' && setShowDatePicker(false)} className="w-full bg-white text-ink text-sm p-3 border-2 border-border focus:outline-none focus:border-accent mb-4" />
                         <div className="flex gap-2">
                           <button onClick={() => setShowDatePicker(false)} className="flex-1 py-3 text-[10px] bg-accent text-white font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{t('common.confirm')}</button>
-                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-canvas text-ink border border-border font-black uppercase tracking-widest">{t('action.today')}</button>
+                          <button onClick={() => { setSelectedDate(new Date()); setShowDatePicker(false); }} className="flex-1 py-3 text-[10px] bg-canvas text-ink border-2 border-border font-black uppercase tracking-widest">{t('action.today')}</button>
                         </div>
                       </div>
                     )}
                   </div>
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 text-gray-500 hover:text-accent border border-border md:border-0"><ChevronRight size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={20} /></button>
                 </div>
               </div>
 
@@ -1022,7 +1022,7 @@ function App() {
                         <span className="text-[10px] text-ink font-black uppercase tracking-widest truncate max-w-[120px]">{profile.username}</span>
                         <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-500 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">{t('auth.logout_nav')}</button>
                       </div>
-                      <div className="w-10 h-10 bg-white border border-border p-1 flex items-center justify-center overflow-hidden shadow-sm">
+                      <div className="w-10 h-10 bg-white border-2 border-border p-1 flex items-center justify-center overflow-hidden shadow-sm">
                         {profile.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-300" />}
                       </div>
                     </div>
@@ -1182,7 +1182,7 @@ function App() {
               {dailyStats.completed}/{dailyStats.total} <span className="text-[10px] opacity-50 ml-1">({dailyStats.percentage}%)</span>
             </span>
           </div>
-          <div className="h-4 bg-white border border-border rounded-none overflow-hidden p-[2px] relative group">
+          <div className="h-4 bg-white border-2 border-border rounded-none overflow-hidden p-[2px] relative group">
             <div 
               className="h-full bg-accent transition-all duration-1000 ease-out relative"
               style={{ width: `${dailyStats.percentage}%` }}
@@ -1201,7 +1201,7 @@ function App() {
           <div className="grid grid-cols-7 gap-2 h-16 items-end">
             {last7Days.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-2">
-                <div className="w-full bg-canvas h-10 relative border border-border overflow-hidden">
+                <div className="w-full bg-canvas h-10 relative border-2 border-border overflow-hidden">
                   <div
                     className="absolute bottom-0 left-0 right-0 transition-all duration-500"
                     style={{
@@ -1218,11 +1218,11 @@ function App() {
         <section className="space-y-4">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.thirty_days')}</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <p className="text-[8px] text-gray-500 uppercase tracking-widest">{t('stats.perfect_days')}</p>
               <p className="text-3xl font-black text-ink tracking-tight">{thirtyDayStats.perfectDays}</p>
             </div>
-            <div className="bg-white border border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
               <p className="text-[8px] text-gray-500 uppercase tracking-widest">{t('stats.avg_efficiency')}</p>
               <p className="text-3xl font-black text-accent tracking-tight">{thirtyDayStats.avg}%</p>
             </div>
@@ -1281,7 +1281,7 @@ function App() {
               ))}
             </div>
 
-            <div className="h-[350px] w-full bg-white border border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="h-[350px] w-full bg-white border-2 border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={lifetimeChartData}>
                   <defs>
@@ -1304,7 +1304,7 @@ function App() {
                    fontSize={9}
                    tickLine={false}
                    axisLine={false}
-                   domain={['auto', 'auto']}
+                   domain={[0, 100]}
                    tickFormatter={(val) => `${Math.round(val)}%`}
                   />
                   <Tooltip
@@ -1316,7 +1316,7 @@ function App() {
                   />
                   {!hiddenRoutines.has('Total') && (
                    <Area
-                     type="natural"
+                     type="monotone"
                      dataKey="Total"
                      stroke="#7C3AED"
                      strokeWidth={3}
@@ -1330,7 +1330,7 @@ function App() {
                   {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
                    <Line
                      key={r.id}
-                     type="natural"
+                     type="monotone"
                      dataKey={r.title}
                      stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
                      strokeWidth={1.5}
@@ -1352,7 +1352,7 @@ function App() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {taskBreakdown.map((task, index) => (
-                <div key={index} className="bg-white border border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div key={index} className="bg-white border-2 border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <span className="text-[10px] uppercase tracking-widest text-gray-500 block truncate max-w-[150px] font-bold">{task.title}</span>

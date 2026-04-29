@@ -371,7 +371,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
               <button 
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               >
                 <Camera size={16} className={isUploading ? 'animate-pulse' : ''} />
               </button>
@@ -379,7 +379,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                 <button 
                   onClick={handleAvatarDelete}
                   disabled={isUploading}
-                  className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   title="Delete Profile Picture"
                 >
                   <Trash2 size={16} />
@@ -532,7 +532,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                   <span>Next: {streakProgress.next.name}</span>
                   <span>{dailyStreak} / {streakProgress.next.count} Days</span>
                 </div>
-                <div className="h-1.5 w-full bg-canvas border border-border/10 overflow-hidden">
+                <div className="h-1.5 w-full bg-canvas border-2 border-border/10 overflow-hidden">
                   <div 
                     className="h-full bg-accent transition-all duration-1000"
                     style={{ width: `${Math.min(100, (dailyStreak / streakProgress.next.count) * 100)}%` }}
@@ -570,7 +570,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
                   <span>Next: {xpProgress.next.name}</span>
                   <span>{(profile?.lifetime_xp || profile?.total_xp || 0).toLocaleString()} / {xpProgress.next.count.toLocaleString()} XP</span>
                 </div>
-                <div className="h-1.5 w-full bg-canvas border border-border/10 overflow-hidden">
+                <div className="h-1.5 w-full bg-canvas border-2 border-border/10 overflow-hidden">
                   <div 
                     className="h-full bg-accent transition-all duration-1000"
                     style={{ width: `${Math.min(100, ((profile?.lifetime_xp || profile?.total_xp || 0) / xpProgress.next.count) * 100)}%` }}

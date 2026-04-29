@@ -81,7 +81,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
             </p>
           </div>
 
-          <div className="flex bg-canvas border border-border p-1 rounded-none">
+          <div className="flex bg-canvas border-2 border-border p-1 rounded-none">
             <button 
               onClick={() => setView('sign_in')}
               className={`flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all ${view === 'sign_in' ? 'bg-accent text-white' : 'text-ink/40 hover:text-ink'}`}
@@ -111,7 +111,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="identity@neural.link"
-                className="w-full bg-canvas border border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
+                className="w-full bg-canvas border-2 border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
               />
             </div>
           </div>
@@ -129,7 +129,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full bg-canvas border border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
+                className="w-full bg-canvas border-2 border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
               />
             </div>
           </div>

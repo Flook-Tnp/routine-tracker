@@ -77,7 +77,7 @@ export function KanbanBoard({
                   <div key={task.id} className="bg-white border-2 border-border p-5 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]">
                     <p className="text-sm text-ink mb-6 font-black leading-relaxed uppercase tracking-tight">{task.title}</p>
                     
-                    <div className="flex justify-between items-center pt-4 border-t border-border/10">
+                    <div className="flex justify-between items-center pt-4 border-t-2 border-border/10">
                       <div className="flex gap-2">
                         {col.id !== 'todo' && (
                           <button 
