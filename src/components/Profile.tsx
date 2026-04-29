@@ -584,17 +584,16 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
 
       {!isPublic && (
         <section className="pt-8 border-t-2 border-border">
-          <button 
+          <button
             onClick={() => {
               import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())
             }}
-            className="w-full py-5 bg-red-50 border-2 border-red-600 text-red-600 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            className="w-full py-5 bg-canvas border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
-            [Terminate_Session]
+            [Log_Out]
           </button>
         </section>
       )}
-
       {/* Trophy Room Modal */}
       {showTrophyRoom && (
         <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
