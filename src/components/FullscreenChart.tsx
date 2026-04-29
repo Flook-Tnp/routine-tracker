@@ -95,7 +95,7 @@ export function FullscreenChart({
             />
             {!hiddenRoutines.has('Total') && (
               <Area
-                type="linear"
+                type="monotone"
                 dataKey="Total"
                 stroke="#7C3AED"
                 strokeWidth={4}
@@ -108,7 +108,7 @@ export function FullscreenChart({
             {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
               <Line
                 key={r.id}
-                type="linear"
+                type="monotone"
                 dataKey={r.title}
                 stroke={`hsl(${(i * 60) % 360}, 60%, 45%)`}
                 strokeWidth={2}
@@ -124,7 +124,7 @@ export function FullscreenChart({
               travellerWidth={20}
             >
               <AreaChart data={lifetimeChartData}>
-                <Area type="linear" dataKey="Total" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.1} dot={false} />
+                <Area type="monotone" dataKey="Total" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.1} dot={false} />
               </AreaChart>
             </Brush>
           </AreaChart>

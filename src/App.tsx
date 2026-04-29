@@ -1236,21 +1236,17 @@ function App() {
                 <p className="text-[10px] text-gray-400 uppercase mt-1">Total Days Tracked: {lifetimeStats.totalDays}</p>
               </div>
               <div className="flex items-center gap-4">
-                <FullscreenChart
-                  isChartFullscreen={isChartFullscreen}
-                  setIsChartFullscreen={setIsChartFullscreen}
-                  activeCategory={activeCategory}
-                  lifetimeStats={lifetimeStats}
-                  lifetimeChartData={lifetimeChartData}
-                  hiddenRoutines={hiddenRoutines}
-                  setHiddenRoutines={setHiddenRoutines}
-                  filteredRoutines={filteredRoutines}
-                />
+                <button 
+                  onClick={() => setIsChartFullscreen(true)}
+                  className="p-2 bg-white border-2 border-border text-ink/40 hover:text-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  title="Fullscreen View"
+                >
+                  <Maximize2 size={16} />
+                </button>
                 <div className="text-right">
                   <span className="text-3xl font-black text-accent">{lifetimeStats.percentage}%</span>
                 </div>
-              </div>
-            </div>
+              </div>            </div>
 
             <div className="flex flex-wrap gap-2">
               <button
@@ -1317,7 +1313,7 @@ function App() {
                   />
                   {!hiddenRoutines.has('Total') && (
                    <Area
-                     type="linear"
+                     type="monotone"
                      dataKey="Total"
                      stroke="#7C3AED"
                      strokeWidth={3}
@@ -1331,7 +1327,7 @@ function App() {
                   {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
                    <Line
                      key={r.id}
-                     type="linear"
+                     type="monotone"
                      dataKey={r.title}
                      stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
                      strokeWidth={2}
@@ -1495,8 +1491,18 @@ function App() {
         />
       )}
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t border-border px-2 py-3 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
+      <FullscreenChart
+        isChartFullscreen={isChartFullscreen}
+        setIsChartFullscreen={setIsChartFullscreen}
+        activeCategory={activeCategory}
+        lifetimeStats={lifetimeStats}
+        lifetimeChartData={lifetimeChartData}
+        hiddenRoutines={hiddenRoutines}
+        setHiddenRoutines={setHiddenRoutines}
+        filteredRoutines={filteredRoutines}
+      />
+
+      {/* Mobile Bottom Navigation */}      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t border-border px-2 py-3 pb-safe shadow-[0_-10px_30px_rgba(0,0,0,0.1)]">
         <div className="flex justify-around items-center max-w-lg mx-auto">
           <button
             onClick={() => setCurrentView('tracker')}
