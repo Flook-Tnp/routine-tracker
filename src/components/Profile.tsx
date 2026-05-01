@@ -218,12 +218,22 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         <p className="text-[10px] uppercase tracking-widest text-ink/40">{t('profile.loading')}</p>
         <p className="text-[8px] text-ink/20 font-black">Status: Establishing secure connection to profile sector</p>
       </div>
-      <button 
-        onClick={() => onBack ? onBack() : window.location.reload()}
-        className="btn-primary"
-      >
-        {onBack ? 'Return_to_Standings' : 'Re-Initialize_System'}
-      </button>
+      <div className="flex flex-col items-center gap-4">
+        <button 
+          onClick={() => onBack ? onBack() : window.location.reload()}
+          className="btn-primary w-64"
+        >
+          {onBack ? 'Return_to_Standings' : 'Re-Initialize_System'}
+        </button>
+        {!isPublic && (
+          <button 
+            onClick={() => import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())}
+            className="text-[10px] font-black uppercase tracking-widest text-ink/40 hover:text-red-500 transition-colors"
+          >
+            [Force_Log_Out_Stale_Session]
+          </button>
+        )}
+      </div>
     </div>
   )
 

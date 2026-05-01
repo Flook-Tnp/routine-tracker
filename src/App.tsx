@@ -1060,22 +1060,21 @@ function App() {
                 </div>
 
                 <div className="hidden md:flex items-center gap-4 pl-8 border-l border-border/50">
-                  {session && profile && (
+                  {session && (
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-ink font-black uppercase tracking-widest truncate max-w-[120px]">{profile.username}</span>
+                        <span className="text-[10px] text-ink font-black uppercase tracking-widest truncate max-w-[120px]">{profile?.username || session.user.email?.split('@')[0]}</span>
                         <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-500 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">{t('auth.logout_nav')}</button>
                       </div>
                       <div className="w-10 h-10 bg-white border-2 border-border p-1 flex items-center justify-center overflow-hidden shadow-sm">
-                        {profile.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-300" />}
+                        {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-300" />}
                       </div>
                     </div>
                   )}
                   {!session && (
                     <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-2 px-6">{t('auth.login_nav')}</button>
                   )}
-                </div>
-              </div>
+                </div>              </div>
             </div>
 
             <div 
