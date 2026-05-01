@@ -32,7 +32,7 @@ export function KanbanBoard({
   )
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <section className="space-y-4 font-mono">
         <div className="flex justify-between items-end px-1">
           <div className="space-y-1">
@@ -65,7 +65,7 @@ export function KanbanBoard({
           
           return (
             <div key={col.id} className="space-y-6">
-              <div className="flex items-center gap-2 border-b-2 border-border pb-3 mb-2 sticky top-[180px] md:top-0 bg-canvas/95 backdrop-blur-md z-10 py-3">
+              <div className="flex items-center gap-2 border-b-2 border-border pb-3 mb-2 md:sticky md:top-0 bg-canvas z-10 py-3">
                 <div className={`w-2 h-5 ${col.id === 'todo' ? 'bg-ink/20' : 'bg-accent'}`} />
                 <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${col.color}`}>{col.label}</h3>
                 <span className="ml-auto text-[9px] text-ink/40 font-black">
