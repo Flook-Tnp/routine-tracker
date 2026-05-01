@@ -119,7 +119,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
           {(view === 'sign_up' || view === 'forgot_password') && !message && !error && (
             <div className="bg-accent/5 border border-accent/20 p-3 animate-in fade-in slide-in-from-top-1 duration-300">
               <p className="text-[9px] text-accent font-black uppercase leading-relaxed tracking-widest text-center">
-                Protocol_Note: A confirmation link will be sent to your email. You must verify it before proceeding.
+                {t('auth.verification_note')}
               </p>
             </div>
           )}
