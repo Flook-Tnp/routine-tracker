@@ -829,10 +829,10 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-ink font-mono selection:bg-accent/30">
       
-      {/* Integrated Header Container */}
-      <div className="bg-white border-b-2 border-border">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-8">
-          <header className="space-y-6 md:space-y-8">
+      {/* Integrated Header Container - Sticky on Mobile */}
+      <div className="md:relative sticky top-0 z-[100] bg-white border-b-2 border-border">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 md:py-8">
+          <header className="space-y-4 md:space-y-8">
             {/* Desktop Top Row: Title + Nav */}
             <div className="hidden md:flex justify-between items-center border-b border-border/50 pb-4">
               <div className="flex items-center gap-4">
@@ -933,29 +933,29 @@ function App() {
             </div>
 
             {/* Combined Mobile Header / Desktop Bottom Row */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 md:gap-0">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0">
               <div className="space-y-3">
                 {/* Mobile Identity */}
                 <div className="flex md:hidden items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
-                    <h1 className="text-2xl font-bold text-ink tracking-tighter uppercase">{t('app.title')}</h1>
+                    <h1 className="text-xl font-black text-ink tracking-tighter uppercase">{t('app.title')}</h1>
                     <div className="relative" ref={notificationsRefMobile}>
                       <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-500'}`}><Bell size={18} />
                     </button>
-                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-[10px] font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
                       {language}
                     </button>
                     {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
                     <button className="hidden"></button>
                       {showNotifications && (
-                        <div className="fixed md:absolute top-20 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="fixed md:absolute top-16 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
                           <div className="p-3 border-b border-border bg-canvas flex justify-between items-center">
                             <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                             <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-ink">
                               <X size={12} />
                             </button>
                           </div>
-                          <div className="max-h-[60vh] md:max-h-80 overflow-y-auto custom-scrollbar">
+                          <div className="max-h-[50vh] md:max-h-80 overflow-y-auto custom-scrollbar">
                             {notifications.length > 0 ? (
                               notifications.map((n) => (
                                 <div key={n.id} className="p-4 border-b border-border last:border-0 hover:bg-canvas transition-colors group">
@@ -979,26 +979,26 @@ function App() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     {session ? (
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-white border-2 border-border flex items-center justify-center overflow-hidden">
                           {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="text-gray-400" />}
                         </div>
-                        <button onClick={() => supabase.auth.signOut()} className="text-gray-500 p-1 hover:text-red-500 transition-colors"><LogOut size={18} /></button>
+                        <button onClick={() => supabase.auth.signOut()} className="text-gray-500 p-1 hover:text-red-500 transition-colors"><LogOut size={16} /></button>
                       </div>
                     ) : (
-                      <button onClick={() => setIsAuthModalOpen(true)} className="p-2 text-accent border border-accent/30 bg-accent-soft/50"><LogIn size={18} /></button>
+                      <button onClick={() => setIsAuthModalOpen(true)} className="p-1.5 text-accent border border-accent/30 bg-accent-soft/50"><LogIn size={16} /></button>
                     )}
                   </div>
                 </div>
 
                 {/* Date Controls */}
-                <div className="flex items-center gap-2">
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={20} /></button>
+                <div className="flex items-center gap-1 md:gap-2">
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={18} md:size={20} /></button>
                   <div className="relative flex-1 md:flex-none" ref={datePickerRef}>
-                    <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-accent bg-accent-soft px-4 py-2 border border-accent/30 hover:bg-accent-soft/80 text-xs font-bold uppercase tracking-widest transition-all">
-                      <CalendarIcon size={16} />
+                    <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-accent bg-accent-soft px-3 md:px-4 py-1.5 md:py-2 border border-accent/30 hover:bg-accent-soft/80 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all">
+                      <CalendarIcon size={14} md:size={16} />
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
                     </button>
                     {showDatePicker && (
@@ -1009,11 +1009,39 @@ function App() {
                       />
                     )}
                   </div>
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={18} md:size={20} /></button>
+                  
+                  {/* Today Button - Mobile Only */}
+                  <button 
+                    onClick={() => setSelectedDate(startOfDay(new Date()))}
+                    className="md:hidden ml-1 px-3 py-1.5 bg-black text-white text-[10px] font-black uppercase tracking-widest border-2 border-black active:translate-y-[2px] transition-all"
+                  >
+                    {t('action.today')}
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-6 md:gap-10 border-t md:border-t-0 border-border pt-4 md:pt-0">
+              <div className="flex items-center justify-between md:justify-end gap-4 md:gap-10 md:border-t-0 border-border md:pt-0 pt-2 border-t md:hidden">
+                <div className="flex gap-4 w-full justify-around">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-orange-500">
+                      <Flame size={14} fill="currentColor" />
+                      <span className="text-lg font-black tracking-tighter text-ink">{dailyStreak}</span>
+                    </div>
+                    <p className="text-[7px] text-gray-500 uppercase tracking-widest font-black">{t('streak.daily')}</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1 text-accent">
+                      <Trophy size={14} />
+                      <span className="text-lg font-black tracking-tighter text-ink">{weeklyStreak}</span>
+                    </div>
+                    <p className="text-[7px] text-gray-500 uppercase tracking-widest font-black">{t('streak.weekly')}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop Streaks */}
+              <div className="hidden md:flex items-center justify-end gap-10">
                 <div className="flex gap-8">
                   <div className="text-center md:text-right">
                     <div className="flex items-center justify-center md:justify-end gap-1.5 text-orange-500">
@@ -1052,7 +1080,7 @@ function App() {
 
             <div 
               ref={dateStripRef}
-              className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-2 md:pb-0"
+              className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-1 md:pb-0"
             >
               {dateStrip.map((date) => {
                 const isActive = format(date, 'yyyy-MM-dd') === selectedDateStr
@@ -1062,20 +1090,20 @@ function App() {
                     key={date.toString()}
                     data-active={isActive}
                     onClick={() => setSelectedDate(date)}
-                    className={`flex-shrink-0 w-[54px] md:w-auto flex flex-col items-center py-3 border transition-all snap-center ${
+                    className={`flex-shrink-0 w-[48px] md:w-auto flex flex-col items-center py-2 md:py-3 border transition-all snap-center ${
                       isActive 
                         ? 'bg-accent border-border text-white font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
                         : 'bg-white border-border text-gray-400 hover:border-accent hover:text-accent'
                     }`}
                   >
-                    <span className="text-[8px] uppercase tracking-tighter opacity-70">
+                    <span className="text-[7px] md:text-[8px] uppercase tracking-tighter opacity-70">
                       {format(date, 'EEE')}
                     </span>
-                    <span className="text-sm">
+                    <span className="text-xs md:text-sm">
                       {format(date, 'd')}
                     </span>
                     {isToday && !isActive && (
-                      <div className="w-1.5 h-1.5 bg-accent rounded-full mt-1" />
+                      <div className="w-1 h-1 md:w-1.5 md:h-1.5 bg-accent rounded-full mt-0.5 md:mt-1" />
                     )}
                   </button>
                 )
@@ -1085,7 +1113,7 @@ function App() {
         </div>
       </div>
 
-      <div key={currentView} className="max-w-5xl mx-auto p-4 md:p-8 pt-8 pb-32 space-y-12 view-enter">
+      <div key={currentView} className="max-w-5xl mx-auto p-4 md:p-8 pt-4 md:pt-8 pb-32 space-y-8 md:space-y-12 view-enter">
         {currentView === 'tracker' ? (
           <>
             <section className="space-y-4">
