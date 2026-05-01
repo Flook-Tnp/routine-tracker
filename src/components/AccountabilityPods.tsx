@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -27,6 +27,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [isEditingPod, setIsEditingPod] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [loading, setLoading] = useState(true)
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -140,6 +143,22 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }
 
+  const handleUpdateGroup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editName.trim() || !selectedPod) return
+    try {
+      const updatedPod = await StorageService.updateGroup(selectedPod.id, {
+        name: editName,
+        description: editDescription
+      })
+      onSelectPod(updatedPod)
+      setGroups(groups.map(g => g.id === updatedPod.id ? updatedPod : g))
+      setIsEditingPod(false)
+    } catch (err) {
+      console.error('Update failed:', err)
+    }
+  }
+
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newTaskTitle.trim() || !selectedPod) return
@@ -225,30 +244,69 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         </button>
 
         <section className="bg-white border-2 border-border p-5 md:p-8 space-y-6 md:space-y-8 relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-2xl md:text-3xl font-black text-ink uppercase tracking-tighter">{selectedPod.name}</h2>
-                <div className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                  <Flame size={14} fill="currentColor" />
-                  Group_Streak: {podMembers[0]?.pod_current_streak ?? 0}
-                </div>
+          {isEditingPod ? (
+            <form onSubmit={handleUpdateGroup} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.name_label')}</label>
+                <input 
+                  autoFocus
+                  type="text" 
+                  value={editName} 
+                  onChange={(e) => setEditName(e.target.value)} 
+                  className="w-full input-primary text-sm py-3" 
+                />
               </div>
-              <p className="text-sm text-ink/70 leading-relaxed max-w-lg">{selectedPod.description}</p>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.desc_label')}</label>
+                <textarea 
+                  value={editDescription} 
+                  onChange={(e) => setEditDescription(e.target.value)} 
+                  className="w-full input-primary text-sm py-3 h-28 resize-none" 
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="flex-1 btn-primary py-3">SAVE_CHANGES</button>
+                <button type="button" onClick={() => setIsEditingPod(false)} className="px-6 bg-white border-2 border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('common.cancel')}</button>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h2 className="text-2xl md:text-3xl font-black text-ink uppercase tracking-tighter">{selectedPod.name}</h2>
+                  <div className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <Flame size={14} fill="currentColor" />
+                    Group_Streak: {podMembers[0]?.pod_current_streak ?? 0}
+                  </div>
+                </div>
+                <p className="text-sm text-ink/70 leading-relaxed max-w-lg">{selectedPod.description}</p>
+              </div>
+              <div className="w-full md:w-auto text-left md:text-right flex flex-col md:items-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-border md:border-none">
+                <p className="text-[8px] text-ink/50 uppercase font-black tracking-widest">{t('pods.established')} {new Date(selectedPod.created_at).toLocaleDateString()}</p>
+                {selectedPod.created_by === session?.user?.id ? (
+                  <div className="flex flex-col md:items-end gap-3">
+                    <button 
+                      onClick={() => {
+                        setEditName(selectedPod.name)
+                        setEditDescription(selectedPod.description || '')
+                        setIsEditingPod(true)
+                      }} 
+                      className="text-[10px] font-black text-accent hover:text-accent/80 uppercase tracking-widest flex items-center gap-2 active:scale-95"
+                    >
+                      <Pencil size={14} /> Edit_Group
+                    </button>
+                    <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[10px] font-black text-red-600 hover:text-red-500 uppercase tracking-widest flex items-center gap-2 active:scale-95">
+                      <Trash2 size={14} /> Delete_Group
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => handleLeaveGroup(selectedPod.id)} className="text-[10px] font-black text-ink/60 hover:text-red-500 uppercase tracking-widest active:scale-95">
+                    Leave_Group
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="w-full md:w-auto text-left md:text-right flex flex-col md:items-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-border md:border-none">
-              <p className="text-[8px] text-ink/50 uppercase font-black tracking-widest">{t('pods.established')} {new Date(selectedPod.created_at).toLocaleDateString()}</p>
-              {selectedPod.created_by === session?.user?.id ? (
-                <button onClick={() => handleDeleteGroup(selectedPod.id)} className="text-[10px] font-black text-red-600 hover:text-red-500 uppercase tracking-widest flex items-center gap-2 active:scale-95">
-                  <Trash2 size={14} /> Delete_Group
-                </button>
-              ) : (
-                <button onClick={() => handleLeaveGroup(selectedPod.id)} className="text-[10px] font-black text-ink/60 hover:text-red-500 uppercase tracking-widest active:scale-95">
-                  Leave_Group
-                </button>
-              )}
-            </div>
-          </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">

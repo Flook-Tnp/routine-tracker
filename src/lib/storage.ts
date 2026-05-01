@@ -358,6 +358,17 @@ export const StorageService = {
     if (error) throw error
   },
 
+  async updateGroup(groupId: string, updates: Partial<Group>): Promise<Group> {
+    const { data, error } = await supabase
+      .from('groups')
+      .update(updates)
+      .eq('id', groupId)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Group
+  },
+
   async fetchGroupTasks(groupId: string): Promise<GroupTask[]> {
     const { data, error } = await supabase
       .from('group_tasks')
