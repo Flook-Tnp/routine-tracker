@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType, RoutineCompletion } from '../types'
@@ -58,6 +59,18 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   // Count unique physical days for the UI check as well
   const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
   const [showTrophyRoom, setShowTrophyRoom] = useState<'streak' | 'xp' | null>(null)
+
+  // Lock body scroll when modals are open
+  useEffect(() => {
+    if (showTrophyRoom || imageToCrop) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [showTrophyRoom, imageToCrop])
 
   // Update local state when profile changes (essential when switching between users)
   useEffect(() => {
@@ -291,7 +304,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
       )}
 
       {/* Cropper Modal */}
-      {imageToCrop && (
+      {imageToCrop && createPortal(
         <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
           <div className="w-full max-w-xl bg-white border-2 border-border shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden flex flex-col">
             <div className="p-4 border-b-2 border-border flex justify-between items-center bg-canvas">
@@ -352,7 +365,8 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <section className="text-center space-y-6">
@@ -595,7 +609,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
         </section>
       )}
       {/* Trophy Room Modal */}
-      {showTrophyRoom && (
+      {showTrophyRoom && createPortal(
         <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
           <div className="w-full h-full md:h-auto md:max-w-6xl bg-white border-none md:border-2 md:border-border shadow-none md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col md:max-h-[90vh]">
             <div className="p-6 md:p-8 border-b-2 border-border flex justify-between items-center bg-canvas">
@@ -670,7 +684,8 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
