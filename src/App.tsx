@@ -995,10 +995,10 @@ function App() {
 
                 {/* Date Controls */}
                 <div className="flex items-center gap-1 md:gap-2">
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={18} md:size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={20} /></button>
                   <div className="relative flex-1 md:flex-none" ref={datePickerRef}>
                     <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-accent bg-accent-soft px-3 md:px-4 py-1.5 md:py-2 border border-accent/30 hover:bg-accent-soft/80 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all">
-                      <CalendarIcon size={14} md:size={16} />
+                      <CalendarIcon size={16} />
                       {format(selectedDate, 'EEE, MMM d, yyyy')}
                     </button>
                     {showDatePicker && (
@@ -1009,7 +1009,7 @@ function App() {
                       />
                     )}
                   </div>
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={18} md:size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={20} /></button>
                   
                   {/* Today Button - Mobile Only */}
                   <button 
