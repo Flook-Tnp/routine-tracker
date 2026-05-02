@@ -256,8 +256,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 </div>
               ) : (
                 <p 
-                  onClick={() => setViewingReactions(post)}
-                  className="text-[13px] text-ink leading-relaxed font-mono whitespace-pre-wrap cursor-pointer hover:text-accent transition-colors py-2"
+                  className="text-[13px] text-ink leading-relaxed font-mono whitespace-pre-wrap py-2"
                 >
                   {post.content}
                 </p>
