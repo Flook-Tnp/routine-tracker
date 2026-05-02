@@ -175,6 +175,7 @@ CREATE POLICY "Tasks manageable by owners" ON tasks FOR ALL USING (auth.uid() = 
 
 CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);
 CREATE POLICY "Users can create posts" ON posts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own posts" ON posts FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own posts" ON posts FOR DELETE USING (auth.uid() = user_id);
 
 -- RPC for XP

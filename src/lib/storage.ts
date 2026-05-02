@@ -272,6 +272,14 @@ export const StorageService = {
     if (error) throw error
   },
 
+  async updatePost(postId: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('posts')
+      .update({ content })
+      .eq('id', postId)
+    if (error) throw error
+  },
+
   async addComment(postId: string, content: string, userId: string): Promise<Comment> {
     const { data, error } = await supabase
       .from('comments')

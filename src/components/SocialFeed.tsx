@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { MessageSquare, Send, Trash2, Plus, Globe } from 'lucide-react'
+import { MessageSquare, Send, Trash2, Plus, Globe, Pencil, X, Check } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -23,6 +23,8 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
   const [loading, setLoading] = useState(true)
   const [commentingOn, setCommentingOn] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
+  const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editContent, setEditContent] = useState('')
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -111,6 +113,18 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     }
   }
 
+  const handleUpdatePost = async (postId: string) => {
+    if (!editContent.trim()) return
+    try {
+      await StorageService.updatePost(postId, editContent)
+      setEditingPostId(null)
+      fetchPosts()
+    } catch (err: any) {
+      console.error('Error updating post:', err)
+      alert('PROTOCOL_ERROR: Update transmission failed.')
+    }
+  }
+
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-400">{t('feed.loading')}</div>
 
   return (
@@ -188,17 +202,56 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 </span>
               )}
               {post.user_id === session?.user?.id && (
-                <button 
-                  onClick={() => handleDeletePost(post.id)}
-                  className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                  title="Delete Post"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => {
+                      setEditingPostId(post.id)
+                      setEditContent(post.content)
+                    }}
+                    className="p-2 text-gray-400 hover:text-accent transition-colors"
+                    title="Edit Post"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeletePost(post.id)}
+                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete Post"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               )}
             </div>
 
-            <p className="text-sm text-ink leading-relaxed font-mono">{post.content}</p>
+            {editingPostId === post.id ? (
+              <div className="space-y-3">
+                <textarea
+                  autoFocus
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value)}
+                  className="w-full bg-canvas border-2 border-accent p-3 text-sm font-mono text-ink focus:outline-none h-24 resize-none"
+                />
+                <div className="flex justify-end gap-2">
+                  <button 
+                    onClick={() => setEditingPostId(null)}
+                    className="flex items-center gap-1 px-3 py-1 text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-ink transition-colors"
+                  >
+                    <X size={10} />
+                    {t('common.cancel')}
+                  </button>
+                  <button 
+                    onClick={() => handleUpdatePost(post.id)}
+                    className="flex items-center gap-1 bg-accent text-white px-3 py-1 text-[8px] font-black uppercase tracking-widest hover:bg-accent/80 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none border border-black"
+                  >
+                    <Check size={10} />
+                    {t('common.save')}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-ink leading-relaxed font-mono whitespace-pre-wrap">{post.content}</p>
+            )}
 
             <div className="flex gap-4 border-t border-border pt-4">
               <button 
