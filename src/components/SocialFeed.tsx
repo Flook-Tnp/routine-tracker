@@ -178,122 +178,129 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
           const isMe = post.user_id === session?.user?.id
           return (
             <div key={post.id} className="bg-white border-2 border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(124,58,237,1)] transition-all">
-              <div className="flex justify-between items-start">
-                <div 
-                  className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
-                  onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
+            <div className="flex justify-between items-start mb-2">
+              <div 
+                className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
+                onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
+              >
+                <div className={`w-10 h-10 bg-canvas border-2 border-black flex items-center justify-center text-[12px] font-black text-accent uppercase overflow-hidden transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${!isMe && 'group-hover/user:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)] group-hover/user:-translate-y-0.5'}`}>
+                  {post.profiles?.avatar_url ? (
+                    <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
+                  ) : (
+                    post.profiles?.username?.[0]
+                  )}
+                </div>
+                <div>
+                  <p className={`text-[11px] font-black text-ink uppercase tracking-tight transition-colors ${!isMe && 'group-hover/user:text-accent'}`}>{post.profiles?.username}</p>
+                  <p className="text-[8px] text-gray-400 uppercase font-black tracking-widest">
+                    {formatDistanceToNow(new Date(post.created_at))} ago
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {post.type === 'milestone' && (
+                  <span className="px-2 py-0.5 bg-orange-500 text-white border-2 border-black text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    MILESTONE
+                  </span>
+                )}
+                {isMe && (
+                  <div className="flex items-center bg-canvas border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                    <button 
+                      onClick={() => {
+                        setEditingPostId(post.id)
+                        setEditContent(post.content)
+                      }}
+                      className="p-1.5 text-gray-400 hover:text-accent border-r-2 border-black transition-colors"
+                      title="Edit Post"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button 
+                      onClick={() => handleDeletePost(post.id)}
+                      className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete Post"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="py-2">
+              {editingPostId === post.id ? (
+                <div className="space-y-3">
+                  <textarea
+                    autoFocus
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="w-full bg-canvas border-2 border-black p-4 text-sm font-mono text-ink focus:outline-none focus:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] h-32 resize-none"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button 
+                      onClick={() => setEditingPostId(null)}
+                      className="flex items-center gap-1 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-ink transition-colors border-2 border-transparent"
+                    >
+                      <X size={12} />
+                      {t('common.cancel')}
+                    </button>
+                    <button 
+                      onClick={() => handleUpdatePost(post.id)}
+                      className="flex items-center gap-2 bg-black text-white px-5 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black"
+                    >
+                      <Check size={12} />
+                      {t('common.save')}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p 
+                  onClick={() => setViewingReactions(post)}
+                  className="text-[13px] text-ink leading-relaxed font-mono whitespace-pre-wrap cursor-pointer hover:text-accent transition-colors py-2"
                 >
-                  <div className={`w-8 h-8 bg-canvas border-2 border-border flex items-center justify-center text-[10px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isMe && 'group-hover/user:border-accent'}`}>
-                    {post.profiles?.avatar_url ? (
-                      <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
-                    ) : (
-                      post.profiles?.username?.[0]
-                    )}
-                  </div>
-                  <div>
-                    <p className={`text-xs font-bold text-ink uppercase tracking-tighter transition-colors ${!isMe && 'group-hover/user:text-accent'}`}>{post.profiles?.username}</p>
-                    <p className="text-[8px] text-gray-400 uppercase font-bold">
-                      {formatDistanceToNow(new Date(post.created_at))} ago
-                    </p>
-                  </div>
-                </div>
-              {post.type === 'milestone' && (
-                <span className="px-2 py-0.5 bg-accent/10 text-accent border border-accent/30 text-[8px] font-bold uppercase tracking-widest">
-                  Milestone
-                </span>
-              )}
-              {post.user_id === session?.user?.id && (
-                <div className="flex items-center gap-1">
-                  <button 
-                    onClick={() => {
-                      setEditingPostId(post.id)
-                      setEditContent(post.content)
-                    }}
-                    className="p-2 text-gray-400 hover:text-accent transition-colors"
-                    title="Edit Post"
-                  >
-                    <Pencil size={14} />
-                  </button>
-                  <button 
-                    onClick={() => handleDeletePost(post.id)}
-                    className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    title="Delete Post"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  {post.content}
+                </p>
               )}
             </div>
 
-            {editingPostId === post.id ? (
-              <div className="space-y-3">
-                <textarea
-                  autoFocus
-                  value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
-                  className="w-full bg-canvas border-2 border-accent p-3 text-sm font-mono text-ink focus:outline-none h-24 resize-none"
-                />
-                <div className="flex justify-end gap-2">
-                  <button 
-                    onClick={() => setEditingPostId(null)}
-                    className="flex items-center gap-1 px-3 py-1 text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-ink transition-colors"
-                  >
-                    <X size={10} />
-                    {t('common.cancel')}
-                  </button>
-                  <button 
-                    onClick={() => handleUpdatePost(post.id)}
-                    className="flex items-center gap-1 bg-accent text-white px-3 py-1 text-[8px] font-black uppercase tracking-widest hover:bg-accent/80 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none border border-black"
-                  >
-                    <Check size={10} />
-                    {t('common.save')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p 
-                onClick={() => setViewingReactions(post)}
-                className="text-sm text-ink leading-relaxed font-mono whitespace-pre-wrap cursor-pointer hover:text-accent transition-colors"
-              >
-                {post.content}
-              </p>
-            )}
-
-            <div className="flex gap-4 border-t border-border pt-4">
-              <div className="flex items-center gap-1 group/react">
+            <div className="flex items-stretch gap-2 pt-4 mt-2 border-t-2 border-black/5">
+              <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '🔥')}
-                  className={`text-[10px] font-bold transition-colors p-1 hover:bg-canvas border-2 border-transparent hover:border-border ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-gray-400 hover:text-orange-500'}`}
                 >
-                  🔥
+                  <span className="text-xs">🔥</span>
                 </button>
                 <button 
                   onClick={() => setViewingReactions(post)}
-                  className="px-2 py-0.5 bg-canvas border-2 border-border text-[8px] font-black text-gray-500 hover:text-accent hover:border-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="px-3 py-1.5 text-[10px] font-black text-ink hover:text-accent transition-colors"
                 >
                   {post.reactions?.filter((r: Reaction) => r.emoji === '🔥').length || 0}
                 </button>
               </div>
-              <div className="flex items-center gap-1 group/react">
+
+              <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '👏')}
-                  className={`text-[10px] font-bold transition-colors p-1 hover:bg-canvas border-2 border-transparent hover:border-border ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'bg-accent text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
                 >
-                  👏
+                  <span className="text-xs">👏</span>
                 </button>
                 <button 
                   onClick={() => setViewingReactions(post)}
-                  className="px-2 py-0.5 bg-canvas border-2 border-border text-[8px] font-black text-gray-500 hover:text-accent hover:border-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="px-3 py-1.5 text-[10px] font-black text-ink hover:text-accent transition-colors"
                 >
                   {post.reactions?.filter((r: Reaction) => r.emoji === '👏').length || 0}
                 </button>
               </div>
+
               <button 
                 onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
-                className="flex items-center gap-1 text-[10px] font-bold text-gray-400 hover:text-accent transition-colors"
+                className={`flex items-center gap-2 px-4 py-1.5 bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none ${commentingOn === post.id ? 'bg-ink text-white' : 'text-gray-400 hover:text-ink'}`}
               >
-                <MessageSquare size={12} />
-                <span className="text-[8px]">{post.comments?.length || 0}</span>
+                <MessageSquare size={14} />
+                <span className="text-[10px] font-black">{post.comments?.length || 0}</span>
               </button>
             </div>
 
