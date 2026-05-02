@@ -75,6 +75,7 @@ export interface Reaction {
   post_id: string
   user_id: string
   emoji: string
+  profiles?: { username: string, avatar_url?: string | null }
 }
 
 export interface Group {

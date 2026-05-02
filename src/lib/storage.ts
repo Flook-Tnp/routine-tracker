@@ -240,7 +240,7 @@ export const StorageService = {
         *,
         profiles (username, avatar_url),
         comments (*, profiles (username, avatar_url)),
-        reactions (*)
+        reactions (*, profiles (username, avatar_url))
       `)
       .order('created_at', { ascending: false })
     

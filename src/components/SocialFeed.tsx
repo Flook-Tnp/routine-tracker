@@ -25,6 +25,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
   const [newComment, setNewComment] = useState('')
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
+  const [viewingReactions, setViewingReactions] = useState<Post | null>(null)
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -250,22 +251,43 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-ink leading-relaxed font-mono whitespace-pre-wrap">{post.content}</p>
+              <p 
+                onClick={() => setViewingReactions(post)}
+                className="text-sm text-ink leading-relaxed font-mono whitespace-pre-wrap cursor-pointer hover:text-accent transition-colors"
+              >
+                {post.content}
+              </p>
             )}
 
             <div className="flex gap-4 border-t border-border pt-4">
-              <button 
-                onClick={() => handleToggleReaction(post.id, '🔥')}
-                className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
-              >
-                🔥 <span className="text-[8px]">{post.reactions?.filter((r: Reaction) => r.emoji === '🔥').length || 0}</span>
-              </button>
-              <button 
-                onClick={() => handleToggleReaction(post.id, '👏')}
-                className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
-              >
-                👏 <span className="text-[8px]">{post.reactions?.filter((r: Reaction) => r.emoji === '👏').length || 0}</span>
-              </button>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => handleToggleReaction(post.id, '🔥')}
+                  className={`text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                >
+                  🔥
+                </button>
+                <button 
+                  onClick={() => setViewingReactions(post)}
+                  className="text-[8px] font-bold text-gray-400 hover:text-accent transition-colors"
+                >
+                  {post.reactions?.filter((r: Reaction) => r.emoji === '🔥').length || 0}
+                </button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button 
+                  onClick={() => handleToggleReaction(post.id, '👏')}
+                  className={`text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                >
+                  👏
+                </button>
+                <button 
+                  onClick={() => setViewingReactions(post)}
+                  className="text-[8px] font-bold text-gray-400 hover:text-accent transition-colors"
+                >
+                  {post.reactions?.filter((r: Reaction) => r.emoji === '👏').length || 0}
+                </button>
+              </div>
               <button 
                 onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
                 className="flex items-center gap-1 text-[10px] font-bold text-gray-400 hover:text-accent transition-colors"
@@ -337,6 +359,65 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
           />
         )}
       </div>
+
+      {viewingReactions && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border-4 border-black w-full max-w-md shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b-4 border-black flex justify-between items-center bg-accent text-white">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">REACTION_LOG</h3>
+              <button 
+                onClick={() => setViewingReactions(null)}
+                className="p-1 hover:bg-white/20 transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar">
+              {(viewingReactions.reactions?.length || 0) > 0 ? (
+                <div className="space-y-3">
+                  {viewingReactions.reactions?.map((reaction) => (
+                    <div key={reaction.id} className="flex items-center justify-between p-3 border-2 border-border bg-canvas hover:border-accent transition-all group">
+                      <div 
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => {
+                          setViewingReactions(null)
+                          onSelectUser?.(reaction.user_id)
+                        }}
+                      >
+                        <div className="w-8 h-8 bg-white border-2 border-border flex items-center justify-center overflow-hidden">
+                          {reaction.profiles?.avatar_url ? (
+                            <img src={reaction.profiles.avatar_url} alt={reaction.profiles.username} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[10px] font-bold text-accent uppercase">{reaction.profiles?.username?.[0]}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-tight text-ink group-hover:text-accent transition-colors">
+                          @{reaction.profiles?.username}
+                        </span>
+                      </div>
+                      <span className="text-xl">{reaction.emoji}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">No reactions recorded yet.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t-4 border-black bg-canvas">
+              <button 
+                onClick={() => setViewingReactions(null)}
+                className="w-full py-3 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+              >
+                CLOSE_TRANSMISSION
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
