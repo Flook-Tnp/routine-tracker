@@ -260,30 +260,30 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
             )}
 
             <div className="flex gap-4 border-t border-border pt-4">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 group/react">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '🔥')}
-                  className={`text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                  className={`text-[10px] font-bold transition-colors p-1 hover:bg-canvas border-2 border-transparent hover:border-border ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
                 >
                   🔥
                 </button>
                 <button 
                   onClick={() => setViewingReactions(post)}
-                  className="text-[8px] font-bold text-gray-400 hover:text-accent transition-colors"
+                  className="px-2 py-0.5 bg-canvas border-2 border-border text-[8px] font-black text-gray-500 hover:text-accent hover:border-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                 >
                   {post.reactions?.filter((r: Reaction) => r.emoji === '🔥').length || 0}
                 </button>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 group/react">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '👏')}
-                  className={`text-[10px] font-bold transition-colors ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
+                  className={`text-[10px] font-bold transition-colors p-1 hover:bg-canvas border-2 border-transparent hover:border-border ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'text-accent' : 'text-gray-400 hover:text-accent'}`}
                 >
                   👏
                 </button>
                 <button 
                   onClick={() => setViewingReactions(post)}
-                  className="text-[8px] font-bold text-gray-400 hover:text-accent transition-colors"
+                  className="px-2 py-0.5 bg-canvas border-2 border-border text-[8px] font-black text-gray-500 hover:text-accent hover:border-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                 >
                   {post.reactions?.filter((r: Reaction) => r.emoji === '👏').length || 0}
                 </button>
@@ -381,19 +381,23 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                       <div 
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => {
-                          setViewingReactions(null)
-                          onSelectUser?.(reaction.user_id)
+                          if (reaction.user_id) {
+                            setViewingReactions(null)
+                            onSelectUser?.(reaction.user_id)
+                          }
                         }}
                       >
                         <div className="w-8 h-8 bg-white border-2 border-border flex items-center justify-center overflow-hidden">
                           {reaction.profiles?.avatar_url ? (
                             <img src={reaction.profiles.avatar_url} alt={reaction.profiles.username} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-[10px] font-bold text-accent uppercase">{reaction.profiles?.username?.[0]}</span>
+                            <span className="text-[10px] font-bold text-accent uppercase">
+                              {reaction.profiles?.username?.[0] || '?'}
+                            </span>
                           )}
                         </div>
                         <span className="text-[10px] font-black uppercase tracking-tight text-ink group-hover:text-accent transition-colors">
-                          @{reaction.profiles?.username}
+                          @{reaction.profiles?.username || 'unknown_user'}
                         </span>
                       </div>
                       <span className="text-xl">{reaction.emoji}</span>

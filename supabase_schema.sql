@@ -83,7 +83,7 @@ CREATE TABLE tasks (
 -- Table for social posts
 CREATE TABLE posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   group_id UUID REFERENCES groups(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   type TEXT NOT NULL DEFAULT 'manual',
@@ -95,7 +95,7 @@ CREATE TABLE posts (
 CREATE TABLE comments (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   content TEXT NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -104,7 +104,7 @@ CREATE TABLE comments (
 CREATE TABLE reactions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
   emoji TEXT NOT NULL,
   UNIQUE(post_id, user_id, emoji)
 );
