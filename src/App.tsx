@@ -31,7 +31,7 @@ function App() {
   const [currentView, setCurrentView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('tracker')
   const [previousView, setPreviousView] = useState<'tracker' | 'board' | 'leaderboard' | 'profile' | 'social' | 'pods'>('leaderboard')
   const [viewedProfileId, setViewedProfileId] = useState<string | null>(null)
-  const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; dailyStreak: number; weeklyStreak: number } | null>(null)
+  const [viewedData, setViewedData] = useState<{ profile: Profile; routines: Routine[]; completions: RoutineCompletion[]; dailyStreak: number; weeklyStreak: number } | null>(null)
   const [selectedPod, setSelectedPod] = useState<Group | null>(null)
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
@@ -191,9 +191,11 @@ function App() {
       setViewedData({
         profile: targetProfile,
         routines: targetRoutines,
+        completions: targetCompletions,
         dailyStreak: daily,
         weeklyStreak: weekly
       })
+
     } catch (err) {
       console.error('Error fetching user data:', err)
       alert('PROTOCOL_ERROR: Failed to retrieve public profile data')
@@ -1522,6 +1524,7 @@ function App() {
         key={viewedProfileId || session?.user?.id || 'guest'}
         profile={viewedProfileId ? viewedData?.profile || null : profile}
         routines={viewedProfileId ? viewedData?.routines || [] : routines}
+        completions={viewedProfileId ? viewedData?.completions || [] : completions}
         dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak}
         weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : weeklyStreak}
         onProfileUpdate={viewedProfileId ? undefined : setProfile}        isPublic={!!viewedProfileId}

@@ -11,6 +11,7 @@ import { useTranslation } from '../lib/i18n'
 interface ProfileProps {
   profile: ProfileType | null
   routines: Routine[]
+  completions: RoutineCompletion[]
   dailyStreak: number
   weeklyStreak: number
   onProfileUpdate?: (profile: ProfileType) => void
@@ -39,7 +40,7 @@ const XP_MILESTONES = [
   { id: 'XP_250000', name: 'Legend', count: 250000, icon: '🌌' }
 ]
 
-export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
+export function Profile({ profile, routines, completions: initialCompletions, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
   const { t } = useTranslation();
 
   const [isEditing, setIsEditing] = useState(false)
@@ -47,7 +48,7 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  const [completions, setCompletions] = useState<RoutineCompletion[]>([])
+  const [completions, setCompletions] = useState<RoutineCompletion[]>(initialCompletions)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   // Cropping State
@@ -81,19 +82,16 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
 
   // Count unique physical days for the UI check
   useEffect(() => {
-    if (profile?.id) {
-      StorageService.fetchCompletions(profile.id).then(fetchedCompletions => {
-        if (!Array.isArray(fetchedCompletions)) return
-        setCompletions(fetchedCompletions)
-        const count = new Set(
-          fetchedCompletions
-            .filter(c => c && c.completed_date)
-            .map(c => c.completed_date)
-        ).size
-        setUniqueLoggingDays(count)
-      }).catch(err => console.error('Failed to fetch completions for streak check:', err))
+    if (initialCompletions) {
+      setCompletions(initialCompletions)
+      const count = new Set(
+        initialCompletions
+          .filter(c => c && c.completed_date)
+          .map(c => c.completed_date)
+      ).size
+      setUniqueLoggingDays(count)
     }
-  }, [profile?.id, dailyStreak])
+  }, [initialCompletions])
 
   // Permanently award badges if they don't exist
   const checkMilestones = async () => {
@@ -104,9 +102,8 @@ export function Profile({ profile, routines, dailyStreak, weeklyStreak, onProfil
     let changed = false
 
     // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
-    const routineCompletions = await StorageService.fetchCompletions(profile.id)
     const completionsCount = new Set(
-      routineCompletions
+      completions
         .filter(c => c && c.created_at)
         .map(c => c.created_at!.split('T')[0])
     ).size
