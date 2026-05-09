@@ -746,44 +746,52 @@ function App() {
       
       const showTotal = !hiddenRoutines.has('Total')
       const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
-
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Group ALL routines by lowercase title for case-insensitive continuity
+      // 1. Unified Habit Data Structure
       const routineIdToTitle: Record<string, string> = {}
-      const titleToEarliestStart: Record<string, string> = {}
-      
-      const compsByRoutine: Record<string, string[]> = {}
-      completions.forEach(c => {
-        if (!compsByRoutine[c.routine_id]) compsByRoutine[c.routine_id] = []
-        compsByRoutine[c.routine_id].push(c.completed_date)
-      })
+      const titleToDisplay: Record<string, string> = {}
+      const titleToAllCompletions: Record<string, string[]> = {}
+      const titleToEarliestCreation: Record<string, string> = {}
 
+      // Map current routines
       routines.forEach(r => {
         const title = r.title.trim().toLowerCase()
         routineIdToTitle[r.id] = title
-        
-        const rComps = compsByRoutine[r.id] || []
-        // Day 1 is the first time the habit was actually COMPLETED
-        // This is more accurate for tracking performance than the creation date
-        const firstComp = rComps.length > 0
-          ? rComps.reduce((min, d) => d < min ? d : min)
-          : (r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd'))
-        
-        const start = firstComp
-        
-        if (!titleToEarliestStart[title] || start < titleToEarliestStart[title]) {
-          titleToEarliestStart[title] = start
+        titleToDisplay[title] = r.title
+        const created = r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd')
+        if (!titleToEarliestCreation[title] || created < titleToEarliestCreation[title]) {
+          titleToEarliestCreation[title] = created
         }
       })
 
-      // 2. Identify titles relevant to current view (normalized)
+      // Group completions by title (including those from old/deleted IDs)
+      // This is true global tracking
+      completions.forEach(c => {
+        const title = routineIdToTitle[c.routine_id]
+        if (title) {
+          if (!titleToAllCompletions[title]) titleToAllCompletions[title] = []
+          titleToAllCompletions[title].push(c.completed_date)
+        }
+      })
+
+      // 2. Determine "True Day 1" for each active habit
       const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
-      const titleToDisplay: Record<string, string> = {}
-      filteredRoutines.forEach(r => { titleToDisplay[r.title.trim().toLowerCase()] = r.title })
-      
-      // 3. Aggregate ALL completions globally by date and normalized title
+      const titleToTrueStart: Record<string, string> = {}
+
+      activeTitles.forEach(title => {
+        const habitComps = titleToAllCompletions[title] || []
+        if (habitComps.length > 0) {
+          // If they've done it, Day 1 is the first time they ever completed it
+          titleToTrueStart[title] = habitComps.reduce((min, d) => d < min ? d : min)
+        } else {
+          // Otherwise use creation date
+          titleToTrueStart[title] = titleToEarliestCreation[title] || format(new Date(), 'yyyy-MM-dd')
+        }
+      })
+
+      // 3. Aggregate all completions by date/title for O(1) lookup
       const completionsByDateByTitle: Record<string, Set<string>> = {}
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
@@ -795,13 +803,13 @@ function App() {
         }
       })
 
-      // 4. Generate Full Timeline (No sampling for maximum resolution)
-      const firstDateStr = activeTitles.reduce((min, t) => {
-        const start = titleToEarliestStart[t] || format(new Date(), 'yyyy-MM-dd')
+      // 4. Generate High-Resolution Timeline (No sampling)
+      const globalStartStr = activeTitles.reduce((min, t) => {
+        const start = titleToTrueStart[t]
         return start < min ? start : min
       }, format(new Date(), 'yyyy-MM-dd'))
 
-      const firstDate = startOfDay(parseISO(firstDateStr))
+      const firstDate = startOfDay(parseISO(globalStartStr))
       const today = startOfDay(new Date())
       const daysInterval = eachDayOfInterval({ start: firstDate, end: today })
       
@@ -813,8 +821,8 @@ function App() {
         const dStr = format(date, 'yyyy-MM-dd')
         const entry: Record<string, string | number> = { name: dStr }
 
-        const titlesDoneToday = completionsByDateByTitle[dStr] || new Set()
-        titlesDoneToday.forEach(title => {
+        const doneToday = completionsByDateByTitle[dStr] || new Set()
+        doneToday.forEach(title => {
           if (cumulativeCounts[title] !== undefined) cumulativeCounts[title]++
         })
 
@@ -822,12 +830,12 @@ function App() {
         let activeCount = 0
 
         activeTitles.forEach(title => {
-          const startDateStr = titleToEarliestStart[title]
-          if (dStr >= startDateStr) {
-            const startD = parseISO(startDateStr)
-            const daysActive = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
+          const startStr = titleToTrueStart[title]
+          if (dStr >= startStr) {
+            const startD = parseISO(startStr)
+            const daysSinceStart = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
             const count = cumulativeCounts[title]
-            const percentage = Math.min(100, (count / daysActive) * 100)
+            const percentage = Math.min(100, (count / daysSinceStart) * 100)
             entry[titleToDisplay[title]] = percentage
             dailyTotalPct += percentage
             activeCount++
