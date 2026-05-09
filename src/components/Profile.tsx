@@ -142,14 +142,25 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     const wStreaks: Record<string, number> = {}
     const cats = Array.from(new Set((routines || []).map(r => r.category || 'General')))
     
+    // Pre-group completions by routine ID for O(1) access
+    const routineCompletionsMap = new Map<string, Set<string>>()
+    completions.forEach(c => {
+      if (!routineCompletionsMap.has(c.routine_id)) {
+        routineCompletionsMap.set(c.routine_id, new Set())
+      }
+      routineCompletionsMap.get(c.routine_id)?.add(c.completed_date)
+    })
+
     cats.forEach(cat => {
       const categoryRoutines = routines.filter(r => (r.category || 'General') === cat)
-      const categoryRoutineIds = new Set(categoryRoutines.map(r => r.id))
-      const doneDates = new Set(
-        completions
-          .filter(c => categoryRoutineIds.has(c.routine_id))
-          .map(c => c.completed_date)
-      )
+      const categoryRoutineIds = categoryRoutines.map(r => r.id)
+      
+      // Merge all completion dates for this category
+      const doneDates = new Set<string>()
+      categoryRoutineIds.forEach(id => {
+        const dates = routineCompletionsMap.get(id)
+        if (dates) dates.forEach(d => doneDates.add(d))
+      })
 
       // Calculate Daily Streak
       let streak = 0

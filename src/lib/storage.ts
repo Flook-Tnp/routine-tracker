@@ -13,35 +13,42 @@ export const StorageService = {
   },
 
   async fetchCompletions(userId: string): Promise<RoutineCompletion[]> {
-    let allCompletions: RoutineCompletion[] = []
-    let from = 0
-    let to = 999
-    let hasMore = true
+    // 1. Get total count first for efficient parallel fetching
+    const { count, error: countError } = await supabase
+      .from('routine_completions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+    
+    if (countError) throw countError
+    if (!count || count === 0) return []
 
-    while (hasMore) {
-      const { data, error } = await supabase
-        .from('routine_completions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('completed_date', { ascending: true })
-        .range(from, to)
-      
-      if (error) throw error
+    // 2. Fetch all completions in parallel chunks of 1000
+    // This is much faster than sequential 'while' loops for large datasets
+    const chunkSize = 1000
+    const chunks = Math.ceil(count / chunkSize)
+    const promises = []
 
-      if (data && data.length > 0) {
-        allCompletions = [...allCompletions, ...(data as RoutineCompletion[])]
-        if (data.length < 1000) {
-          hasMore = false
-        } else {
-          from += 1000
-          to += 1000
-        }
-      } else {
-        hasMore = false
-      }
-      
-      if (from > 1000000) break 
+    for (let i = 0; i < chunks; i++) {
+      promises.push(
+        supabase
+          .from('routine_completions')
+          .select('id, routine_id, completed_date, xp_earned, created_at')
+          .eq('user_id', userId)
+          .order('completed_date', { ascending: true })
+          .range(i * chunkSize, (i + 1) * chunkSize - 1)
+      )
     }
+
+    const results = await Promise.all(promises)
+    const allCompletions: RoutineCompletion[] = []
+
+    for (const result of results) {
+      if (result.error) throw result.error
+      if (result.data) {
+        allCompletions.push(...(result.data as RoutineCompletion[]))
+      }
+    }
+
     return allCompletions
   },
 

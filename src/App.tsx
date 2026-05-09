@@ -108,18 +108,31 @@ function App() {
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
     
+    // Pre-group completions by routine ID for O(1) access
+    const routineCompletionsMap = new Map<string, Set<string>>()
+    userCompletions.forEach(c => {
+      if (!routineCompletionsMap.has(c.routine_id)) {
+        routineCompletionsMap.set(c.routine_id, new Set())
+      }
+      routineCompletionsMap.get(c.routine_id)?.add(c.completed_date)
+    })
+
     // Calculate streaks for each category separately
     const categories = Array.from(new Set(userRoutines.map(r => r.category || 'General')))
     let maxDaily = 0
     let maxWeekly = 0
 
     categories.forEach(cat => {
-      const catRoutineIds = new Set(userRoutines.filter(r => (r.category || 'General') === cat).map(r => r.id))
-      const doneDates = new Set(
-        userCompletions
-          .filter(c => catRoutineIds.has(c.routine_id))
-          .map(c => c.completed_date)
-      )
+      const catRoutineIds = userRoutines.filter(r => (r.category || 'General') === cat).map(r => r.id)
+      
+      // Merge all completion dates for this category
+      const doneDates = new Set<string>()
+      catRoutineIds.forEach(id => {
+        const dates = routineCompletionsMap.get(id)
+        if (dates) dates.forEach(d => doneDates.add(d))
+      })
+
+      if (doneDates.size === 0) return
 
       let daily = 0
       let checkDate = new Date()
@@ -138,7 +151,7 @@ function App() {
         const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
         let activeDaysCount = 0
         weekDays.forEach(d => {
-          if (userCompletions.some(c => c.completed_date === format(d, 'yyyy-MM-dd') && catRoutineIds.has(c.routine_id))) activeDaysCount++
+          if (doneDates.has(format(d, 'yyyy-MM-dd'))) activeDaysCount++
         })
         return activeDaysCount >= 3
       }
@@ -625,16 +638,21 @@ function App() {
   }, [filteredRoutines, completions])
 
   const last7Days = useMemo(() => {
+    const routineIdSet = new Set(filteredRoutines.map(r => r.id))
+    const completionsByDate: Record<string, number> = {}
+    completions.forEach(c => {
+      if (routineIdSet.has(c.routine_id)) {
+        completionsByDate[c.completed_date] = (completionsByDate[c.completed_date] || 0) + 1
+      }
+    })
+
     return eachDayOfInterval({
       start: subDays(selectedDate, 6),
       end: selectedDate
     }).map(date => {
       const dStr = format(date, 'yyyy-MM-dd')
       const total = filteredRoutines.length
-      const done = completions.filter(c => 
-        c.completed_date === dStr && 
-        filteredRoutines.some(r => r.id === c.routine_id)
-      ).length
+      const done = completionsByDate[dStr] || 0
       return {
         date: dStr,
         label: format(date, 'EEE'),
@@ -646,9 +664,16 @@ function App() {
   const taskBreakdown = useMemo<TaskBreakdownItem[]>(() => {
     try {
       if (filteredRoutines.length === 0) return []
-      
+
+      // Pre-group completions for O(1) lookup
+      const completionsByRoutine: Record<string, RoutineCompletion[]> = {}
+      completions.forEach(c => {
+        if (!completionsByRoutine[c.routine_id]) completionsByRoutine[c.routine_id] = []
+        completionsByRoutine[c.routine_id].push(c)
+      })
+
       return filteredRoutines.map(routine => {
-        const taskCompletions = completions.filter(c => c.routine_id === routine.id)
+        const taskCompletions = completionsByRoutine[routine.id] || []
         
         // Use the earlier of created_at OR the first completion date
         const firstCompletionDate = taskCompletions.length > 0 
@@ -721,16 +746,23 @@ function App() {
       
       const showTotal = !hiddenRoutines.has('Total')
       const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
-      
+
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
       const completionsByDate: Record<string, string[]> = {}
-      const relevantCompletions = completions.filter(c => filteredRoutines.some(r => r.id === c.routine_id))
-      
+      const routineIdSet = new Set(filteredRoutines.map(r => r.id))
+      const relevantCompletions = completions.filter(c => routineIdSet.has(c.routine_id))
+
       relevantCompletions.forEach(c => {
         if (!completionsByDate[c.completed_date]) completionsByDate[c.completed_date] = []
         completionsByDate[c.completed_date].push(c.routine_id)
+      })
+
+      const completionsByRoutine: Record<string, RoutineCompletion[]> = {}
+      relevantCompletions.forEach(c => {
+        if (!completionsByRoutine[c.routine_id]) completionsByRoutine[c.routine_id] = []
+        completionsByRoutine[c.routine_id].push(c)
       })
 
       const data: Record<string, string | number>[] = []
@@ -739,9 +771,9 @@ function App() {
       const routineStartDates: Record<string, string> = {}
       filteredRoutines.forEach(r => {
         cumulativeTaskCompletions[r.id] = 0
-        
-        const taskCompletions = relevantCompletions.filter(c => c.routine_id === r.id)
-        const firstComp = taskCompletions.length > 0 
+
+        const taskCompletions = completionsByRoutine[r.id] || []
+        const firstComp = taskCompletions.length > 0
           ? taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date)
           : format(new Date(), 'yyyy-MM-dd')
         
