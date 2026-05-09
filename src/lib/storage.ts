@@ -299,19 +299,25 @@ export const StorageService = {
   },
 
   async updateComment(commentId: string, content: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('comments')
       .update({ content })
       .eq('id', commentId)
+      .select()
+    
     if (error) throw error
+    if (!data || data.length === 0) throw new Error('PERMISSION_DENIED: RLS policy blocked the update.')
   },
 
   async deleteComment(commentId: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('comments')
       .delete()
       .eq('id', commentId)
+      .select()
+    
     if (error) throw error
+    if (!data || data.length === 0) throw new Error('PERMISSION_DENIED: RLS policy blocked the deletion.')
   },
 
   async toggleReaction(postId: string, emoji: string, userId: string): Promise<Reaction | null> {
