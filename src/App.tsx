@@ -743,20 +743,21 @@ function App() {
   const lifetimeChartData = useMemo(() => {
     try {
       if (completions.length === 0 || filteredRoutines.length === 0) return []
-      
+
       const showTotal = !hiddenRoutines.has('Total')
       const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Unified Habit Data Structure
+      // 1. Map IDs to Titles ONLY for routines in the current category
+      // This prevents history from other categories (like a stray Duolingo in 'General') from appearing here.
+      const currentCategoryRoutines = filteredRoutines
       const routineIdToTitle: Record<string, string> = {}
       const titleToDisplay: Record<string, string> = {}
-      const titleToAllCompletions: Record<string, string[]> = {}
+      const titleToCompletions: Record<string, string[]> = {}
       const titleToEarliestCreation: Record<string, string> = {}
 
-      // Map current routines
-      routines.forEach(r => {
+      currentCategoryRoutines.forEach(r => {
         const title = r.title.trim().toLowerCase()
         routineIdToTitle[r.id] = title
         titleToDisplay[title] = r.title
@@ -766,32 +767,47 @@ function App() {
         }
       })
 
-      // Group completions by title (including those from old/deleted IDs)
-      // This is true global tracking
+      // Group completions by title ONLY if they belong to a routine in this category
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
         if (title) {
-          if (!titleToAllCompletions[title]) titleToAllCompletions[title] = []
-          titleToAllCompletions[title].push(c.completed_date)
+          if (!titleToCompletions[title]) titleToCompletions[title] = []
+          titleToCompletions[title].push(c.completed_date)
         }
       })
 
-      // 2. Determine "True Day 1" for each active habit
-      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
+      // 2. Determine "True Day 1" (First real completion OR Creation Date)
+      const activeTitles = Array.from(new Set(currentCategoryRoutines.map(r => r.title.trim().toLowerCase())))
       const titleToTrueStart: Record<string, string> = {}
 
       activeTitles.forEach(title => {
-        const habitComps = titleToAllCompletions[title] || []
+        const habitComps = [...(titleToCompletions[title] || [])].sort()
+        
         if (habitComps.length > 0) {
-          // If they've done it, Day 1 is the first time they ever completed it
-          titleToTrueStart[title] = habitComps.reduce((min, d) => d < min ? d : min)
+          // HEURISTIC: Find the "Real Start"
+          // If there's a massive gap (60+ days) between completions at the start, 
+          // we treat the earlier ones as "stray/test" data and start from the next one.
+          let realStartIndex = 0
+          for (let i = 0; i < habitComps.length - 1; i++) {
+            const current = parseISO(habitComps[i])
+            const next = parseISO(habitComps[i+1])
+            const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
+            
+            if (gapDays > 60) {
+              // Ignore everything up to here and try the next date as the start
+              realStartIndex = i + 1
+            } else {
+              // Found a cluster of activity, this is the real start
+              break
+            }
+          }
+          titleToTrueStart[title] = habitComps[realStartIndex]
         } else {
-          // Otherwise use creation date
           titleToTrueStart[title] = titleToEarliestCreation[title] || format(new Date(), 'yyyy-MM-dd')
         }
       })
 
-      // 3. Aggregate all completions by date/title for O(1) lookup
+      // 3. Aggregate all relevant completions for O(1) daily lookup
       const completionsByDateByTitle: Record<string, Set<string>> = {}
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
@@ -803,16 +819,16 @@ function App() {
         }
       })
 
-      // 4. Generate High-Resolution Timeline (No sampling)
-      const globalStartStr = activeTitles.reduce((min, t) => {
+      // 4. Timeline Generation (Full resolution)
+      const categoryStartStr = activeTitles.reduce((min, t) => {
         const start = titleToTrueStart[t]
         return start < min ? start : min
       }, format(new Date(), 'yyyy-MM-dd'))
 
-      const firstDate = startOfDay(parseISO(globalStartStr))
+      const firstDate = startOfDay(parseISO(categoryStartStr))
       const today = startOfDay(new Date())
       const daysInterval = eachDayOfInterval({ start: firstDate, end: today })
-      
+
       const data: Record<string, string | number>[] = []
       const cumulativeCounts: Record<string, number> = {}
       activeTitles.forEach(t => { cumulativeCounts[t] = 0 })
@@ -847,10 +863,10 @@ function App() {
       })      
       return data
     } catch (err) {
-      console.error('Error in lifetimeChartData:', err)
+      console.error('Error in chart data:', err)
       return []
     }
-  }, [routines, completions, filteredRoutines, hiddenRoutines])
+  }, [completions, filteredRoutines, hiddenRoutines])
 
   const thirtyDayStats = useMemo(() => {
     const thirtyDays = eachDayOfInterval({
