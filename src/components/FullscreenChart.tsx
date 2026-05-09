@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Minimize2 } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line } from 'recharts'
 import type { Routine } from '../types'
@@ -13,6 +13,8 @@ interface FullscreenChartProps {
   hiddenRoutines: Set<string>
   setHiddenRoutines: (val: Set<string>) => void
   filteredRoutines: Routine[]
+  isAutoZoom: boolean
+  setIsAutoZoom: (val: boolean) => void
 }
 
 export function FullscreenChart({
@@ -23,10 +25,11 @@ export function FullscreenChart({
   lifetimeChartData,
   hiddenRoutines,
   setHiddenRoutines,
-  filteredRoutines
+  filteredRoutines,
+  isAutoZoom,
+  setIsAutoZoom
 }: FullscreenChartProps) {
   const { t } = useTranslation()
-  const [isAutoZoom, setIsAutoZoom] = useState(false)
 
   if (!isChartFullscreen) return null
 

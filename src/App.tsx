@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
 import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser, Maximize2 } from 'lucide-react'
-import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
 import { FullscreenChart } from './components/FullscreenChart'
@@ -58,6 +58,7 @@ function App() {
   const [showManual, setShowManual] = useState(false)
   const [isChartFullscreen, setIsChartFullscreen] = useState(false)
   const [hiddenRoutines, setHiddenRoutines] = useState<Set<string>>(new Set())
+  const [isAutoZoom, setIsAutoZoom] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'sign_in' | 'sign_up' | 'forgot_password' | 'update_password'>('sign_in')
 
   const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null)
@@ -665,32 +666,64 @@ function App() {
     try {
       if (filteredRoutines.length === 0) return []
 
-      // Pre-group completions for O(1) lookup
-      const completionsByRoutine: Record<string, RoutineCompletion[]> = {}
-      completions.forEach(c => {
-        if (!completionsByRoutine[c.routine_id]) completionsByRoutine[c.routine_id] = []
-        completionsByRoutine[c.routine_id].push(c)
+      // 1. Unified Habit Data (Match chart logic)
+      const routineIdToTitle: Record<string, string> = {}
+      const titleToDisplay: Record<string, string> = {}
+      const titleToCompletions: Record<string, string[]> = {}
+      const titleToEarliestCreation: Record<string, string> = {}
+
+      routines.forEach(r => {
+        const title = r.title.trim().toLowerCase()
+        routineIdToTitle[r.id] = title
+        titleToDisplay[title] = r.title
+        const created = r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd')
+        if (!titleToEarliestCreation[title] || created < titleToEarliestCreation[title]) {
+          titleToEarliestCreation[title] = created
+        }
       })
 
-      return filteredRoutines.map(routine => {
-        const taskCompletions = completionsByRoutine[routine.id] || []
-        
-        // Use the earlier of created_at OR the first completion date
-        const firstCompletionDate = taskCompletions.length > 0 
-          ? parseISO(taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date))
-          : new Date()
-        
-        const creationDate = routine.created_at ? parseISO(routine.created_at) : firstCompletionDate
-        
-        const start = startOfDay(creationDate < firstCompletionDate ? creationDate : firstCompletionDate)
+      completions.forEach(c => {
+        const title = routineIdToTitle[c.routine_id]
+        if (title) {
+          if (!titleToCompletions[title]) titleToCompletions[title] = []
+          titleToCompletions[title].push(c.completed_date)
+        }
+      })
+
+      // 2. Map routines in current category to their unified stats
+      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
+      
+      return activeTitles.map(title => {
+        const habitComps = [...(titleToCompletions[title] || [])].sort()
+        let trueStartStr = ''
+
+        if (habitComps.length > 0) {
+          // Gap-filtering logic (Match chart logic)
+          let realStartIndex = 0
+          for (let i = 0; i < habitComps.length - 1; i++) {
+            const current = parseISO(habitComps[i])
+            const next = parseISO(habitComps[i+1])
+            const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
+            if (gapDays > 60) realStartIndex = i + 1
+            else break
+          }
+          trueStartStr = habitComps[realStartIndex]
+        } else {
+          trueStartStr = titleToEarliestCreation[title] || format(new Date(), 'yyyy-MM-dd')
+        }
+
+        const start = startOfDay(parseISO(trueStartStr))
         const today = startOfDay(new Date())
         const activeDays = eachDayOfInterval({ start, end: today }).length
+        
+        // Count completions ONLY since true start
+        const validComps = habitComps.filter(d => d >= trueStartStr).length
 
         return {
-          title: routine.title,
-          percentage: Math.min(100, Math.round((taskCompletions.length / activeDays) * 100)),
+          title: titleToDisplay[title],
+          percentage: activeDays > 0 ? Math.min(100, Math.round((validComps / activeDays) * 100)) : 0,
           startDate: format(start, 'MMM d, yyyy'),
-          totalCompletions: taskCompletions.length,
+          totalCompletions: validComps,
           activeDays
         }
       })
@@ -698,16 +731,13 @@ function App() {
       console.error('Error in taskBreakdown:', err)
       return []
     }
-  }, [filteredRoutines, completions])
+  }, [filteredRoutines, completions, routines])
 
   const lifetimeStats = useMemo(() => {
     try {
       if (taskBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
       
       const showTotal = !hiddenRoutines.has('Total')
-      const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
-      const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
-      
       const relevantBreakdown = taskBreakdown.filter(t => 
         showTotal || !hiddenRoutines.has(t.title)
       )
@@ -717,17 +747,9 @@ function App() {
       const totalPercentage = relevantBreakdown.reduce((acc, task) => acc + task.percentage, 0)
       const averagePercentage = Math.round(totalPercentage / relevantBreakdown.length)
       
-      // Calculate overall total days since the oldest relevant routine was created or completed
-      const relevantRoutines = timelineRoutines
-      const creationDates = relevantRoutines.map(r => parseISO(r.created_at)).filter(d => !isNaN(d.getTime()))
-      
-      const relevantCompletions = completions.filter(c => 
-        relevantRoutines.some(r => r.id === c.routine_id)
-      )
-      const completionDates = relevantCompletions.map(c => parseISO(c.completed_date)).filter(d => !isNaN(d.getTime()))
-      
-      const allDates = [...creationDates, ...completionDates]
-      const oldestDate = allDates.length > 0 ? allDates.reduce((a, b) => a < b ? a : b) : new Date()
+      // Calculate overall total days since the oldest relevant start date
+      const creationDates = relevantBreakdown.map(t => parseISO(t.startDate))
+      const oldestDate = creationDates.length > 0 ? creationDates.reduce((a, b) => a < b ? a : b) : new Date()
       const totalDays = eachDayOfInterval({ start: startOfDay(oldestDate), end: startOfDay(new Date()) }).length
 
       return {
@@ -738,7 +760,7 @@ function App() {
       console.error('Error in lifetimeStats:', err)
       return { totalDays: 0, percentage: 0 }
     }
-  }, [taskBreakdown, filteredRoutines, completions, hiddenRoutines])
+  }, [taskBreakdown, hiddenRoutines])
 
   const lifetimeChartData = useMemo(() => {
     try {
@@ -860,6 +882,27 @@ function App() {
       return []
     }
   }, [routines, completions, filteredRoutines, hiddenRoutines])
+  // Calculate dynamic Y-axis domain (shared logic with FullscreenChart)
+  const yDomain = useMemo(() => {
+    if (!isAutoZoom || lifetimeChartData.length === 0) return [0, 100]
+    let min = 100, max = 0
+    const visibleKeys = [
+      ...(!hiddenRoutines.has('Total') ? ['Total'] : []),
+      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.title)).map(r => r.title)
+    ]
+    lifetimeChartData.forEach(entry => {
+      visibleKeys.forEach(key => {
+        const val = Number(entry[key])
+        if (!isNaN(val)) {
+          if (val < min) min = val
+          if (val > max) max = val
+        }
+      })
+    })
+    const padding = (max - min) * 0.1 || 5
+    return [Math.max(0, Math.floor(min - padding)), Math.min(100, Math.ceil(max + padding))]
+  }, [isAutoZoom, lifetimeChartData, hiddenRoutines, filteredRoutines])
+
   const thirtyDayStats = useMemo(() => {
     const thirtyDays = eachDayOfInterval({
       start: subDays(selectedDate, 29),
@@ -1270,33 +1313,41 @@ function App() {
                 </div>
               </div>            </div>
 
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => {
-                  const next = new Set(hiddenRoutines)
-                  if (next.has('Total')) next.delete('Total')
-                  else next.add('Total')
-                  setHiddenRoutines(next)
-                }}
-                className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border text-gray-400 hover:border-black'}`}
-              >
-                OVERALL_TOTAL
-              </button>
-              {filteredRoutines.map((r, i) => (
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={r.id}
                   onClick={() => {
                     const next = new Set(hiddenRoutines)
-                    if (next.has(r.title)) next.delete(r.title)
-                    else next.add(r.title)
+                    if (next.has('Total')) next.delete('Total')
+                    else next.add('Total')
                     setHiddenRoutines(next)
                   }}
-                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-border bg-white text-gray-400'}`}
-                  style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 40%, 40%)` : undefined, borderLeftWidth: '4px' }}
+                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border text-gray-400 hover:border-black'}`}
                 >
-                  {r.title}
+                  OVERALL_TOTAL
                 </button>
-              ))}
+                {filteredRoutines.map((r, i) => (
+                  <button
+                    key={r.id}
+                    onClick={() => {
+                      const next = new Set(hiddenRoutines)
+                      if (next.has(r.title)) next.delete(r.title)
+                      else next.add(r.title)
+                      setHiddenRoutines(next)
+                    }}
+                    className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-border bg-white text-gray-400'}`}
+                    style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 40%, 40%)` : undefined, borderLeftWidth: '4px' }}
+                  >
+                    {r.title}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setIsAutoZoom(!isAutoZoom)}
+                className={`px-3 py-1 border-2 text-[8px] font-black uppercase transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-black' : 'bg-white border-border text-ink'}`}
+              >
+                {isAutoZoom ? 'FIXED_SCALE' : 'AUTO_ZOOM_Y'}
+              </button>
             </div>
 
             <div className="h-[350px] w-full bg-white border-2 border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
@@ -1322,8 +1373,8 @@ function App() {
                    fontSize={9}
                    tickLine={false}
                    axisLine={false}
-                   domain={[0, 100]}
-                   ticks={[0, 25, 50, 75, 100]}
+                   domain={yDomain}
+                   ticks={!isAutoZoom ? [0, 25, 50, 75, 100] : undefined}
                    tickFormatter={(val) => `${Math.round(val)}%`}
                   />
                   <Tooltip
@@ -1357,14 +1408,7 @@ function App() {
                      opacity={0.6}
                      animationDuration={1000}
                    />
-                  ))}                  <Brush 
-                    dataKey="name" 
-                    height={30} 
-                    stroke="#000" 
-                    fill="#fff"
-                    travellerWidth={10}
-                    gap={1}
-                  />
+                  ))}
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -1537,6 +1581,8 @@ function App() {
         hiddenRoutines={hiddenRoutines}
         setHiddenRoutines={setHiddenRoutines}
         filteredRoutines={filteredRoutines}
+        isAutoZoom={isAutoZoom}
+        setIsAutoZoom={setIsAutoZoom}
       />
 
       {/* Mobile Bottom Navigation */}
