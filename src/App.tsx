@@ -750,34 +750,42 @@ function App() {
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Group routines by title and find their minimum start dates
-      const routineTitles = Array.from(new Set(filteredRoutines.map(r => r.title)))
-      const titleStartDates: Record<string, string> = {}
+      // 1. Group ALL routines by title to find global earliest start dates
       const routineIdToTitle: Record<string, string> = {}
-
-      routineTitles.forEach(title => {
-        const matchingRoutines = filteredRoutines.filter(r => r.title === title)
-        let minStart: string | null = null
-
-        matchingRoutines.forEach(r => {
-          routineIdToTitle[r.id] = title
-          const taskCompletions = completions.filter(c => c.routine_id === r.id)
-          const firstComp = taskCompletions.length > 0
-            ? taskCompletions.reduce((min, c) => c.completed_date < min ? c.completed_date : min, taskCompletions[0].completed_date)
-            : format(new Date(), 'yyyy-MM-dd')
-          
-          const created = r.created_at ? r.created_at.split('T')[0] : firstComp
-          const start = created < firstComp ? created : firstComp
-          if (!minStart || start < minStart) minStart = start
-        })
-        titleStartDates[title] = minStart || format(new Date(), 'yyyy-MM-dd')
+      const titleToEarliestStart: Record<string, string> = {}
+      
+      // Pre-group completions by routine ID for O(1) start-date detection
+      const compsByRoutine: Record<string, string[]> = {}
+      completions.forEach(c => {
+        if (!compsByRoutine[c.routine_id]) compsByRoutine[c.routine_id] = []
+        compsByRoutine[c.routine_id].push(c.completed_date)
       })
 
-      // 2. Pre-process completions by date and title (ensures title-based continuity)
+      routines.forEach(r => {
+        const title = r.title.trim()
+        routineIdToTitle[r.id] = title
+        
+        const rComps = compsByRoutine[r.id] || []
+        const firstComp = rComps.length > 0
+          ? rComps.reduce((min, d) => d < min ? d : min)
+          : format(new Date(), 'yyyy-MM-dd')
+        
+        const created = r.created_at ? r.created_at.split('T')[0] : firstComp
+        const start = created < firstComp ? created : firstComp
+        
+        if (!titleToEarliestStart[title] || start < titleToEarliestStart[title]) {
+          titleToEarliestStart[title] = start
+        }
+      })
+
+      // 2. Identify titles relevant to the current view
+      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim())))
+      
+      // 3. Aggregate ALL completions by date and title (captures global history)
       const completionsByDateByTitle: Record<string, Set<string>> = {}
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
-        if (title) {
+        if (title && activeTitles.includes(title)) {
           if (!completionsByDateByTitle[c.completed_date]) {
             completionsByDateByTitle[c.completed_date] = new Set()
           }
@@ -785,16 +793,19 @@ function App() {
         }
       })
 
-      // 3. Process Timeline
-      const allStartDates = timelineRoutines.map(r => parseISO(titleStartDates[r.title])).filter(d => !isNaN(d.getTime()))
-      const firstDate = startOfDay(allStartDates.length > 0 ? allStartDates.reduce((min, d) => d < min ? d : min) : new Date())
+      // 4. Generate Timeline
+      const firstDateStr = activeTitles.reduce((min, t) => {
+        const start = titleToEarliestStart[t] || format(new Date(), 'yyyy-MM-dd')
+        return start < min ? start : min
+      }, format(new Date(), 'yyyy-MM-dd'))
+
+      const firstDate = startOfDay(parseISO(firstDateStr))
       const today = startOfDay(new Date())
-      
       const daysInterval = eachDayOfInterval({ start: firstDate, end: today })
-      const data: Record<string, string | number>[] = []
       
-      const cumulativeTitleCounts: Record<string, number> = {}
-      routineTitles.forEach(t => { cumulativeTitleCounts[t] = 0 })
+      const data: Record<string, string | number>[] = []
+      const cumulativeCounts: Record<string, number> = {}
+      activeTitles.forEach(t => { cumulativeCounts[t] = 0 })
 
       daysInterval.forEach((date, index) => {
         const dStr = format(date, 'yyyy-MM-dd')
@@ -802,31 +813,26 @@ function App() {
 
         const titlesDoneToday = completionsByDateByTitle[dStr] || new Set()
         titlesDoneToday.forEach(title => {
-          if (cumulativeTitleCounts[title] !== undefined) {
-            cumulativeTitleCounts[title]++
-          }
+          if (cumulativeCounts[title] !== undefined) cumulativeCounts[title]++
         })
 
-        let dailyTotalPercentage = 0
-        let activeTitlesOnDay = 0
+        let dailyTotalPct = 0
+        let activeCount = 0
 
-        routineTitles.forEach(title => {
-          const startDateStr = titleStartDates[title]
-          if (dStr >= startDateStr) {
-            const taskFirstDate = parseISO(startDateStr)
-            // Faster day count calculation
-            const daysActive = Math.floor((date.getTime() - taskFirstDate.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const count = cumulativeTitleCounts[title]
-            
+        activeTitles.forEach(title => {
+          const startStr = titleToEarliestStart[title]
+          if (dStr >= startStr) {
+            const startD = parseISO(startStr)
+            const daysActive = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
+            const count = cumulativeCounts[title]
             const percentage = Math.min(100, (count / daysActive) * 100)
             entry[title] = percentage
-            dailyTotalPercentage += percentage
-            activeTitlesOnDay++
+            dailyTotalPct += percentage
+            activeCount++
           }
         })
 
-        entry['Total'] = activeTitlesOnDay > 0 ? (dailyTotalPercentage / activeTitlesOnDay) : 0
-
+        entry['Total'] = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
         if (daysInterval.length < 365 || index % 2 === 0 || index === daysInterval.length - 1) {
           data.push(entry)
         }
@@ -836,7 +842,7 @@ function App() {
       console.error('Error in lifetimeChartData:', err)
       return []
     }
-  }, [filteredRoutines, completions, hiddenRoutines])
+  }, [routines, completions, filteredRoutines, hiddenRoutines])
 
   const thirtyDayStats = useMemo(() => {
     const thirtyDays = eachDayOfInterval({
