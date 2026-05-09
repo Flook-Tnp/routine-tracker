@@ -765,12 +765,13 @@ function App() {
         routineIdToTitle[r.id] = title
         
         const rComps = compsByRoutine[r.id] || []
+        // Day 1 is the first time the habit was actually COMPLETED
+        // This is more accurate for tracking performance than the creation date
         const firstComp = rComps.length > 0
           ? rComps.reduce((min, d) => d < min ? d : min)
-          : format(new Date(), 'yyyy-MM-dd')
+          : (r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd'))
         
-        const created = r.created_at ? r.created_at.split('T')[0] : firstComp
-        const start = created < firstComp ? created : firstComp
+        const start = firstComp
         
         if (!titleToEarliestStart[title] || start < titleToEarliestStart[title]) {
           titleToEarliestStart[title] = start
