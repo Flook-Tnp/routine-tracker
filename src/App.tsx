@@ -23,11 +23,11 @@ import type { AppNotification } from './types'
 import { useTranslation } from './lib/i18n'
 
 const NAV_ITEMS = [
-  { id: 'tracker', label: 'nav.tracker', icon: ListTodo },
-  { id: 'board', label: 'nav.board', icon: LayoutDashboard },
-  { id: 'leaderboard', label: 'nav.rank', icon: Award },
-  { id: 'social', label: 'nav.global', icon: Globe },
-  { id: 'pods', label: 'nav.pods', icon: Users },
+  { id: 'tracker', label: 'nav.tracker', icon: ListTodo, authRequired: false },
+  { id: 'board', label: 'nav.board', icon: LayoutDashboard, authRequired: false },
+  { id: 'leaderboard', label: 'nav.rank', icon: Award, authRequired: false },
+  { id: 'social', label: 'nav.global', icon: Globe, authRequired: false },
+  { id: 'pods', label: 'nav.pods', icon: Users, authRequired: false },
   { id: 'profile', label: 'nav.profile', icon: CircleUser, authRequired: true }
 ] as const;
 
