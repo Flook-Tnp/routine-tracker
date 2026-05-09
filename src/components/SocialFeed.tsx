@@ -80,23 +80,44 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
   const handleUpdateComment = async (commentId: string) => {
     if (!editCommentContent.trim()) return
+
+    // Optimistic Update
+    const oldPosts = [...posts]
+    setPosts(posts.map(post => ({
+      ...post,
+      comments: post.comments?.map(c => 
+        c.id === commentId ? { ...c, content: editCommentContent } : c
+      )
+    })))
+    
+    setEditingCommentId(null)
+
     try {
       await StorageService.updateComment(commentId, editCommentContent)
-      setEditingCommentId(null)
-      fetchPosts()
+      fetchPosts() // Sync with server
     } catch (err: any) {
       console.error('Error updating comment:', err)
+      setPosts(oldPosts) // Rollback
       alert('PROTOCOL_ERROR: Comment update failed.')
     }
   }
 
   const handleDeleteComment = async (commentId: string) => {
     if (!session || !window.confirm('TERMINATE_COMMENT: Are you sure?')) return
+
+    // Optimistic Update
+    const oldPosts = [...posts]
+    setPosts(posts.map(post => ({
+      ...post,
+      comments: post.comments?.filter(c => c.id !== commentId)
+    })))
+
     try {
       await StorageService.deleteComment(commentId)
-      fetchPosts()
+      fetchPosts() // Sync with server
     } catch (err: any) {
       console.error('Error deleting comment:', err)
+      setPosts(oldPosts) // Rollback
       alert('PROTOCOL_ERROR: Comment could not be terminated.')
     }
   }

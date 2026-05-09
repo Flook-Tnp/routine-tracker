@@ -251,6 +251,7 @@ export const StorageService = {
         reactions (*, profiles (username, avatar_url))
       `)
       .order('created_at', { ascending: false })
+      .order('created_at', { foreignTable: 'comments', ascending: true })
     
     if (groupId) {
       query = query.eq('group_id', groupId)
