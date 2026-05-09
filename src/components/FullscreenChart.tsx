@@ -110,6 +110,7 @@ export function FullscreenChart({
               tickLine={false}
               axisLine={false}
               domain={yDomain}
+              ticks={!isAutoZoom ? [0, 25, 50, 75, 100] : undefined}
               tickFormatter={(val) => `${Math.round(val)}%`}
             />
             <Tooltip
@@ -141,17 +142,6 @@ export function FullscreenChart({
                 opacity={0.7}
               />
             ))}
-            <Brush
-              dataKey="name"
-              height={40}
-              stroke="#000000"
-              fill="#FAFAFA"
-              travellerWidth={20}
-            >
-              <AreaChart data={lifetimeChartData}>
-                <Area type="monotone" dataKey="Total" stroke="#7C3AED" fill="#7C3AED" fillOpacity={0.1} dot={false} />
-              </AreaChart>
-            </Brush>
           </AreaChart>
         </ResponsiveContainer>
       </div>

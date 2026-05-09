@@ -840,14 +840,18 @@ function App() {
           if (dStr >= startStr) {
             const startD = parseISO(startStr)
             const daysSinceStart = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const pct = Math.min(100, (cumulativeCounts[title] / daysSinceStart) * 100)
+            const rawPct = Math.min(100, (cumulativeCounts[title] / daysSinceStart) * 100)
+            const pct = Number(rawPct.toFixed(1))
             entry[titleToDisplay[title]] = pct
-            dailyTotalPct += pct
+            dailyTotalPct += rawPct
             activeCount++
           }
         })
 
-        if (showTotal) entry['Total'] = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
+        if (showTotal) {
+          const avgPct = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
+          entry['Total'] = Number(avgPct.toFixed(1))
+        }
         data.push(entry)
       })      
       return data
