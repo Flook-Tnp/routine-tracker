@@ -750,11 +750,10 @@ function App() {
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Group ALL routines by title to find global earliest start dates
+      // 1. Group ALL routines by lowercase title for case-insensitive continuity
       const routineIdToTitle: Record<string, string> = {}
       const titleToEarliestStart: Record<string, string> = {}
       
-      // Pre-group completions by routine ID for O(1) start-date detection
       const compsByRoutine: Record<string, string[]> = {}
       completions.forEach(c => {
         if (!compsByRoutine[c.routine_id]) compsByRoutine[c.routine_id] = []
@@ -762,7 +761,7 @@ function App() {
       })
 
       routines.forEach(r => {
-        const title = r.title.trim()
+        const title = r.title.trim().toLowerCase()
         routineIdToTitle[r.id] = title
         
         const rComps = compsByRoutine[r.id] || []
@@ -778,10 +777,12 @@ function App() {
         }
       })
 
-      // 2. Identify titles relevant to the current view
-      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim())))
+      // 2. Identify titles relevant to current view (normalized)
+      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
+      const titleToDisplay: Record<string, string> = {}
+      filteredRoutines.forEach(r => { titleToDisplay[r.title.trim().toLowerCase()] = r.title })
       
-      // 3. Aggregate ALL completions by date and title (captures global history)
+      // 3. Aggregate ALL completions globally by date and normalized title
       const completionsByDateByTitle: Record<string, Set<string>> = {}
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
@@ -793,7 +794,7 @@ function App() {
         }
       })
 
-      // 4. Generate Timeline
+      // 4. Generate Full Timeline (No sampling for maximum resolution)
       const firstDateStr = activeTitles.reduce((min, t) => {
         const start = titleToEarliestStart[t] || format(new Date(), 'yyyy-MM-dd')
         return start < min ? start : min
@@ -807,7 +808,7 @@ function App() {
       const cumulativeCounts: Record<string, number> = {}
       activeTitles.forEach(t => { cumulativeCounts[t] = 0 })
 
-      daysInterval.forEach((date, index) => {
+      daysInterval.forEach((date) => {
         const dStr = format(date, 'yyyy-MM-dd')
         const entry: Record<string, string | number> = { name: dStr }
 
@@ -820,22 +821,20 @@ function App() {
         let activeCount = 0
 
         activeTitles.forEach(title => {
-          const startStr = titleToEarliestStart[title]
-          if (dStr >= startStr) {
-            const startD = parseISO(startStr)
+          const startDateStr = titleToEarliestStart[title]
+          if (dStr >= startDateStr) {
+            const startD = parseISO(startDateStr)
             const daysActive = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
             const count = cumulativeCounts[title]
             const percentage = Math.min(100, (count / daysActive) * 100)
-            entry[title] = percentage
+            entry[titleToDisplay[title]] = percentage
             dailyTotalPct += percentage
             activeCount++
           }
         })
 
         entry['Total'] = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
-        if (daysInterval.length < 365 || index % 2 === 0 || index === daysInterval.length - 1) {
-          data.push(entry)
-        }
+        data.push(entry)
       })      
       return data
     } catch (err) {
