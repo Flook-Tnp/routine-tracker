@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import { Minimize2 } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, Line, Brush } from 'recharts'
 import type { Routine } from '../types'
