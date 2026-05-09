@@ -297,6 +297,22 @@ export const StorageService = {
     return data[0] as Comment
   },
 
+  async updateComment(commentId: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .update({ content })
+      .eq('id', commentId)
+    if (error) throw error
+  },
+
+  async deleteComment(commentId: string): Promise<void> {
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId)
+    if (error) throw error
+  },
+
   async toggleReaction(postId: string, emoji: string, userId: string): Promise<Reaction | null> {
     const { data: existing } = await supabase
       .from('reactions')

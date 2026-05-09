@@ -24,6 +24,8 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
   const [commentingOn, setCommentingOn] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
+  const [editCommentContent, setEditCommentContent] = useState('')
   const [editContent, setEditContent] = useState('')
   const [viewingReactions, setViewingReactions] = useState<Post | null>(null)
 
@@ -73,6 +75,29 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     } catch (err) {
       console.error('Error adding comment:', err)
       setNewComment(content) // Restore on failure
+    }
+  }
+
+  const handleUpdateComment = async (commentId: string) => {
+    if (!editCommentContent.trim()) return
+    try {
+      await StorageService.updateComment(commentId, editCommentContent)
+      setEditingCommentId(null)
+      fetchPosts()
+    } catch (err: any) {
+      console.error('Error updating comment:', err)
+      alert('PROTOCOL_ERROR: Comment update failed.')
+    }
+  }
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!session || !window.confirm('TERMINATE_COMMENT: Are you sure?')) return
+    try {
+      await StorageService.deleteComment(commentId)
+      fetchPosts()
+    } catch (err: any) {
+      console.error('Error deleting comment:', err)
+      alert('PROTOCOL_ERROR: Comment could not be terminated.')
     }
   }
 
@@ -304,26 +329,83 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
             </div>
 
             {(post.comments?.length || 0) > 0 && (
-              <div className="space-y-3 pl-4 border-l-2 border-border mt-4">
+              <div className="space-y-4 pl-4 border-l-2 border-border mt-4">
                 {post.comments?.map((comment) => {
                   const isCommentMe = comment.user_id === session?.user?.id
+                  const isEditingComment = editingCommentId === comment.id
+
                   return (
-                    <div key={comment.id} className="space-y-1">
-                      <div 
-                        className={`flex items-center gap-2 group/commenter ${isCommentMe ? 'cursor-default' : 'cursor-pointer'}`}
-                        onClick={() => !isCommentMe && comment.user_id && onSelectUser?.(comment.user_id)}
-                      >
-                        <div className={`w-4 h-4 bg-canvas border-2 border-border flex items-center justify-center text-[6px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-accent'}`}>
-                          {comment.profiles?.avatar_url ? (
-                            <img src={comment.profiles.avatar_url} alt={comment.profiles.username} className="w-full h-full object-cover" />
-                          ) : (
-                            comment.profiles?.username?.[0]
-                          )}
+                    <div key={comment.id} className="group/comment space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div 
+                          className={`flex items-center gap-2 group/commenter ${isCommentMe ? 'cursor-default' : 'cursor-pointer'}`}
+                          onClick={() => !isCommentMe && comment.user_id && onSelectUser?.(comment.user_id)}
+                        >
+                          <div className={`w-5 h-5 bg-canvas border-2 border-border flex items-center justify-center text-[7px] font-bold text-accent uppercase overflow-hidden transition-colors ${!isCommentMe && 'group-hover/commenter:border-accent'}`}>
+                            {comment.profiles?.avatar_url ? (
+                              <img src={comment.profiles.avatar_url} alt={comment.profiles.username} className="w-full h-full object-cover" />
+                            ) : (
+                              comment.profiles?.username?.[0]
+                            )}
+                          </div>
+                          <span className={`text-[10px] font-bold text-accent uppercase transition-colors ${!isCommentMe && 'group-hover/commenter:text-accent/80'}`}>{comment.profiles?.username}</span>
+                          <span className="text-[7px] text-gray-400 font-bold uppercase tracking-tight">{formatDistanceToNow(new Date(comment.created_at))} ago</span>
                         </div>
-                        <span className={`text-[9px] font-bold text-accent uppercase transition-colors ${!isCommentMe && 'group-hover/commenter:text-accent/80'}`}>{comment.profiles?.username}</span>
-                        <span className="text-[7px] text-gray-400 font-bold uppercase">{formatDistanceToNow(new Date(comment.created_at))} ago</span>
+
+                        {isCommentMe && !isEditingComment && (
+                          <div className="flex items-center gap-2 opacity-0 group-hover/comment:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => {
+                                setEditingCommentId(comment.id)
+                                setEditCommentContent(comment.content)
+                              }}
+                              className="text-gray-400 hover:text-accent transition-colors"
+                              title="Edit Comment"
+                            >
+                              <Pencil size={10} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              title="Delete Comment"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-[11px] text-gray-600 font-mono">{comment.content}</p>
+
+                      {isEditingComment ? (
+                        <div className="space-y-2 bg-canvas p-2 border border-accent">
+                          <input
+                            autoFocus
+                            type="text"
+                            value={editCommentContent}
+                            onChange={(e) => setEditCommentContent(e.target.value)}
+                            className="w-full bg-white border border-border px-3 py-1.5 text-[11px] font-mono text-ink focus:outline-none focus:border-accent"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleUpdateComment(comment.id)
+                              if (e.key === 'Escape') setEditingCommentId(null)
+                            }}
+                          />
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => setEditingCommentId(null)}
+                              className="text-[8px] font-black uppercase tracking-widest text-gray-400 hover:text-ink"
+                            >
+                              {t('common.cancel')}
+                            </button>
+                            <button 
+                              onClick={() => handleUpdateComment(comment.id)}
+                              className="text-[8px] font-black uppercase tracking-widest text-accent hover:text-ink"
+                            >
+                              {t('common.save')}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-[12px] text-gray-600 font-mono pl-7">{comment.content}</p>
+                      )}
                     </div>
                   )
                 })}
