@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
-import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogIn, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser, Maximize2 } from 'lucide-react'
+import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser, Maximize2 } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
 import { KanbanBoard } from './components/KanbanBoard'
@@ -21,6 +21,15 @@ import { AccountabilityPods } from './components/AccountabilityPods'
 import { EmptyState } from './components/EmptyState'
 import type { AppNotification } from './types'
 import { useTranslation } from './lib/i18n'
+
+const NAV_ITEMS = [
+  { id: 'tracker', label: 'nav.tracker', icon: ListTodo },
+  { id: 'board', label: 'nav.board', icon: LayoutDashboard },
+  { id: 'leaderboard', label: 'nav.rank', icon: Award },
+  { id: 'social', label: 'nav.global', icon: Globe },
+  { id: 'pods', label: 'nav.pods', icon: Users },
+  { id: 'profile', label: 'nav.profile', icon: CircleUser, authRequired: true }
+] as const;
 
 // Pods System Final Verification - Deployment Active
 function App() {
@@ -831,43 +840,39 @@ function App() {
   return (
     <div className="min-h-screen bg-canvas text-ink font-mono selection:bg-accent/30">
       
-      {/* Integrated Header Container - Sticky on Mobile */}
-      <div className="md:relative sticky top-0 z-[100] bg-white border-b-2 border-border">
-        <div className="max-w-5xl mx-auto px-4 md:px-8 py-4 md:py-8">
-          <header className="space-y-4 md:space-y-8">
-            {/* Desktop Top Row: Title + Nav */}
-            <div className="hidden md:flex justify-between items-center border-b border-border/50 pb-4">
+      {/* Integrated Header Container - Sticky on All Devices */}
+      <div className="sticky top-0 z-[100] bg-white border-b-2 border-border shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 md:py-6">
+          <header className="space-y-4 md:space-y-6">
+            {/* Top Row: Title, Notifications, and Identity */}
+            <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-black text-ink tracking-tighter uppercase">{t('app.title')}</h1>
+                <h1 className="text-xl md:text-2xl font-black text-ink tracking-tighter uppercase">{t('app.title')}</h1>
                 <div className="flex items-center gap-2">
-
                   <div className="relative" ref={notificationsRefDesktop}>
                     <button 
                       onClick={handleToggleNotifications}
                       className={`relative p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-500 hover:text-accent'}`}
                     >
                       <Bell size={18} />
-                    </button>
-                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
-                      {language}
-                    </button>
-                    {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
-                    <button className="hidden">
                       {notifications.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-border">
+                        <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[8px] font-black px-1.5 rounded-full border-2 border-border md:hidden">
                           {notifications.length}
                         </span>
                       )}
                     </button>
+                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-[10px] md:text-xs font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-1 md:ml-2 border-2 border-border px-2 bg-white">
+                      {language}
+                    </button>
                     {showNotifications && (
-                      <div className="absolute top-full left-0 mt-4 w-72 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
+                      <div className="absolute top-full left-0 mt-4 w-72 md:w-80 bg-white border-2 border-border shadow-2xl z-[110] animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-3 border-b border-border bg-canvas flex justify-between items-center">
                           <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
                           <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-ink">
                             <X size={12} />
                           </button>
                         </div>
-                        <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                        <div className="max-h-80 overflow-y-auto custom-scrollbar">
                           {notifications.length > 0 ? (
                             notifications.map((n) => (
                               <div key={n.id} className="p-4 border-b border-border last:border-0 hover:bg-canvas transition-colors group">
@@ -892,116 +897,35 @@ function App() {
                 </div>
               </div>
 
-              <div className="flex gap-1 bg-white p-1 border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-                <button
-                  onClick={() => setCurrentView('tracker')}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'tracker' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                >
-                  {t('nav.tracker')}
-                </button>
-                <button
-                  onClick={() => setCurrentView('board')}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'board' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                >
-                  {t('nav.board')}
-                </button>
-                <button
-                  onClick={() => setCurrentView('leaderboard')}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'leaderboard' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                >
-                  {t('nav.rank')}
-                </button>
-                <button
-                  onClick={() => setCurrentView('social')}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'social' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                >
-                  {t('nav.global')}
-                </button>
-                <button
-                  onClick={() => setCurrentView('pods')}
-                  className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'pods' ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                >
-                  {t('nav.pods')}
-                </button>
-                {session && (
-                  <button
-                    onClick={() => { setViewedProfileId(null); setCurrentView('profile'); }}
-                    className={`px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${currentView === 'profile' && !viewedProfileId ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
-                  >
-                    {t('nav.profile')}
-                  </button>
+              {/* Desktop Identity / Auth */}
+              <div className="flex items-center gap-3">
+                {session ? (
+                  <div className="flex items-center gap-3">
+                    <div className="hidden md:flex flex-col items-end">
+                      <span className="text-[10px] text-ink font-black uppercase tracking-widest truncate max-w-[120px]">{profile?.username || session.user.email?.split('@')[0]}</span>
+                      <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-500 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">{t('auth.logout_nav')}</button>
+                    </div>
+                    <div className="w-8 h-8 md:w-10 md:h-10 bg-white border-2 border-border p-0.5 md:p-1 flex items-center justify-center overflow-hidden shadow-sm">
+                      {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-300" />}
+                    </div>
+                    <button onClick={() => supabase.auth.signOut()} className="md:hidden text-gray-500 p-1 hover:text-red-500 transition-colors"><LogOut size={16} /></button>
+                  </div>
+                ) : (
+                  <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-1.5 md:py-2 px-4 md:px-6 text-[10px]">{t('auth.login_nav')}</button>
                 )}
               </div>
             </div>
 
-            {/* Combined Mobile Header / Desktop Bottom Row */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-0">
-              <div className="space-y-3">
-                {/* Mobile Identity */}
-                <div className="flex md:hidden items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-xl font-black text-ink tracking-tighter uppercase">{t('app.title')}</h1>
-                    <div className="relative" ref={notificationsRefMobile}>
-                      <button onClick={handleToggleNotifications} className={`relative p-1 ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-500'}`}><Bell size={18} />
-                    </button>
-                    <button onClick={() => setLanguage(language === 'en' ? 'th' : 'en')} className="p-1 text-[10px] font-bold text-gray-500 hover:text-accent transition-colors uppercase ml-2 border-2 border-border px-2 bg-white">
-                      {language}
-                    </button>
-                    {/* dummy wrapper so bell toggle logic stays intact, we're inside a relative div */}
-                    <button className="hidden"></button>
-                      {showNotifications && (
-                        <div className="fixed md:absolute top-16 md:top-full left-4 right-4 md:left-0 md:right-auto md:mt-4 md:w-80 bg-white border-2 border-border shadow-2xl z-[100] animate-in fade-in zoom-in-95 duration-200">
-                          <div className="p-3 border-b border-border bg-canvas flex justify-between items-center">
-                            <span className="text-[8px] uppercase font-black text-gray-500 tracking-[0.2em]">{t('notifications.title')}</span>
-                            <button onClick={() => setShowNotifications(false)} className="text-gray-600 hover:text-ink">
-                              <X size={12} />
-                            </button>
-                          </div>
-                          <div className="max-h-[50vh] md:max-h-80 overflow-y-auto custom-scrollbar">
-                            {notifications.length > 0 ? (
-                              notifications.map((n) => (
-                                <div key={n.id} className="p-4 border-b border-border last:border-0 hover:bg-canvas transition-colors group">
-                                  <p className="text-xs text-ink font-mono leading-relaxed mb-2">{n.content}</p>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[8px] text-gray-500 uppercase font-bold">{formatDistanceToNow(new Date(n.created_at))} ago</span>
-                                    <button onClick={() => dismissNotification(n.id)} className="text-[8px] uppercase font-black text-accent hover:text-accent/80 opacity-100 transition-all">
-                                      [Clear]
-                                    </button>
-                                  </div>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="p-8 text-center text-gray-400">
-                                <p className="text-[8px] uppercase font-black tracking-widest">{t('notifications.empty')}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {session ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-white border-2 border-border flex items-center justify-center overflow-hidden">
-                          {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={14} className="text-gray-400" />}
-                        </div>
-                        <button onClick={() => supabase.auth.signOut()} className="text-gray-500 p-1 hover:text-red-500 transition-colors"><LogOut size={16} /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setIsAuthModalOpen(true)} className="p-1.5 text-accent border border-accent/30 bg-accent-soft/50"><LogIn size={16} /></button>
-                    )}
-                  </div>
-                </div>
-
+            {/* Desktop Navigation Row - Integrated with Date Controls */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+              <div className="flex flex-wrap items-center gap-2 md:gap-4">
                 {/* Date Controls */}
-                <div className="flex items-center gap-1 md:gap-2">
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronLeft size={20} /></button>
-                  <div className="relative flex-1 md:flex-none" ref={datePickerRef}>
-                    <button onClick={() => setShowDatePicker(!showDatePicker)} className="w-full md:w-auto flex items-center justify-center gap-2 text-accent bg-accent-soft px-3 md:px-4 py-1.5 md:py-2 border border-accent/30 hover:bg-accent-soft/80 text-[10px] md:text-xs font-bold uppercase tracking-widest transition-all">
-                      <CalendarIcon size={16} />
-                      {format(selectedDate, 'EEE, MMM d, yyyy')}
+                <div className="flex items-center gap-1">
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, 1))} className="p-1.5 md:p-2 text-gray-500 hover:text-accent border-2 border-border bg-white active:translate-y-[1px] transition-all"><ChevronLeft size={18} /></button>
+                  <div className="relative" ref={datePickerRef}>
+                    <button onClick={() => setShowDatePicker(!showDatePicker)} className="flex items-center gap-2 text-accent bg-accent-soft px-3 md:px-4 py-1.5 md:py-2 border-2 border-border hover:bg-accent-soft/80 text-[10px] font-black uppercase tracking-widest transition-all">
+                      <CalendarIcon size={14} />
+                      {format(selectedDate, 'EEE, MMM d')}
                     </button>
                     {showDatePicker && (
                       <BrutalistDatePicker 
@@ -1011,74 +935,62 @@ function App() {
                       />
                     )}
                   </div>
-                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1 md:p-2 text-gray-500 hover:text-accent border-2 border-border md:border-0"><ChevronRight size={20} /></button>
+                  <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1.5 md:p-2 text-gray-500 hover:text-accent border-2 border-border bg-white active:translate-y-[1px] transition-all"><ChevronRight size={18} /></button>
                   
-                  {/* Today Button - Mobile Only */}
-                  <button 
-                    onClick={() => setSelectedDate(startOfDay(new Date()))}
-                    className="md:hidden ml-1 px-3 py-1.5 bg-black text-white text-[10px] font-black uppercase tracking-widest border-2 border-black active:translate-y-[2px] transition-all"
-                  >
-                    {t('action.today')}
-                  </button>
+                  {/* Today Button - Visible on All Devices when not today */}
+                  {format(selectedDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
+                    <button 
+                      onClick={() => setSelectedDate(startOfDay(new Date()))}
+                      className="ml-1 px-3 py-2 bg-black text-white text-[10px] font-black uppercase tracking-widest border-2 border-black active:translate-y-[2px] transition-all shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]"
+                    >
+                      {t('action.today')}
+                    </button>
+                  )}
+                </div>
+
+                {/* Desktop Top Navigation (Hidden on Mobile) */}
+                <div className="hidden md:flex gap-1 bg-white p-1 border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                  {NAV_ITEMS.map((item) => {
+                    if (item.authRequired && !session) return null;
+                    const Icon = item.icon;
+                    const isActive = currentView === item.id && (item.id !== 'profile' || !viewedProfileId);
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          if (item.id === 'profile') setViewedProfileId(null);
+                          setCurrentView(item.id);
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${isActive ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
+                      >
+                        <Icon size={14} />
+                        {t(item.label)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between md:justify-end gap-4 md:gap-10 md:border-t-0 border-border md:pt-0 pt-2 border-t md:hidden">
-                <div className="flex gap-4 w-full justify-around">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-orange-500">
-                      <Flame size={14} fill="currentColor" />
-                      <span className="text-lg font-black tracking-tighter text-ink">{dailyStreak}</span>
-                    </div>
-                    <p className="text-[7px] text-gray-500 uppercase tracking-widest font-black">{t('streak.daily')}</p>
+              {/* Streaks Display */}
+              <div className="flex items-center gap-6 md:gap-8 bg-canvas/50 md:bg-transparent p-3 md:p-0 border-2 border-dashed border-border md:border-0">
+                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-orange-500">
+                  <Flame size={18} fill="currentColor" />
+                  <div className="flex flex-col items-center md:items-end">
+                    <span className="text-xl md:text-2xl font-black tracking-tighter text-ink leading-none">{dailyStreak}</span>
+                    <p className="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest font-black">{t('streak.daily')}</p>
                   </div>
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-1 text-accent">
-                      <Trophy size={14} />
-                      <span className="text-lg font-black tracking-tighter text-ink">{weeklyStreak}</span>
-                    </div>
-                    <p className="text-[7px] text-gray-500 uppercase tracking-widest font-black">{t('streak.weekly')}</p>
+                </div>
+                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-accent">
+                  <Trophy size={18} />
+                  <div className="flex flex-col items-center md:items-end">
+                    <span className="text-xl md:text-2xl font-black tracking-tighter text-ink leading-none">{weeklyStreak}</span>
+                    <p className="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest font-black">{t('streak.weekly')}</p>
                   </div>
                 </div>
               </div>
-
-              {/* Desktop Streaks */}
-              <div className="hidden md:flex items-center justify-end gap-10">
-                <div className="flex gap-8">
-                  <div className="text-center md:text-right">
-                    <div className="flex items-center justify-center md:justify-end gap-1.5 text-orange-500">
-                      <Flame size={20} fill="currentColor" />
-                      <span className="text-2xl md:text-3xl font-black tracking-tighter text-ink">{dailyStreak}</span>
-                    </div>
-                    <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black">{t('streak.daily')}</p>
-                  </div>
-                  <div className="text-center md:text-right">
-                    <div className="flex items-center justify-center md:justify-end gap-1.5 text-accent">
-                      <Trophy size={20} />
-                      <span className="text-2xl md:text-3xl font-black tracking-tighter text-ink">{weeklyStreak}</span>
-                    </div>
-                    <p className="text-[9px] text-gray-500 uppercase tracking-widest font-black">{t('streak.weekly')}</p>
-                  </div>
-                </div>
-
-                <div className="hidden md:flex items-center gap-4 pl-8 border-l border-border/50">
-                  {session && (
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-end">
-                        <span className="text-[10px] text-ink font-black uppercase tracking-widest truncate max-w-[120px]">{profile?.username || session.user.email?.split('@')[0]}</span>
-                        <button onClick={() => supabase.auth.signOut()} className="text-[8px] text-gray-500 hover:text-red-500 uppercase font-black tracking-[0.2em] transition-colors mt-0.5">{t('auth.logout_nav')}</button>
-                      </div>
-                      <div className="w-10 h-10 bg-white border-2 border-border p-1 flex items-center justify-center overflow-hidden shadow-sm">
-                        {profile?.avatar_url ? <img src={profile.avatar_url} className="w-full h-full object-cover" /> : <User size={18} className="text-gray-300" />}
-                      </div>
-                    </div>
-                  )}
-                  {!session && (
-                    <button onClick={() => setIsAuthModalOpen(true)} className="btn-primary py-2 px-6">{t('auth.login_nav')}</button>
-                  )}
-                </div>              </div>
             </div>
 
+            {/* Date Strip */}
             <div 
               ref={dateStripRef}
               className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-1 md:pb-0"
@@ -1570,53 +1482,24 @@ function App() {
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t-4 border-black px-1 py-1 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-stretch h-16 max-w-lg mx-auto">
-          <button
-            onClick={() => setCurrentView('tracker')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'tracker' ? 'bg-black text-white' : 'text-ink/40'}`}
-          >
-            <ListTodo size={20} className={currentView === 'tracker' ? 'animate-success-pop' : ''} />
-            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.tracker')}</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('board')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'board' ? 'bg-black text-white' : 'text-ink/40'}`}
-          >
-            <LayoutDashboard size={20} className={currentView === 'board' ? 'animate-success-pop' : ''} />
-            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.board')}</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('leaderboard')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'leaderboard' ? 'bg-black text-white' : 'text-ink/40'}`}
-          >
-            <Award size={20} className={currentView === 'leaderboard' ? 'animate-success-pop' : ''} />
-            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.rank')}</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('social')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'social' ? 'bg-black text-white' : 'text-ink/40'}`}
-          >
-            <Globe size={20} className={currentView === 'social' ? 'animate-success-pop' : ''} />
-            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.global')}</span>
-          </button>
-          <button
-            onClick={() => setCurrentView('pods')}
-            className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'pods' ? 'bg-black text-white' : 'text-ink/40'}`}
-          >
-            <Users size={20} className={currentView === 'pods' ? 'animate-success-pop' : ''} />
-            <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.pods')}</span>
-          </button>
-          {session && (
-            <button
-              onClick={() => {
-                setViewedProfileId(null)
-                setCurrentView('profile')
-              }}
-              className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${currentView === 'profile' && !viewedProfileId ? 'bg-black text-white' : 'text-ink/40'}`}
-            >
-              <CircleUser size={20} className={currentView === 'profile' && !viewedProfileId ? 'animate-success-pop' : ''} />
-              <span className="text-[7px] font-black uppercase tracking-widest">{t('nav.profile')}</span>
-            </button>
-          )}
+          {NAV_ITEMS.map((item) => {
+            if (item.authRequired && !session) return null;
+            const Icon = item.icon;
+            const isActive = currentView === item.id && (item.id !== 'profile' || !viewedProfileId);
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  if (item.id === 'profile') setViewedProfileId(null);
+                  setCurrentView(item.id);
+                }}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'bg-black text-white' : 'text-ink/40'}`}
+              >
+                <Icon size={20} className={isActive ? 'animate-success-pop' : ''} />
+                <span className="text-[7px] font-black uppercase tracking-widest">{t(item.label)}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
     </div>
