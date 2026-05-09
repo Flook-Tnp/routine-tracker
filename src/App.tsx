@@ -746,18 +746,18 @@ function App() {
 
       const showTotal = !hiddenRoutines.has('Total')
       const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
+
+      // Focus the timeline ONLY on routines that are currently visible
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Map IDs to Titles ONLY for routines in the current category
-      // This prevents history from other categories (like a stray Duolingo in 'General') from appearing here.
-      const currentCategoryRoutines = filteredRoutines
+      // 1. Unified Habit Data Structure (Global context)
       const routineIdToTitle: Record<string, string> = {}
       const titleToDisplay: Record<string, string> = {}
       const titleToCompletions: Record<string, string[]> = {}
       const titleToEarliestCreation: Record<string, string> = {}
 
-      currentCategoryRoutines.forEach(r => {
+      routines.forEach(r => {
         const title = r.title.trim().toLowerCase()
         routineIdToTitle[r.id] = title
         titleToDisplay[title] = r.title
@@ -767,7 +767,6 @@ function App() {
         }
       })
 
-      // Group completions by title ONLY if they belong to a routine in this category
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
         if (title) {
@@ -776,30 +775,21 @@ function App() {
         }
       })
 
-      // 2. Determine "True Day 1" (First real completion OR Creation Date)
-      const activeTitles = Array.from(new Set(currentCategoryRoutines.map(r => r.title.trim().toLowerCase())))
+      // 2. Identify normalized titles for the CURRENT timeline routines
+      const timelineTitles = Array.from(new Set(timelineRoutines.map(r => r.title.trim().toLowerCase())))
       const titleToTrueStart: Record<string, string> = {}
 
-      activeTitles.forEach(title => {
+      timelineTitles.forEach(title => {
         const habitComps = [...(titleToCompletions[title] || [])].sort()
-        
+
         if (habitComps.length > 0) {
-          // HEURISTIC: Find the "Real Start"
-          // If there's a massive gap (60+ days) between completions at the start, 
-          // we treat the earlier ones as "stray/test" data and start from the next one.
           let realStartIndex = 0
           for (let i = 0; i < habitComps.length - 1; i++) {
             const current = parseISO(habitComps[i])
             const next = parseISO(habitComps[i+1])
             const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
-            
-            if (gapDays > 60) {
-              // Ignore everything up to here and try the next date as the start
-              realStartIndex = i + 1
-            } else {
-              // Found a cluster of activity, this is the real start
-              break
-            }
+            if (gapDays > 60) realStartIndex = i + 1
+            else break
           }
           titleToTrueStart[title] = habitComps[realStartIndex]
         } else {
@@ -807,11 +797,11 @@ function App() {
         }
       })
 
-      // 3. Aggregate all relevant completions for O(1) daily lookup
+      // 3. Aggregate all relevant completions for the current view
       const completionsByDateByTitle: Record<string, Set<string>> = {}
       completions.forEach(c => {
         const title = routineIdToTitle[c.routine_id]
-        if (title && activeTitles.includes(title)) {
+        if (title && timelineTitles.includes(title)) {
           if (!completionsByDateByTitle[c.completed_date]) {
             completionsByDateByTitle[c.completed_date] = new Set()
           }
@@ -819,19 +809,19 @@ function App() {
         }
       })
 
-      // 4. Timeline Generation (Full resolution)
-      const categoryStartStr = activeTitles.reduce((min, t) => {
+      // 4. Generate Dynamic Timeline based ONLY on visible routines
+      const timelineStartStr = timelineTitles.reduce((min, t) => {
         const start = titleToTrueStart[t]
         return start < min ? start : min
       }, format(new Date(), 'yyyy-MM-dd'))
 
-      const firstDate = startOfDay(parseISO(categoryStartStr))
+      const firstDate = startOfDay(parseISO(timelineStartStr))
       const today = startOfDay(new Date())
       const daysInterval = eachDayOfInterval({ start: firstDate, end: today })
 
       const data: Record<string, string | number>[] = []
       const cumulativeCounts: Record<string, number> = {}
-      activeTitles.forEach(t => { cumulativeCounts[t] = 0 })
+      timelineTitles.forEach(t => { cumulativeCounts[t] = 0 })
 
       daysInterval.forEach((date) => {
         const dStr = format(date, 'yyyy-MM-dd')
@@ -845,20 +835,19 @@ function App() {
         let dailyTotalPct = 0
         let activeCount = 0
 
-        activeTitles.forEach(title => {
+        timelineTitles.forEach(title => {
           const startStr = titleToTrueStart[title]
           if (dStr >= startStr) {
             const startD = parseISO(startStr)
             const daysSinceStart = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const count = cumulativeCounts[title]
-            const percentage = Math.min(100, (count / daysSinceStart) * 100)
-            entry[titleToDisplay[title]] = percentage
-            dailyTotalPct += percentage
+            const pct = Math.min(100, (cumulativeCounts[title] / daysSinceStart) * 100)
+            entry[titleToDisplay[title]] = pct
+            dailyTotalPct += pct
             activeCount++
           }
         })
 
-        entry['Total'] = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
+        if (showTotal) entry['Total'] = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
         data.push(entry)
       })      
       return data
@@ -866,8 +855,7 @@ function App() {
       console.error('Error in chart data:', err)
       return []
     }
-  }, [completions, filteredRoutines, hiddenRoutines])
-
+  }, [routines, completions, filteredRoutines, hiddenRoutines])
   const thirtyDayStats = useMemo(() => {
     const thirtyDays = eachDayOfInterval({
       start: subDays(selectedDate, 29),

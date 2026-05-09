@@ -25,8 +25,35 @@ export function FullscreenChart({
   filteredRoutines
 }: FullscreenChartProps) {
   const { t } = useTranslation()
+  const [isAutoZoom, setIsAutoZoom] = useState(false)
 
   if (!isChartFullscreen) return null
+
+  // Calculate dynamic Y-axis domain if auto-zoom is on
+  const yDomain = useMemo(() => {
+    if (!isAutoZoom || lifetimeChartData.length === 0) return [0, 100]
+    
+    let min = 100
+    let max = 0
+    const visibleKeys = [
+      ...(!hiddenRoutines.has('Total') ? ['Total'] : []),
+      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.title)).map(r => r.title)
+    ]
+
+    lifetimeChartData.forEach(entry => {
+      visibleKeys.forEach(key => {
+        const val = Number(entry[key])
+        if (!isNaN(val)) {
+          if (val < min) min = val
+          if (val > max) max = val
+        }
+      })
+    })
+
+    // Add some padding
+    const padding = (max - min) * 0.1 || 5
+    return [Math.max(0, Math.floor(min - padding)), Math.min(100, Math.ceil(max + padding))]
+  }, [isAutoZoom, lifetimeChartData, hiddenRoutines, filteredRoutines])
 
   const toggleRoutine = (title: string) => {
     const next = new Set(hiddenRoutines)
@@ -42,12 +69,20 @@ export function FullscreenChart({
           <h2 className="text-xl font-black text-ink tracking-tighter uppercase">{t('chart.lifetime_analysis')}</h2>
           <p className="text-[10px] text-ink/40 uppercase tracking-widest">{activeCategory} Section • {lifetimeStats.totalDays} Days</p>
         </div>
-        <button 
-          onClick={() => setIsChartFullscreen(false)}
-          className="p-3 bg-white border-2 border-border text-ink hover:bg-red-50 hover:text-red-600 transition-all rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-        >
-          <Minimize2 size={24} />
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsAutoZoom(!isAutoZoom)}
+            className={`px-4 py-2 border-2 text-[10px] font-black uppercase transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-black' : 'bg-white border-border text-ink'}`}
+          >
+            {isAutoZoom ? 'FIXED_SCALE' : 'AUTO_ZOOM_Y'}
+          </button>
+          <button 
+            onClick={() => setIsChartFullscreen(false)}
+            className="p-3 bg-white border-2 border-border text-ink hover:bg-red-50 hover:text-red-600 transition-all rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+          >
+            <Minimize2 size={24} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 bg-white border-2 border-border p-6 md:p-10 relative shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
@@ -73,8 +108,7 @@ export function FullscreenChart({
               fontSize={10}
               tickLine={false}
               axisLine={false}
-              domain={[0, 100]}
-              ticks={[0, 25, 50, 75, 100]}
+              domain={yDomain}
               tickFormatter={(val) => `${Math.round(val)}%`}
             />
             <Tooltip
