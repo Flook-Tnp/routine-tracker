@@ -104,8 +104,8 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
     const completionsCount = new Set(
       completions
-        .filter(c => c && c.created_at)
-        .map(c => c.created_at!.split('T')[0])
+        .filter(c => c && (c.created_at || c.completed_date))
+        .map(c => (c.created_at || c.completed_date).split('T')[0])
     ).size
 
     const milestones = [

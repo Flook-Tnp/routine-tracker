@@ -14,16 +14,17 @@ export const StorageService = {
 
   async fetchCompletions(userId: string): Promise<RoutineCompletion[]> {
     // 1. Get total count first for efficient parallel fetching
+    // Use a standard select with a limit of 1 to be safer than 'head: true'
     const { count, error: countError } = await supabase
       .from('routine_completions')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('user_id', userId)
+      .limit(1)
     
     if (countError) throw countError
-    if (!count || count === 0) return []
+    if (count === null || count === 0) return []
 
     // 2. Fetch all completions in parallel chunks of 1000
-    // This is much faster than sequential 'while' loops for large datasets
     const chunkSize = 1000
     const chunks = Math.ceil(count / chunkSize)
     const promises = []
@@ -32,7 +33,7 @@ export const StorageService = {
       promises.push(
         supabase
           .from('routine_completions')
-          .select('id, routine_id, completed_date, xp_earned, created_at')
+          .select('*')
           .eq('user_id', userId)
           .order('completed_date', { ascending: true })
           .range(i * chunkSize, (i + 1) * chunkSize - 1)
@@ -199,7 +200,7 @@ export const StorageService = {
   async fetchLeaderboard(): Promise<Partial<Profile>[]> {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, username, total_xp, lifetime_xp, avatar_url, badges')
+      .select('*')
       .order('total_xp', { ascending: false })
       .limit(10)
     if (error) throw error
