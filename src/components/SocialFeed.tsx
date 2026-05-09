@@ -374,23 +374,23 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                         </div>
 
                         {isCommentMe && !isEditingComment && (
-                          <div className="flex items-center gap-2 opacity-0 group-hover/comment:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-2 md:opacity-0 group-hover/comment:opacity-100 transition-opacity">
                             <button 
                               onClick={() => {
                                 setEditingCommentId(comment.id)
                                 setEditCommentContent(comment.content)
                               }}
-                              className="text-gray-400 hover:text-accent transition-colors"
+                              className="p-1 text-gray-400 hover:text-accent transition-colors"
                               title="Edit Comment"
                             >
-                              <Pencil size={10} />
+                              <Pencil size={12} />
                             </button>
                             <button 
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors"
+                              className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                               title="Delete Comment"
                             >
-                              <Trash2 size={10} />
+                              <Trash2 size={12} />
                             </button>
                           </div>
                         )}
