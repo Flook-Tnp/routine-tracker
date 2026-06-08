@@ -9,7 +9,7 @@ import { ConfirmDialog } from './components/ConfirmDialog'
 import { BrutalistDatePicker } from './components/BrutalistDatePicker'
 import { AuthModal } from './components/Auth'
 import { StorageService } from './lib/storage'
-import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile, Group } from './types'
+import type { Routine, RoutineCompletion, Task, TaskLog, TaskBreakdownItem, Profile, Group } from './types'
 import type { Session } from '@supabase/supabase-js'
 import { calculateXP } from './lib/gamification'
 import { EmptyState } from './components/EmptyState'
@@ -57,6 +57,7 @@ function App() {
   const [notifications, setNotifications] = useState<AppNotification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [taskLogs, setTaskLogs] = useState<TaskLog[]>([])
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [routines, setRoutines] = useState<Routine[]>([])
   const [completions, setCompletions] = useState<RoutineCompletion[]>([])
@@ -305,10 +306,11 @@ function App() {
               }
             })
 
-          const [routinesData, allCompletions, tasksData, notificationsData] = await Promise.all([
+          const [routinesData, allCompletions, tasksData, taskLogsData, notificationsData] = await Promise.all([
             StorageService.fetchRoutines(currentSession.user.id),
             StorageService.fetchCompletions(currentSession.user.id),
             StorageService.fetchTasks(currentSession.user.id),
+            StorageService.fetchTaskLogs(currentSession.user.id),
             StorageService.fetchNotifications(currentSession.user.id)
           ])
 
@@ -316,6 +318,7 @@ function App() {
             setRoutines(routinesData)
             setCompletions(allCompletions)
             setTasks(tasksData)
+            setTaskLogs(taskLogsData)
             setNotifications(notificationsData)
             setLoading(false)
             if (identityChanged) setCurrentView('tracker')
@@ -330,6 +333,7 @@ function App() {
           setRoutines([])
           setCompletions([])
           setTasks([])
+          setTaskLogs([])
           setLoading(false)
           if (identityChanged) setCurrentView('tracker')
         }
@@ -439,15 +443,51 @@ function App() {
   }
 
   async function finalizeTask(id: string, dateStr: string) {
+    const updates: Partial<Task> = { completed_date: dateStr, status: 'done' }
     if (session) {
       try {
-        await StorageService.updateTask(id, { completed_date: dateStr })
-        setTasks(tasks.map(t => t.id === id ? { ...t, completed_date: dateStr } : t))
+        await StorageService.updateTask(id, updates)
+        setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
       } catch (err) {
         console.error('Error finalizing task:', err)
       }
     } else {
-      setTasks(tasks.map(t => t.id === id ? { ...t, completed_date: dateStr } : t))
+      setTasks(tasks.map(t => t.id === id ? { ...t, ...updates } : t))
+    }
+  }
+
+  async function logTask(id: string, dateStr: string, note: string) {
+    if (session) {
+      try {
+        const log = await StorageService.upsertTaskLog(id, session.user.id, dateStr, note)
+        setTaskLogs(prev => {
+          const exists = prev.some(item => item.task_id === id && item.logged_date === dateStr)
+          if (exists) {
+            return prev.map(item => item.task_id === id && item.logged_date === dateStr ? log : item)
+          }
+          return [log, ...prev]
+        })
+      } catch (err) {
+        console.error('Error logging task:', err)
+        alert(`LOG_FAILURE: ${getErrorMessage(err)}`)
+      }
+    } else {
+      const now = new Date().toISOString()
+      const guestLog: TaskLog = {
+        id: crypto.randomUUID(),
+        task_id: id,
+        logged_date: dateStr,
+        note: note.trim() || null,
+        created_at: now,
+        updated_at: now
+      }
+      setTaskLogs(prev => {
+        const exists = prev.some(item => item.task_id === id && item.logged_date === dateStr)
+        if (exists) {
+          return prev.map(item => item.task_id === id && item.logged_date === dateStr ? guestLog : item)
+        }
+        return [guestLog, ...prev]
+      })
     }
   }
 
@@ -1534,6 +1574,8 @@ function App() {
               deleteTask={deleteTask}
               selectedDateStr={selectedDateStr}
               finalizeTask={finalizeTask}
+              logTask={logTask}
+              taskLogs={taskLogs}
             />
           ) : currentView === 'leaderboard' ? (
             <Leaderboard onSelectUser={handleSelectUser} currentUserId={session?.user?.id} />

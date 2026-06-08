@@ -80,6 +80,18 @@ CREATE TABLE tasks (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Table for recurring/ongoing task activity logs
+CREATE TABLE task_logs (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  task_id UUID REFERENCES tasks(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  logged_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  note TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(task_id, logged_date)
+);
+
 -- Table for social posts
 CREATE TABLE posts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -133,6 +145,9 @@ CREATE INDEX idx_routine_completions_routine_id ON routine_completions(routine_i
 CREATE INDEX idx_routine_completions_completed_date ON routine_completions(completed_date);
 CREATE INDEX idx_routines_user_id ON routines(user_id);
 CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX idx_task_logs_user_id ON task_logs(user_id);
+CREATE INDEX idx_task_logs_task_id ON task_logs(task_id);
+CREATE INDEX idx_task_logs_logged_date ON task_logs(logged_date);
 CREATE INDEX idx_posts_user_id ON posts(user_id);
 CREATE INDEX idx_posts_group_id ON posts(group_id);
 CREATE INDEX idx_group_members_group_id ON group_members(group_id);
@@ -147,6 +162,7 @@ ALTER TABLE group_task_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE routines ENABLE ROW LEVEL SECURITY;
 ALTER TABLE routine_completions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reactions ENABLE ROW LEVEL SECURITY;
@@ -196,6 +212,16 @@ WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Routines viewable by everyone" ON routines FOR SELECT USING (true); CREATE POLICY "Routines manageable by owners" ON routines FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Completions viewable by everyone" ON routine_completions FOR SELECT USING (true); CREATE POLICY "Completions manageable by owners" ON routine_completions FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Tasks manageable by owners" ON tasks FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Task logs manageable by owners" ON task_logs FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (
+  auth.uid() = user_id
+  AND EXISTS (
+    SELECT 1 FROM tasks
+    WHERE tasks.id = task_logs.task_id
+      AND tasks.user_id = auth.uid()
+  )
+);
 
 CREATE POLICY "Posts viewable by everyone" ON posts FOR SELECT USING (true);
 CREATE POLICY "Users can create posts" ON posts FOR INSERT WITH CHECK (auth.uid() = user_id);

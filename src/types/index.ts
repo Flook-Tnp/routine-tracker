@@ -23,6 +23,16 @@ export interface Task {
   created_at: string
 }
 
+export interface TaskLog {
+  id: string
+  task_id: string
+  user_id?: string
+  logged_date: string
+  note: string | null
+  created_at: string
+  updated_at?: string
+}
+
 export interface TaskBreakdownItem {
   title: string
   percentage: number

@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Routine, RoutineCompletion, Task, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
+import type { Routine, RoutineCompletion, Task, TaskLog, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
@@ -61,6 +61,22 @@ export const StorageService = {
       .order('created_at', { ascending: false })
     if (error) throw error
     return data as Task[]
+  },
+
+  async fetchTaskLogs(userId: string): Promise<TaskLog[]> {
+    const { data, error } = await supabase
+      .from('task_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('logged_date', { ascending: false })
+    if (error) {
+      if (error.code === '42P01') {
+        console.warn('TASK_LOGS_TABLE_MISSING: apply the latest Supabase schema to enable task activity history.')
+        return []
+      }
+      throw error
+    }
+    return data as TaskLog[]
   },
 
   async addRoutine(routine: Partial<Routine>, userId?: string): Promise<Routine> {
@@ -131,6 +147,25 @@ export const StorageService = {
       .update(updates)
       .eq('id', id)
     if (error) throw error
+  },
+
+  async upsertTaskLog(taskId: string, userId: string, loggedDate: string, note: string): Promise<TaskLog> {
+    const { data, error } = await supabase
+      .from('task_logs')
+      .upsert(
+        {
+          task_id: taskId,
+          user_id: userId,
+          logged_date: loggedDate,
+          note: note.trim() || null,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'task_id,logged_date' }
+      )
+      .select()
+      .single()
+    if (error) throw error
+    return data as TaskLog
   },
 
   async deleteTask(id: string): Promise<void> {
