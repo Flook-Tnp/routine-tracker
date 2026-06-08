@@ -95,7 +95,7 @@ export function KanbanBoard({
 }: KanbanBoardProps) {
   const { t } = useTranslation()
   const [loggingTask, setLoggingTask] = useState<Task | null>(null)
-  const [activityTask, setActivityTask] = useState<Task | null>(null)
+  const [isActivityOpen, setIsActivityOpen] = useState(false)
   const [logNote, setLogNote] = useState('')
   const [range, setRange] = useState<TaskRange>('30d')
   const [customStart, setCustomStart] = useState(format(subDays(new Date(), 29), 'yyyy-MM-dd'))
@@ -113,21 +113,33 @@ export function KanbanBoard({
   const completionRate = totalActive === 0 ? 0 : Math.round((todayLoggedTaskIds.size / totalActive) * 100)
 
   const activityLogs = useMemo(() => {
-    if (!activityTask) return []
     const { start, end } = getRangeDates(range, customStart, customEnd)
     return taskLogs
-      .filter(log => log.task_id === activityTask.id)
       .filter(log => {
         const date = parseISO(log.logged_date)
         return date >= start && date <= end
       })
       .sort((a, b) => b.logged_date.localeCompare(a.logged_date))
-  }, [activityTask, customEnd, customStart, range, taskLogs])
+  }, [customEnd, customStart, range, taskLogs])
 
   const activityDays = useMemo(() => {
     const { start, end } = getRangeDates(range, customStart, customEnd)
     return eachDayOfInterval({ start, end })
   }, [customEnd, customStart, range])
+
+  const taskTitleById = useMemo(() => {
+    return new Map(tasks.map(task => [task.id, task.title]))
+  }, [tasks])
+
+  const activityLogsByDate = useMemo(() => {
+    return activityLogs.reduce<Record<string, TaskLog[]>>((acc, log) => {
+      if (!acc[log.logged_date]) acc[log.logged_date] = []
+      acc[log.logged_date].push(log)
+      return acc
+    }, {})
+  }, [activityLogs])
+
+  const activityDates = Object.keys(activityLogsByDate).sort((a, b) => b.localeCompare(a))
 
   const openLogModal = (task: Task) => {
     const existingLog = taskLogs.find(log => log.task_id === task.id && log.logged_date === selectedDateStr)
@@ -136,8 +148,7 @@ export function KanbanBoard({
   }
 
   const openActivityCenter = () => {
-    const defaultTask = activeTasks[0] || tasks[0]
-    if (defaultTask) setActivityTask(defaultTask)
+    setIsActivityOpen(true)
   }
 
   const handleSaveLog = () => {
@@ -376,35 +387,20 @@ export function KanbanBoard({
         </div>
       )}
 
-      {activityTask && (
+      {isActivityOpen && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center bg-ink/55 p-4 font-mono">
           <div className="flex max-h-[90vh] w-full max-w-4xl flex-col border-2 border-border bg-white shadow-[12px_12px_0px_0px_rgba(20,184,166,0.34)]">
             <div className="flex items-start justify-between gap-4 border-b-2 border-border bg-canvas p-5">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-[0.25em] text-sync">{t('board.activity_title')}</p>
-                <h3 className="mt-1 text-xl font-black uppercase tracking-tight text-ink">{activityTask.title}</h3>
+                <h3 className="mt-1 text-xl font-black uppercase tracking-tight text-ink">{t('board.activity_all_tasks')}</h3>
               </div>
-              <button onClick={() => setActivityTask(null)} className="p-2 text-ink/40 transition-colors hover:text-accent">
+              <button onClick={() => setIsActivityOpen(false)} className="p-2 text-ink/40 transition-colors hover:text-accent">
                 <X size={18} />
               </button>
             </div>
 
             <div className="overflow-y-auto p-5 custom-scrollbar">
-              <div className="mb-5 grid gap-2 border-2 border-border bg-white p-3 md:grid-cols-[auto_1fr] md:items-center">
-                <p className="text-[9px] font-black uppercase tracking-widest text-ink/40">{t('board.select_task')}</p>
-                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
-                  {tasks.map(task => (
-                    <button
-                      key={task.id}
-                      onClick={() => setActivityTask(task)}
-                      className={`shrink-0 border-2 px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${activityTask.id === task.id ? 'border-border bg-sync text-white shadow-[2px_2px_0px_0px_rgba(236,72,153,0.42)]' : 'border-border bg-canvas text-ink/45 hover:text-accent'}`}
-                    >
-                      {task.title}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="mb-5 flex flex-wrap gap-2">
                 {rangeOptions.map(option => (
                   <button
@@ -427,14 +423,14 @@ export function KanbanBoard({
               <div className="mb-6 grid grid-cols-3 gap-3">
                 <div className="border-2 border-border bg-accent-soft p-4 text-center">
                   <p className="text-2xl font-black text-accent">{activityLogs.length}</p>
-                  <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-ink/40">{t('board.active_days')}</p>
+                  <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-ink/40">{t('board.total_logs')}</p>
                 </div>
                 <div className="border-2 border-border bg-sync-soft p-4 text-center">
-                  <p className="text-2xl font-black text-sync">{activityDays.length}</p>
-                  <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-ink/40">{t('board.range_days')}</p>
+                  <p className="text-2xl font-black text-sync">{activityDates.length}</p>
+                  <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-ink/40">{t('board.active_days')}</p>
                 </div>
                 <div className="border-2 border-border bg-white p-4 text-center">
-                  <p className="text-2xl font-black text-ink">{activityDays.length === 0 ? 0 : Math.round((activityLogs.length / activityDays.length) * 100)}%</p>
+                  <p className="text-2xl font-black text-ink">{activityDays.length === 0 ? 0 : Math.round((activityDates.length / activityDays.length) * 100)}%</p>
                   <p className="mt-1 text-[8px] font-black uppercase tracking-widest text-ink/40">{t('board.consistency')}</p>
                 </div>
               </div>
@@ -442,11 +438,12 @@ export function KanbanBoard({
               <div className="mb-6 grid grid-cols-7 gap-2">
                 {activityDays.map(day => {
                   const dateStr = format(day, 'yyyy-MM-dd')
-                  const log = activityLogs.find(item => item.logged_date === dateStr)
+                  const dayLogs = activityLogsByDate[dateStr] || []
                   return (
-                    <div key={dateStr} className={`min-h-12 border-2 p-2 text-center ${log ? 'border-accent bg-accent-soft text-accent' : 'border-border bg-canvas text-ink/25'}`}>
+                    <div key={dateStr} className={`min-h-12 border-2 p-2 text-center ${dayLogs.length > 0 ? 'border-accent bg-accent-soft text-accent' : 'border-border bg-canvas text-ink/25'}`}>
                       <p className="text-[8px] font-black uppercase">{format(day, 'MMM')}</p>
                       <p className="text-sm font-black">{format(day, 'd')}</p>
+                      {dayLogs.length > 0 && <p className="mt-1 text-[8px] font-black">{dayLogs.length}</p>}
                       {isSameDay(day, new Date()) && <div className="mx-auto mt-1 h-1 w-4 bg-sync" />}
                     </div>
                   )
@@ -454,10 +451,17 @@ export function KanbanBoard({
               </div>
 
               <div className="space-y-3">
-                {activityLogs.length > 0 ? activityLogs.map(log => (
-                  <div key={log.id} className="border-2 border-border bg-white p-4 shadow-[3px_3px_0px_0px_rgba(20,184,166,0.24)]">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-accent">{format(parseISO(log.logged_date), 'MMM d, yyyy')}</p>
-                    <p className="mt-2 text-sm font-bold leading-relaxed text-ink/75">{log.note || t('board.no_note')}</p>
+                {activityDates.length > 0 ? activityDates.map(dateStr => (
+                  <div key={dateStr} className="border-2 border-border bg-white p-4 shadow-[3px_3px_0px_0px_rgba(20,184,166,0.24)]">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-accent">{format(parseISO(dateStr), 'MMM d, yyyy')}</p>
+                    <div className="mt-3 space-y-3 border-l-2 border-border pl-4">
+                      {activityLogsByDate[dateStr].map(log => (
+                        <div key={log.id} className="space-y-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-ink">{taskTitleById.get(log.task_id) || t('board.unknown_task')}</p>
+                          <p className="text-sm font-bold leading-relaxed text-ink/70">{log.note || t('board.no_note')}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )) : (
                   <div className="border-2 border-dashed border-border bg-canvas py-10 text-center">
