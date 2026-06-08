@@ -342,8 +342,12 @@ BEGIN
   END IF;
 
   INSERT INTO group_members (group_id, user_id)
-  VALUES (target_group_id, auth.uid())
-  ON CONFLICT (group_id, user_id) DO NOTHING;
+  SELECT target_group_id, auth.uid()
+  WHERE NOT EXISTS (
+    SELECT 1 FROM group_members gm
+    WHERE gm.group_id = target_group_id
+      AND gm.user_id = auth.uid()
+  );
 
   RETURN QUERY SELECT auth.uid(), target_group_id;
 END;
