@@ -393,20 +393,37 @@ export const StorageService = {
     return data as Group[]
   },
 
-  async createGroup(name: string, description: string, userId: string): Promise<Group> {
+  async createGroup(name: string, description: string, userId: string, visibility: 'public' | 'private' = 'public', accessCode?: string): Promise<Group> {
     const { data: group, error: groupError } = await supabase
       .from('groups')
-      .insert([{ name, description, created_by: userId }])
+      .insert([{ name, description, created_by: userId, visibility }])
       .select()
       .single()
     if (groupError) throw groupError
+
+    if (visibility === 'private' && accessCode?.trim()) {
+      const { error: codeError } = await supabase
+        .from('group_access_codes')
+        .insert({ group_id: group.id, access_code: accessCode.trim() })
+      if (codeError) throw codeError
+    }
 
     // Automatically join the group
     await this.joinGroup(group.id, userId)
     return group as Group
   },
 
-  async joinGroup(groupId: string, userId: string): Promise<{ user_id: string; group_id: string }> {
+  async joinGroup(groupId: string, userId: string, accessCode?: string): Promise<{ user_id: string; group_id: string }> {
+    const { data: joined, error: joinError } = await supabase
+      .rpc('join_group_with_code', {
+        target_group_id: groupId,
+        provided_code: accessCode?.trim() || null
+      })
+
+    if (!joinError && joined) return joined as { user_id: string; group_id: string }
+
+    if (joinError && joinError.code !== '42883') throw joinError
+
     const { data, error } = await supabase
       .from('group_members')
       .insert([{ group_id: groupId, user_id: userId }])
@@ -432,7 +449,7 @@ export const StorageService = {
     if (error) throw error
   },
 
-  async updateGroup(groupId: string, updates: Partial<Group>): Promise<Group> {
+  async updateGroup(groupId: string, updates: Partial<Group>, accessCode?: string): Promise<Group> {
     const { data, error } = await supabase
       .from('groups')
       .update(updates)
@@ -440,6 +457,22 @@ export const StorageService = {
       .select()
       .single()
     if (error) throw error
+
+    if (updates.visibility === 'private' && accessCode?.trim()) {
+      const { error: codeError } = await supabase
+        .from('group_access_codes')
+        .upsert({ group_id: groupId, access_code: accessCode.trim(), updated_at: new Date().toISOString() })
+      if (codeError) throw codeError
+    }
+
+    if (updates.visibility === 'public') {
+      const { error: codeDeleteError } = await supabase
+        .from('group_access_codes')
+        .delete()
+        .eq('group_id', groupId)
+      if (codeDeleteError) throw codeDeleteError
+    }
+
     return data as Group
   },
 

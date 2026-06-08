@@ -92,6 +92,7 @@ export interface Group {
   id: string
   name: string
   description: string
+  visibility?: 'public' | 'private'
   created_by: string
   created_at: string
   current_streak?: number

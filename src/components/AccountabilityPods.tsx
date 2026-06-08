@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil, Lock, Globe2 } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -32,9 +32,14 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [isCreating, setIsCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newDescription, setNewDescription] = useState('')
+  const [newVisibility, setNewVisibility] = useState<'public' | 'private'>('public')
+  const [newAccessCode, setNewAccessCode] = useState('')
+  const [joinCodes, setJoinCodes] = useState<Record<string, string>>({})
   const [isEditingPod, setIsEditingPod] = useState(false)
   const [editName, setEditName] = useState('')
   const [editDescription, setEditDescription] = useState('')
+  const [editVisibility, setEditVisibility] = useState<'public' | 'private'>('public')
+  const [editAccessCode, setEditAccessCode] = useState('')
   const [loading, setLoading] = useState(true)
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -180,11 +185,14 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName.trim() || !session) return
+    if (newVisibility === 'private' && !newAccessCode.trim()) return
     try {
-      const pod = await StorageService.createGroup(newName, newDescription, session.user.id)
+      const pod = await StorageService.createGroup(newName, newDescription, session.user.id, newVisibility, newAccessCode)
       setGroups([...groups, pod])
       setNewName('')
       setNewDescription('')
+      setNewVisibility('public')
+      setNewAccessCode('')
       setIsCreating(false)
       onSelectPod(pod)
     } catch (err) {
@@ -195,12 +203,15 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const handleJoinGroup = async (groupId: string) => {
     if (!session) return
     try {
-      await StorageService.joinGroup(groupId, session.user.id)
+      const group = groups.find(g => g.id === groupId)
+      const accessCode = group?.visibility === 'private' ? joinCodes[groupId] : undefined
+      await StorageService.joinGroup(groupId, session.user.id, accessCode)
       fetchGroups()
-      const pod = groups.find(g => g.id === groupId)
+      const pod = group || groups.find(g => g.id === groupId)
       if (pod) onSelectPod(pod)
     } catch (err) {
       console.error('Join protocol failed:', err)
+      alert(`JOIN_FAILED: ${getErrorMessage(err, 'Check the group code and try again.')}`)
     }
   }
 
@@ -232,10 +243,12 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     try {
       const updatedPod = await StorageService.updateGroup(selectedPod.id, {
         name: editName,
-        description: editDescription
-      })
+        description: editDescription,
+        visibility: editVisibility
+      }, editAccessCode)
       onSelectPod(updatedPod)
       setGroups(groups.map(g => g.id === updatedPod.id ? updatedPod : g))
+      setEditAccessCode('')
       setIsEditingPod(false)
     } catch (err) {
       console.error('Update failed:', err)
@@ -374,6 +387,37 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   className="w-full input-primary text-sm py-3 h-28 resize-none" 
                 />
               </div>
+              <div className="space-y-3">
+                <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.visibility')}</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { id: 'public' as const, label: t('pods.public'), icon: Globe2 },
+                    { id: 'private' as const, label: t('pods.private'), icon: Lock }
+                  ].map((option) => {
+                    const Icon = option.icon
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setEditVisibility(option.id)}
+                        className={`flex items-center justify-center gap-2 border-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${editVisibility === option.id ? 'border-border bg-accent text-white shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)]' : 'border-border bg-canvas text-ink/45 hover:text-accent'}`}
+                      >
+                        <Icon size={14} />
+                        {option.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {editVisibility === 'private' && (
+                  <input
+                    type="text"
+                    value={editAccessCode}
+                    onChange={(e) => setEditAccessCode(e.target.value)}
+                    placeholder={t('pods.new_access_code_placeholder')}
+                    className="w-full input-primary text-sm py-3"
+                  />
+                )}
+              </div>
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="flex-1 btn-primary py-3">SAVE_CHANGES</button>
                 <button type="button" onClick={() => setIsEditingPod(false)} className="px-6 bg-white border-2 border-border text-ink text-[10px] font-black uppercase hover:bg-canvas transition-all active:scale-95">{t('common.cancel')}</button>
@@ -399,6 +443,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                       onClick={() => {
                         setEditName(selectedPod.name)
                         setEditDescription(selectedPod.description || '')
+                        setEditVisibility(selectedPod.visibility || 'public')
+                        setEditAccessCode('')
                         setIsEditingPod(true)
                       }} 
                       className="text-[10px] font-black text-accent hover:text-accent/80 uppercase tracking-widest flex items-center gap-2 active:scale-95"
@@ -565,8 +611,39 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.desc_label')}</label>
             <textarea value={newDescription} onChange={(e) => setNewDescription(e.target.value)} placeholder="Define your mission objectives..." className="w-full input-primary text-sm py-3 h-28 resize-none" />
           </div>
+          <div className="space-y-3">
+            <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.visibility')}</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'public' as const, label: t('pods.public'), icon: Globe2 },
+                { id: 'private' as const, label: t('pods.private'), icon: Lock }
+              ].map((option) => {
+                const Icon = option.icon
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setNewVisibility(option.id)}
+                    className={`flex items-center justify-center gap-2 border-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${newVisibility === option.id ? 'border-border bg-accent text-white shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)]' : 'border-border bg-canvas text-ink/45 hover:text-accent'}`}
+                  >
+                    <Icon size={14} />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+            {newVisibility === 'private' && (
+              <input
+                type="text"
+                value={newAccessCode}
+                onChange={(e) => setNewAccessCode(e.target.value)}
+                placeholder={t('pods.access_code_placeholder')}
+                className="w-full input-primary text-sm py-3"
+              />
+            )}
+          </div>
           <div className="flex gap-3 pt-2">
-            <button type="submit" className="flex-1 btn-primary py-4">{t('pods.btn_create')}</button>
+            <button type="submit" disabled={newVisibility === 'private' && !newAccessCode.trim()} className="flex-1 btn-primary py-4">{t('pods.btn_create')}</button>
             <button type="button" onClick={() => setIsCreating(false)} className="flex-1 bg-canvas border-2 border-border text-ink py-4 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-all active:scale-95">{t('common.cancel')}</button>
           </div>
         </form>
@@ -590,7 +667,13 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           return (
             <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
               <div className="space-y-2">
-                <h3 className="text-xl md:text-2xl font-black text-ink uppercase tracking-tighter group-hover:text-accent transition-colors">{group.name}</h3>
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-xl md:text-2xl font-black text-ink uppercase tracking-tighter group-hover:text-accent transition-colors">{group.name}</h3>
+                  <span className={`inline-flex items-center gap-1.5 border px-2 py-1 text-[8px] font-black uppercase tracking-widest ${group.visibility === 'private' ? 'border-accent/30 bg-accent-soft text-accent' : 'border-sync/30 bg-sync-soft text-sync'}`}>
+                    {group.visibility === 'private' ? <Lock size={10} /> : <Globe2 size={10} />}
+                    {group.visibility === 'private' ? t('pods.private') : t('pods.public')}
+                  </span>
+                </div>
                 <p className="text-xs text-ink/60 line-clamp-2 leading-relaxed">{group.description}</p>
                 <div className="flex items-center gap-4 pt-2">
                   <span className="text-[9px] text-ink/40 uppercase font-black tracking-widest flex items-center gap-2"><Users size={14} /> {group.group_members?.length || 0} Members</span>
@@ -623,7 +706,24 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 {isMember ? (
                   <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-canvas text-accent border-2 border-border text-[10px] font-black uppercase hover:bg-accent hover:text-white transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.enter')}</button>
                 ) : (
-                  <button onClick={() => handleJoinGroup(group.id)} className="w-full py-4 bg-accent-soft text-accent border-2 border-accent text-[10px] font-black uppercase hover:bg-accent hover:text-white transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.join')}</button>
+                  <div className="space-y-2">
+                    {group.visibility === 'private' && (
+                      <input
+                        type="text"
+                        value={joinCodes[group.id] || ''}
+                        onChange={(e) => setJoinCodes(prev => ({ ...prev, [group.id]: e.target.value }))}
+                        placeholder={t('pods.enter_code')}
+                        className="w-full input-primary py-3 text-[10px] uppercase tracking-widest"
+                      />
+                    )}
+                    <button
+                      onClick={() => handleJoinGroup(group.id)}
+                      disabled={group.visibility === 'private' && !joinCodes[group.id]?.trim()}
+                      className="w-full py-4 bg-accent-soft text-accent border-2 border-accent text-[10px] font-black uppercase hover:bg-accent hover:text-white transition-all active:scale-[0.98] tracking-[0.2em] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      {t('pods.join')}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>

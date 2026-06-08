@@ -14,11 +14,20 @@ CREATE TABLE groups (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
+  visibility TEXT NOT NULL DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
   created_by UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   current_streak INT DEFAULT 0,
   max_streak INT DEFAULT 0,
   last_streak_date DATE
+);
+
+-- Private group access codes are kept out of public group listings
+CREATE TABLE group_access_codes (
+  group_id UUID REFERENCES groups(id) ON DELETE CASCADE PRIMARY KEY,
+  access_code TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Table for group members
@@ -152,10 +161,12 @@ CREATE INDEX idx_posts_user_id ON posts(user_id);
 CREATE INDEX idx_posts_group_id ON posts(group_id);
 CREATE INDEX idx_group_members_group_id ON group_members(group_id);
 CREATE INDEX idx_group_tasks_group_id ON group_tasks(group_id);
+CREATE INDEX idx_groups_visibility ON groups(visibility);
 
 -- RLS
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE groups ENABLE ROW LEVEL SECURITY;
+ALTER TABLE group_access_codes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE group_task_completions ENABLE ROW LEVEL SECURITY;
@@ -177,9 +188,31 @@ CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.
 CREATE POLICY "Groups viewable by everyone" ON groups FOR SELECT USING (true);
 CREATE POLICY "Users can create groups" ON groups FOR INSERT WITH CHECK (auth.uid() = created_by);
 CREATE POLICY "Creators can manage groups" ON groups FOR ALL USING (auth.uid() = created_by);
+CREATE POLICY "Group access codes manageable by creators" ON group_access_codes FOR ALL
+USING (
+  EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_access_codes.group_id
+      AND groups.created_by = auth.uid()
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_access_codes.group_id
+      AND groups.created_by = auth.uid()
+  )
+);
 
 CREATE POLICY "Members viewable by everyone" ON group_members FOR SELECT USING (true);
-CREATE POLICY "Users can join groups" ON group_members FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can join groups" ON group_members FOR INSERT WITH CHECK (
+  auth.uid() = user_id
+  AND EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_members.group_id
+      AND (groups.visibility = 'public' OR groups.created_by = auth.uid())
+  )
+);
 CREATE POLICY "Users can leave groups" ON group_members FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Tasks viewable by members" ON group_tasks FOR SELECT USING (true);
@@ -280,6 +313,42 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION join_group_with_code(target_group_id UUID, provided_code TEXT DEFAULT NULL)
+RETURNS TABLE (user_id UUID, group_id UUID) AS $$
+DECLARE
+  group_visibility TEXT;
+  expected_code TEXT;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'AUTH_REQUIRED';
+  END IF;
+
+  SELECT visibility INTO group_visibility
+  FROM groups
+  WHERE id = target_group_id;
+
+  IF group_visibility IS NULL THEN
+    RAISE EXCEPTION 'GROUP_NOT_FOUND';
+  END IF;
+
+  IF group_visibility = 'private' THEN
+    SELECT access_code INTO expected_code
+    FROM group_access_codes
+    WHERE group_access_codes.group_id = target_group_id;
+
+    IF expected_code IS NULL OR provided_code IS NULL OR expected_code != provided_code THEN
+      RAISE EXCEPTION 'INVALID_GROUP_CODE';
+    END IF;
+  END IF;
+
+  INSERT INTO group_members (group_id, user_id)
+  VALUES (target_group_id, auth.uid())
+  ON CONFLICT (group_id, user_id) DO NOTHING;
+
+  RETURN QUERY SELECT auth.uid(), target_group_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Master Function for Pod Vitals & Streaks
 DROP FUNCTION IF EXISTS get_pod_member_vitals(uuid, date);
 
@@ -305,6 +374,8 @@ DECLARE
   active_member_count INT;
   threshold FLOAT;
   creator_id UUID;
+  check_date DATE;
+  last_success_date DATE;
 BEGIN
   -- 1. Auto-Kick & Context
   SELECT current_streak, max_streak, last_streak_date, created_by 
@@ -332,47 +403,43 @@ BEGIN
   ELSE threshold := 0.4;
   END IF;
 
-  -- 3. Live Streak Update
+  -- 3. Derive streak from completion history instead of trusting cached counters.
   IF member_count >= 1 THEN
-    SELECT COUNT(DISTINCT user_id)::INT INTO active_member_count
+    streak_current := 0;
+    check_date := target_date;
+    last_success_date := NULL;
+
+    SELECT COUNT(DISTINCT gtc.user_id)::INT INTO active_member_count
     FROM group_task_completions gtc
     JOIN group_tasks gt ON gtc.task_id = gt.id
-    WHERE gt.group_id = target_group_id AND gtc.completed_date = target_date;
+    WHERE gt.group_id = target_group_id AND gtc.completed_date = check_date;
 
-    IF active_member_count::FLOAT / member_count >= threshold AND active_member_count > 0 THEN
-      IF last_date IS NULL OR last_date < target_date THEN
-        -- If the last success was yesterday, increment. Otherwise, reset to 1.
-        IF last_date = target_date - INTERVAL '1 day' THEN
-          streak_current := COALESCE(streak_current, 0) + 1;
-        ELSE
-          streak_current := 1;
-        END IF;
-
-        UPDATE groups AS g
-        SET current_streak = streak_current,
-            max_streak = GREATEST(COALESCE(max_streak, 0), streak_current),
-            last_streak_date = target_date
-        WHERE g.id = target_group_id;
-        
-        streak_max := GREATEST(COALESCE(streak_max, 0), streak_current);
-      END IF;
-    ELSE
-      -- Threshold NOT met for target_date
-      IF last_date = target_date THEN
-        -- Someone unchecked a mission that was previously completing the goal for today
-        streak_current := GREATEST(COALESCE(streak_current, 1) - 1, 0);
-        UPDATE groups AS g
-        SET current_streak = streak_current,
-            last_streak_date = target_date - INTERVAL '1 day'
-        WHERE g.id = target_group_id;
-      ELSIF last_date < target_date - INTERVAL '1 day' THEN
-        -- Streak was broken as the gap is more than one day
-        IF streak_current > 0 THEN
-          UPDATE groups AS g SET current_streak = 0 WHERE g.id = target_group_id;
-          streak_current := 0;
-        END IF;
-      END IF;
+    -- Keep today's streak alive if today is not checked in yet but yesterday was.
+    IF active_member_count = 0 OR active_member_count::FLOAT / member_count < threshold THEN
+      check_date := check_date - 1;
     END IF;
+
+    LOOP
+      SELECT COUNT(DISTINCT gtc.user_id)::INT INTO active_member_count
+      FROM group_task_completions gtc
+      JOIN group_tasks gt ON gtc.task_id = gt.id
+      WHERE gt.group_id = target_group_id AND gtc.completed_date = check_date;
+
+      EXIT WHEN active_member_count = 0 OR active_member_count::FLOAT / member_count < threshold;
+
+      streak_current := streak_current + 1;
+      IF last_success_date IS NULL THEN last_success_date := check_date; END IF;
+      check_date := check_date - 1;
+      IF streak_current > 10000 THEN EXIT; END IF;
+    END LOOP;
+
+    UPDATE groups AS g
+    SET current_streak = streak_current,
+        max_streak = GREATEST(COALESCE(g.max_streak, 0), streak_current),
+        last_streak_date = last_success_date
+    WHERE g.id = target_group_id;
+
+    streak_max := GREATEST(COALESCE(streak_max, 0), streak_current);
   END IF;
 
   -- 4. Data Retrieval
