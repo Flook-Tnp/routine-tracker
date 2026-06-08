@@ -135,6 +135,11 @@ export function KanbanBoard({
     setLogNote(existingLog?.note || '')
   }
 
+  const openActivityCenter = () => {
+    const defaultTask = activeTasks[0] || tasks[0]
+    if (defaultTask) setActivityTask(defaultTask)
+  }
+
   const handleSaveLog = () => {
     if (!loggingTask) return
     logTask(loggingTask.id, selectedDateStr, logNote)
@@ -197,13 +202,6 @@ export function KanbanBoard({
               {isLoggedToday ? t('board.edit_log') : t('board.log_today')}
             </button>
           )}
-          <button
-            onClick={() => setActivityTask(task)}
-            className="inline-flex items-center gap-2 border-2 border-border bg-white px-3 py-2 text-[9px] font-black uppercase tracking-widest text-ink/55 transition-all hover:text-sync active:translate-x-[1px] active:translate-y-[1px]"
-          >
-            <Eye size={13} />
-            {t('board.view_activity')}
-          </button>
           {task.status === 'todo' && !isClosed && (
             <button onClick={() => moveTask(task.id, 'in-progress')} className="border-2 border-border bg-sync-soft p-2 text-sync transition-all hover:bg-sync hover:text-white">
               <PlayCircle size={15} />
@@ -243,18 +241,29 @@ export function KanbanBoard({
           <p className="text-[8px] font-black uppercase tracking-widest text-ink/60">{t('board.subtitle')}</p>
         </div>
 
-        <form onSubmit={addTask} className="flex gap-2 md:min-w-[360px]">
-          <input
-            type="text"
-            value={newTaskTitle}
-            onChange={(e) => setNewTaskTitle(e.target.value)}
-            placeholder={t('board.new_task')}
-            className="input-primary min-w-0 flex-1 text-sm"
-          />
-          <button type="submit" className="btn-primary px-6" aria-label="Add Task">
-            <Plus size={20} />
+        <div className="grid gap-2 md:grid-cols-[auto_minmax(320px,420px)]">
+          <button
+            type="button"
+            onClick={openActivityCenter}
+            disabled={tasks.length === 0}
+            className="inline-flex items-center justify-center gap-2 border-2 border-border bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-ink transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.28)] hover:border-sync hover:text-sync active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Eye size={15} />
+            {t('board.activity_center')}
           </button>
-        </form>
+          <form onSubmit={addTask} className="flex gap-2">
+            <input
+              type="text"
+              value={newTaskTitle}
+              onChange={(e) => setNewTaskTitle(e.target.value)}
+              placeholder={t('board.new_task')}
+              className="input-primary min-w-0 flex-1 text-sm"
+            />
+            <button type="submit" className="btn-primary px-6" aria-label="Add Task">
+              <Plus size={20} />
+            </button>
+          </form>
+        </div>
       </section>
 
       <section className="grid gap-4 font-mono md:grid-cols-[1.3fr_0.7fr]">
@@ -381,6 +390,21 @@ export function KanbanBoard({
             </div>
 
             <div className="overflow-y-auto p-5 custom-scrollbar">
+              <div className="mb-5 grid gap-2 border-2 border-border bg-white p-3 md:grid-cols-[auto_1fr] md:items-center">
+                <p className="text-[9px] font-black uppercase tracking-widest text-ink/40">{t('board.select_task')}</p>
+                <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                  {tasks.map(task => (
+                    <button
+                      key={task.id}
+                      onClick={() => setActivityTask(task)}
+                      className={`shrink-0 border-2 px-3 py-2 text-[9px] font-black uppercase tracking-widest transition-all ${activityTask.id === task.id ? 'border-border bg-sync text-white shadow-[2px_2px_0px_0px_rgba(236,72,153,0.42)]' : 'border-border bg-canvas text-ink/45 hover:text-accent'}`}
+                    >
+                      {task.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="mb-5 flex flex-wrap gap-2">
                 {rangeOptions.map(option => (
                   <button
