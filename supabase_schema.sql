@@ -155,6 +155,7 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 
 -- Basic Policies
 CREATE POLICY "Public profiles are viewable by everyone" ON profiles FOR SELECT USING (true);
+CREATE POLICY "Users can create own profile" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
 CREATE POLICY "Groups viewable by everyone" ON groups FOR SELECT USING (true);
@@ -166,8 +167,31 @@ CREATE POLICY "Users can join groups" ON group_members FOR INSERT WITH CHECK (au
 CREATE POLICY "Users can leave groups" ON group_members FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Tasks viewable by members" ON group_tasks FOR SELECT USING (true);
+CREATE POLICY "Group creators can create tasks" ON group_tasks FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_tasks.group_id
+      AND groups.created_by = auth.uid()
+  )
+);
+CREATE POLICY "Group creators can update tasks" ON group_tasks FOR UPDATE USING (
+  EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_tasks.group_id
+      AND groups.created_by = auth.uid()
+  )
+);
+CREATE POLICY "Group creators can delete tasks" ON group_tasks FOR DELETE USING (
+  EXISTS (
+    SELECT 1 FROM groups
+    WHERE groups.id = group_tasks.group_id
+      AND groups.created_by = auth.uid()
+  )
+);
 CREATE POLICY "Completions viewable by everyone" ON group_task_completions FOR SELECT USING (true);
-CREATE POLICY "Users can complete group tasks" ON group_task_completions FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can complete group tasks" ON group_task_completions FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Routines viewable by everyone" ON routines FOR SELECT USING (true); CREATE POLICY "Routines manageable by owners" ON routines FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Completions viewable by everyone" ON routine_completions FOR SELECT USING (true); CREATE POLICY "Completions manageable by owners" ON routine_completions FOR ALL USING (auth.uid() = user_id);
@@ -183,17 +207,48 @@ CREATE POLICY "Users can create comments" ON comments FOR INSERT WITH CHECK (aut
 CREATE POLICY "Users can update own comments" ON comments FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete own comments" ON comments FOR DELETE USING (auth.uid() = user_id);
 
+CREATE POLICY "Reactions viewable by everyone" ON reactions FOR SELECT USING (true);
+CREATE POLICY "Users can create own reactions" ON reactions FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can delete own reactions" ON reactions FOR DELETE USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+
 -- RPC for XP
 CREATE OR REPLACE FUNCTION increment_xp(user_id UUID, amount INTEGER)
 RETURNS void AS $$
 DECLARE
   last_update TIMESTAMP;
 BEGIN
-  -- Simple integrity check: Prevent extreme XP spikes in short time (anti-farming)
-  -- This is a soft check that can be expanded with a proper logging table
+  IF auth.uid() IS NULL OR auth.uid() != user_id THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED';
+  END IF;
+
+  IF amount < 0 OR amount > 100 THEN
+    RAISE EXCEPTION 'INVALID_XP_AMOUNT';
+  END IF;
+
   UPDATE profiles
   SET total_xp = total_xp + amount,
       lifetime_xp = lifetime_xp + amount,
+      updated_at = NOW()
+  WHERE id = user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrement_xp(user_id UUID, amount INTEGER)
+RETURNS void AS $$
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() != user_id THEN
+    RAISE EXCEPTION 'PERMISSION_DENIED';
+  END IF;
+
+  IF amount < 0 OR amount > 100 THEN
+    RAISE EXCEPTION 'INVALID_XP_AMOUNT';
+  END IF;
+
+  UPDATE profiles
+  SET total_xp = GREATEST(total_xp - amount, 0),
       updated_at = NOW()
   WHERE id = user_id;
 END;

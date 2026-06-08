@@ -264,7 +264,7 @@ export const StorageService = {
     return data as Post[]
   },
 
-  async createPost(content: string, userId: string, type: string = 'manual', metadata: any = {}, groupId?: string): Promise<Post> {
+  async createPost(content: string, userId: string, type: string = 'manual', metadata: Record<string, unknown> = {}, groupId?: string): Promise<Post> {
     const { data, error } = await supabase
       .from('posts')
       .insert([{ content, user_id: userId, type, metadata, group_id: groupId }])
@@ -504,7 +504,11 @@ export const StorageService = {
       .eq('group_id', groupId)
     
     if (error) throw error
-    return (data?.map((d: any) => d.profiles).filter(Boolean) || []) as Profile[]
+    const rows = (data || []) as unknown as { profiles: Profile | Profile[] | null }[]
+    return rows.flatMap((row) => {
+      if (!row.profiles) return []
+      return Array.isArray(row.profiles) ? row.profiles : [row.profiles]
+    })
   },
 
   async fetchMemberVitals(groupId: string, date?: string): Promise<MemberVital[]> {

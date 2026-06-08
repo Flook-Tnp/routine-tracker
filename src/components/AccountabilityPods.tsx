@@ -6,6 +6,7 @@ import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../type
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from '../lib/i18n'
 import { EmptyState } from './EmptyState'
+import { getErrorMessage } from '../lib/errors'
 
 interface PodsProps {
   session: Session | null
@@ -85,14 +86,70 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   }, [])
 
   useEffect(() => {
-    fetchGroups()
-  }, [fetchGroups])
+    let cancelled = false
+
+    StorageService.fetchGroups()
+      .then((data) => {
+        if (!cancelled) setGroups(data)
+      })
+      .catch((err) => {
+        console.error('Failed to fetch pods:', err)
+      })
+      .finally(() => {
+        if (!cancelled && !selectedPod) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPod])
 
   useEffect(() => {
-    if (selectedPod) {
-      fetchGroupData(selectedPod.id, selectedDateStr)
+    if (!selectedPod) return
+    let cancelled = false
+
+    Promise.allSettled([
+      StorageService.fetchMemberVitals(selectedPod.id, selectedDateStr),
+      StorageService.fetchGroupTasks(selectedPod.id),
+      StorageService.fetchGroupTaskCompletions(selectedPod.id, selectedDateStr)
+    ])
+      .then(async ([vitalsResult, tasksResult, completionsResult]) => {
+        if (cancelled) return
+
+        if (vitalsResult.status === 'fulfilled' && vitalsResult.value.length > 0) {
+          setPodMembers(vitalsResult.value)
+        } else {
+          console.warn('Vitals failed, using fallback')
+          if (vitalsResult.status === 'rejected') console.error(vitalsResult.reason)
+          const basicMembers = await StorageService.fetchPodMembers(selectedPod.id)
+          if (cancelled) return
+          setPodMembers(basicMembers.map(m => ({
+            id: m.id,
+            username: m.username,
+            avatar_url: m.avatar_url || null,
+            total_xp: m.total_xp,
+            routines_total: 0,
+            routines_completed_today: 0,
+            group_tasks_total: 0,
+            group_tasks_completed: 0,
+            last_activity_date: null
+          })))
+        }
+
+        if (tasksResult.status === 'fulfilled') setGroupTasks(tasksResult.value)
+        if (completionsResult.status === 'fulfilled') setGroupCompletions(completionsResult.value)
+      })
+      .catch((err) => {
+        console.error('Group data sync failed:', err)
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
     }
-  }, [selectedPod, selectedDateStr, fetchGroupData])
+  }, [selectedPod, selectedDateStr])
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -226,8 +283,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       const result = await StorageService.pingUser(userId, selectedPod.id)
       if (result.success) alert(`Ping sent to ${username}.`)
       else alert(result.message)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Ping failed:', err)
+      alert(`PING_FAILED: ${getErrorMessage(err, 'Please try again')}`)
     }
   }
 
@@ -523,4 +581,3 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     </div>
   )
 }
-

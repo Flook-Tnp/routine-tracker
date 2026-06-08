@@ -31,8 +31,6 @@ export function FullscreenChart({
 }: FullscreenChartProps) {
   const { t } = useTranslation()
 
-  if (!isChartFullscreen) return null
-
   // Calculate dynamic Y-axis domain if auto-zoom is on
   const yDomain = useMemo(() => {
     if (!isAutoZoom || lifetimeChartData.length === 0) return [0, 100]
@@ -65,6 +63,8 @@ export function FullscreenChart({
     else next.add(title)
     setHiddenRoutines(next)
   }
+
+  if (!isChartFullscreen) return null
 
   return (
     <div className="fixed inset-0 z-[110] bg-canvas flex flex-col p-4 md:p-8 font-mono">
@@ -119,8 +119,7 @@ export function FullscreenChart({
             <Tooltip
               contentStyle={{ backgroundColor: '#FFF', border: '2px solid #000', fontSize: '12px', fontFamily: 'JetBrains Mono' }}
               cursor={{ stroke: '#7C3AED', strokeWidth: 2 }}
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              formatter={(val: any) => [`${Number(val || 0).toFixed(1)}%`, '']}
+              formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
             />
             {!hiddenRoutines.has('Total') && (
               <Area

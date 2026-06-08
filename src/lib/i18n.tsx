@@ -1,9 +1,12 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 type Language = 'en' | 'th';
 
-const translations = {
+type TranslationValue = string | Record<string, string>
+
+const translations: Record<Language, Record<string, TranslationValue>> = {
   en: {
     // App.tsx
     'app.title': 'DISBY',
@@ -362,27 +365,10 @@ export const I18nProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [language]);
 
   const t = (key: string, params?: Record<string, string>): string => {
-    const keys = key.split('.');
-    let value: any = translations[language];
-    
-    // Attempt flat key first, then nested
-    if ((translations[language] as any)[key]) {
-      value = (translations[language] as any)[key];
-    } else {
-      // Nested object fallback
-      for (const k of keys) {
-        if (value && value[k]) {
-          value = value[k];
-        } else {
-          value = key;
-          break;
-        }
-      }
-    }
+    let value: TranslationValue | undefined = translations[language][key]
 
-    // Fallback to English if translation is missing in current language
-    if (!value || value === key) {
-      value = (translations['en'] as any)[key] || key;
+    if (!value) {
+      value = translations.en[key] || key
     }
 
     if (typeof value === 'string' && params) {

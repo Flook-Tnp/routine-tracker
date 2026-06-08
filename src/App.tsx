@@ -1,11 +1,9 @@
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { lazy, Suspense, useEffect, useState, useMemo, useRef } from 'react'
 import { supabase } from './lib/supabase'
 import { format, subDays, startOfDay, eachDayOfInterval, parseISO, formatDistanceToNow } from 'date-fns'
 import { Trophy, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Plus, Flame, Pencil, Trash2, LogOut, User, Bell, X, LayoutDashboard, ListTodo, Award, Globe, Users, CircleUser, Maximize2 } from 'lucide-react'
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Line } from 'recharts'
 import { ManualModal } from './components/ManualModal'
-import { KanbanBoard } from './components/KanbanBoard'
-import { FullscreenChart } from './components/FullscreenChart'
 import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { BrutalistDatePicker } from './components/BrutalistDatePicker'
@@ -14,13 +12,10 @@ import { StorageService } from './lib/storage'
 import type { Routine, RoutineCompletion, Task, TaskBreakdownItem, Profile, Group } from './types'
 import type { Session } from '@supabase/supabase-js'
 import { calculateXP } from './lib/gamification'
-import { Leaderboard } from './components/Leaderboard'
-import { Profile as ProfileComponent } from './components/Profile'
-import { SocialFeed } from './components/SocialFeed'
-import { AccountabilityPods } from './components/AccountabilityPods'
 import { EmptyState } from './components/EmptyState'
 import type { AppNotification } from './types'
 import { useTranslation } from './lib/i18n'
+import { getErrorMessage } from './lib/errors'
 
 const NAV_ITEMS = [
   { id: 'tracker', label: 'nav.tracker', icon: ListTodo, authRequired: false },
@@ -30,6 +25,21 @@ const NAV_ITEMS = [
   { id: 'pods', label: 'nav.pods', icon: Users, authRequired: false },
   { id: 'profile', label: 'nav.profile', icon: CircleUser, authRequired: true }
 ] as const;
+
+const KanbanBoard = lazy(() => import('./components/KanbanBoard').then((mod) => ({ default: mod.KanbanBoard })))
+const FullscreenChart = lazy(() => import('./components/FullscreenChart').then((mod) => ({ default: mod.FullscreenChart })))
+const Leaderboard = lazy(() => import('./components/Leaderboard').then((mod) => ({ default: mod.Leaderboard })))
+const ProfileComponent = lazy(() => import('./components/Profile').then((mod) => ({ default: mod.Profile })))
+const SocialFeed = lazy(() => import('./components/SocialFeed').then((mod) => ({ default: mod.SocialFeed })))
+const AccountabilityPods = lazy(() => import('./components/AccountabilityPods').then((mod) => ({ default: mod.AccountabilityPods })))
+
+function ViewFallback() {
+  return (
+    <div className="py-20 text-center text-[10px] uppercase tracking-widest text-ink/40 font-black">
+      LOADING_VIEW...
+    </div>
+  )
+}
 
 // Pods System Final Verification - Deployment Active
 function App() {
@@ -286,7 +296,7 @@ function App() {
                     setProfile(newProfile)
                     setLoading(false)
                   }
-                } catch (createErr: any) {
+                } catch (createErr: unknown) {
                   console.error('Profile initialization failed:', createErr)
                   if (mounted) setLoading(false)
                 }
@@ -373,9 +383,9 @@ function App() {
       await StorageService.createPost(content, session.user.id, 'milestone', { streak: dailyStreak, category: activeCategory })
       alert('MILESTONE_TRANSMITTED: Your achievement has been shared with the community.')
       setCurrentView('social')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error sharing streak:', err)
-      alert(`SHARE_FAILURE: ${err.message}`)
+      alert(`SHARE_FAILURE: ${getErrorMessage(err)}`)
     }
   }
 
@@ -565,11 +575,11 @@ function App() {
 
         // Refresh profile in background without blocking
         StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('Error toggling completion:', err)
         // Rollback on error
         setCompletions(oldCompletions)
-        alert(`DATABASE_ERROR: ${err.message || 'Check connection'}`)
+        alert(`DATABASE_ERROR: ${getErrorMessage(err, 'Check connection')}`)
       }
     }
   }
@@ -1130,8 +1140,9 @@ function App() {
       </div>
 
       <div key={currentView} className="max-w-5xl mx-auto p-4 md:p-8 pt-4 md:pt-8 pb-32 space-y-8 md:space-y-12 view-enter">
-        {currentView === 'tracker' ? (
-          <>
+        <Suspense fallback={<ViewFallback />}>
+          {currentView === 'tracker' ? (
+            <>
             <section className="space-y-4">
           <div className="flex overflow-x-auto no-scrollbar md:flex-wrap gap-2 items-center -mx-4 px-4 md:mx-0 md:px-0">
             {categories.map(cat => (
@@ -1351,8 +1362,9 @@ function App() {
             </div>
 
             <div className="h-[350px] w-full bg-white border-2 border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={lifetimeChartData}>
+              {lifetimeChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={lifetimeChartData}>
                   <defs>
                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
@@ -1381,8 +1393,7 @@ function App() {
                    contentStyle={{ backgroundColor: '#fff', border: '2px solid #000', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
                    itemStyle={{ padding: '0px', color: '#000' }}
                    cursor={{ stroke: '#000', strokeWidth: 2 }}
-                   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                   formatter={(val: any) => [`${Number(val || 0).toFixed(1)}%`, '']}
+	                   formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
                   />
                   {!hiddenRoutines.has('Total') && (
                    <Area
@@ -1409,8 +1420,14 @@ function App() {
                      animationDuration={1000}
                    />
                   ))}
-                </AreaChart>
-              </ResponsiveContainer>
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center gap-3 text-ink/30">
+                  <div className="w-10 h-10 border-2 border-dashed border-border" />
+                  <p className="text-[10px] uppercase tracking-[0.25em] font-black">Awaiting habit data</p>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1504,52 +1521,55 @@ function App() {
             })}
           </div>
         </section>
-      </>
-    ) : currentView === 'board' ? (
-      <KanbanBoard
-        tasks={tasks}
-        newTaskTitle={newTaskTitle}
-        setNewTaskTitle={setNewTaskTitle}
-        addTask={addTask}
-        moveTask={moveTask}
-        deleteTask={deleteTask}
-        selectedDateStr={selectedDateStr}
-        finalizeTask={finalizeTask}
-      />
-    ) : currentView === 'leaderboard' ? (
-      <Leaderboard onSelectUser={handleSelectUser} currentUserId={session?.user?.id} />
-    ) : currentView === 'social' ? (
-      <SocialFeed 
-        session={session} 
-        onShareStreak={handleShareStreak}
-        dailyStreak={dailyStreak}
-        onSelectUser={handleSelectUser}
-      />
-      ) : currentView === 'pods' ? (
-      <AccountabilityPods 
-        session={session} 
-        onShareStreak={handleShareStreak}
-        dailyStreak={dailyStreak}
-        onSelectUser={handleSelectUser}
-        selectedPod={selectedPod}
-        onSelectPod={setSelectedPod}
-        selectedDateStr={selectedDateStr}
-      />
-      ) : (
-      <ProfileComponent
-        key={viewedProfileId || session?.user?.id || 'guest'}
-        profile={viewedProfileId ? viewedData?.profile || null : profile}
-        routines={viewedProfileId ? viewedData?.routines || [] : routines}
-        completions={viewedProfileId ? viewedData?.completions || [] : completions}
-        dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak}
-        weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : weeklyStreak}
-        onProfileUpdate={viewedProfileId ? undefined : setProfile}        isPublic={!!viewedProfileId}
-        onBack={() => {
-          setViewedProfileId(null)
-          setCurrentView(previousView)
-        }}
-      />
-    )}      </div>
+            </>
+          ) : currentView === 'board' ? (
+            <KanbanBoard
+              tasks={tasks}
+              newTaskTitle={newTaskTitle}
+              setNewTaskTitle={setNewTaskTitle}
+              addTask={addTask}
+              moveTask={moveTask}
+              deleteTask={deleteTask}
+              selectedDateStr={selectedDateStr}
+              finalizeTask={finalizeTask}
+            />
+          ) : currentView === 'leaderboard' ? (
+            <Leaderboard onSelectUser={handleSelectUser} currentUserId={session?.user?.id} />
+          ) : currentView === 'social' ? (
+            <SocialFeed 
+              session={session} 
+              onShareStreak={handleShareStreak}
+              dailyStreak={dailyStreak}
+              onSelectUser={handleSelectUser}
+            />
+          ) : currentView === 'pods' ? (
+            <AccountabilityPods 
+              session={session} 
+              onShareStreak={handleShareStreak}
+              dailyStreak={dailyStreak}
+              onSelectUser={handleSelectUser}
+              selectedPod={selectedPod}
+              onSelectPod={setSelectedPod}
+              selectedDateStr={selectedDateStr}
+            />
+          ) : (
+            <ProfileComponent
+              key={viewedProfileId || session?.user?.id || 'guest'}
+              profile={viewedProfileId ? viewedData?.profile || null : profile}
+              routines={viewedProfileId ? viewedData?.routines || [] : routines}
+              completions={viewedProfileId ? viewedData?.completions || [] : completions}
+              dailyStreak={viewedProfileId ? viewedData?.dailyStreak || 0 : dailyStreak}
+              weeklyStreak={viewedProfileId ? viewedData?.weeklyStreak || 0 : weeklyStreak}
+              onProfileUpdate={viewedProfileId ? undefined : setProfile}
+              isPublic={!!viewedProfileId}
+              onBack={() => {
+                setViewedProfileId(null)
+                setCurrentView(previousView)
+              }}
+            />
+          )}
+        </Suspense>
+      </div>
 
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
       {isAuthModalOpen && (
@@ -1572,18 +1592,20 @@ function App() {
         />
       )}
 
-      <FullscreenChart
-        isChartFullscreen={isChartFullscreen}
-        setIsChartFullscreen={setIsChartFullscreen}
-        activeCategory={activeCategory}
-        lifetimeStats={lifetimeStats}
-        lifetimeChartData={lifetimeChartData}
-        hiddenRoutines={hiddenRoutines}
-        setHiddenRoutines={setHiddenRoutines}
-        filteredRoutines={filteredRoutines}
-        isAutoZoom={isAutoZoom}
-        setIsAutoZoom={setIsAutoZoom}
-      />
+      <Suspense fallback={null}>
+        <FullscreenChart
+          isChartFullscreen={isChartFullscreen}
+          setIsChartFullscreen={setIsChartFullscreen}
+          activeCategory={activeCategory}
+          lifetimeStats={lifetimeStats}
+          lifetimeChartData={lifetimeChartData}
+          hiddenRoutines={hiddenRoutines}
+          setHiddenRoutines={setHiddenRoutines}
+          filteredRoutines={filteredRoutines}
+          isAutoZoom={isAutoZoom}
+          setIsAutoZoom={setIsAutoZoom}
+        />
+      </Suspense>
 
       {/* Mobile Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t-4 border-black px-1 py-1 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">

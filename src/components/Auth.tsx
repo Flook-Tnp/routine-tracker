@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase'
 import { X, Mail, Lock, UserPlus, LogIn, ShieldCheck, RefreshCw } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useTranslation } from '../lib/i18n'
+import { getErrorMessage } from '../lib/errors'
 
 export type AuthView = 'sign_in' | 'sign_up' | 'forgot_password' | 'update_password'
 
@@ -71,8 +72,8 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
         setMessage(t('auth.update.success'))
         setTimeout(() => setView('sign_in'), 2000)
       }
-    } catch (err: any) {
-      setError(err.message || t('auth.error'))
+    } catch (err: unknown) {
+      setError(getErrorMessage(err, t('auth.error')))
     } finally {
       setLoading(false)
     }
@@ -98,7 +99,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/90 backdrop-blur-md">
-      <div className="relative w-full max-w-md bg-white border-2 border-border p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto custom-scrollbar bg-white border-2 border-border p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-ink/40 hover:text-accent transition-colors p-2 z-[110]"
@@ -155,6 +156,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
                   type="email"
                   autoComplete="username"
                   value={email}
+                  disabled={loading}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="identity@neural.link"
                   className="w-full bg-canvas border-2 border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"
@@ -175,6 +177,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
                   type="password"
                   autoComplete="current-password"
                   value={password}
+                  disabled={loading}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full bg-canvas border-2 border-border pl-10 pr-4 py-3 text-xs font-mono text-ink focus:outline-none focus:border-accent transition-colors placeholder:text-ink/20"

@@ -5,8 +5,11 @@ import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType, RoutineCompletion } from '../types'
 import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
 import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 import getCroppedImg from '../lib/image'
 import { useTranslation } from '../lib/i18n'
+import { getErrorMessage } from '../lib/errors'
+import { supabase } from '../lib/supabase'
 
 interface ProfileProps {
   profile: ProfileType | null
@@ -44,21 +47,19 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   const { t } = useTranslation();
 
   const [isEditing, setIsEditing] = useState(false)
-  const [newUsername, setNewUsername] = useState(profile?.username || '')
+  const [newUsername, setNewUsername] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
-  const [completions, setCompletions] = useState<RoutineCompletion[]>(initialCompletions)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   // Cropping State
   const [imageToCrop, setImageToCrop] = useState<string | null>(null)
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
 
   // Count unique physical days for the UI check as well
-  const [uniqueLoggingDays, setUniqueLoggingDays] = useState(0)
   const [showTrophyRoom, setShowTrophyRoom] = useState<'streak' | 'xp' | null>(null)
 
   // Lock body scroll when modals are open
@@ -73,28 +74,18 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     }
   }, [showTrophyRoom, imageToCrop])
 
-  // Update local state when profile changes (essential when switching between users)
-  useEffect(() => {
-    if (profile?.username) {
-      setNewUsername(profile.username)
-    }
-  }, [profile?.username])
+  const completions = initialCompletions
 
-  // Count unique physical days for the UI check
-  useEffect(() => {
-    if (initialCompletions) {
-      setCompletions(initialCompletions)
-      const count = new Set(
-        initialCompletions
-          .filter(c => c && c.completed_date)
-          .map(c => c.completed_date)
-      ).size
-      setUniqueLoggingDays(count)
-    }
+  const uniqueLoggingDays = useMemo(() => {
+    return new Set(
+      initialCompletions
+        .filter(c => c && c.completed_date)
+        .map(c => c.completed_date)
+    ).size
   }, [initialCompletions])
 
   // Permanently award badges if they don't exist
-  const checkMilestones = async () => {
+  const checkMilestones = useCallback(async () => {
     if (isPublic || !profile) return
     
     const currentBadges = profile.badges || []
@@ -128,14 +119,14 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         console.error('Failed to permanently award badges:', err)
       }
     }
-  }
+  }, [completions, dailyStreak, isPublic, onProfileUpdate, profile])
 
   // Check milestones whenever stats change
   useEffect(() => {
     if (profile) {
       checkMilestones()
     }
-  }, [dailyStreak, profile?.total_xp])
+  }, [checkMilestones, profile])
 
   const { categoryStreaks, categoryWeeklyStreaks } = useMemo(() => {
     const streaks: Record<string, number> = {}
@@ -201,7 +192,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
 
   const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
 
-  const onCropComplete = useCallback((_preventedArea: any, croppedAreaPixels: any) => {
+  const onCropComplete = useCallback((_preventedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
   }, [])
 
@@ -235,7 +226,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         </button>
         {!isPublic && (
           <button 
-            onClick={() => import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())}
+            onClick={() => supabase.auth.signOut()}
             className="text-[10px] font-black uppercase tracking-widest text-ink/40 hover:text-red-500 transition-colors"
           >
             [Force_Log_Out_Stale_Session]
@@ -255,9 +246,9 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       await StorageService.updateProfile(profile.id, { username: newUsername })
       if (onProfileUpdate) onProfileUpdate({ ...profile, username: newUsername })
       setIsEditing(false)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Update failed:', err)
-      alert(`UPDATE_FAILURE: ${err.message || 'Username might be taken'}`)
+      alert(`UPDATE_FAILURE: ${getErrorMessage(err, 'Username might be taken')}`)
     }
   }
 
@@ -286,9 +277,9 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       
       if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: url })
       setImageToCrop(null)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err)
-      alert(`UPLOAD_FAILURE: ${err.message || 'Check Supabase Storage settings'}`)
+      alert(`UPLOAD_FAILURE: ${getErrorMessage(err, 'Check Supabase Storage settings')}`)
     } finally {
       setIsUploading(false)
     }
@@ -302,9 +293,9 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       setIsUploading(true)
       await StorageService.deleteAvatar(profile.id)
       if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: null })
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Delete failed:', err)
-      alert(`DELETE_FAILURE: ${err.message}`)
+      alert(`DELETE_FAILURE: ${getErrorMessage(err)}`)
     } finally {
       setIsUploading(false)
     }
@@ -451,7 +442,10 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               <h2 className="text-3xl font-black text-ink uppercase tracking-tighter md:text-4xl">{profile.username || 'Anonymous_User'}</h2>
               {!isPublic && (
                 <button 
-                  onClick={() => setIsEditing(true)}
+                  onClick={() => {
+                    setNewUsername(profile.username)
+                    setIsEditing(true)
+                  }}
                   className="p-2 text-ink/20 hover:text-accent transition-colors md:opacity-0 group-hover:opacity-100"
                 >
                   <Edit2 size={16} />
@@ -618,7 +612,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         <section className="pt-8 border-t-2 border-border">
           <button
             onClick={() => {
-              import('../lib/supabase').then(({ supabase }) => supabase.auth.signOut())
+              supabase.auth.signOut()
             }}
             className="w-full py-5 bg-canvas border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >

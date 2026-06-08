@@ -20,6 +20,17 @@
   * {
     @apply transition-colors duration-200;
   }
+
+  :focus-visible {
+    outline: 3px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  button,
+  input,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* Custom glow for the progress bar - Updated to Purple */
@@ -38,7 +49,7 @@
 
 @layer components {
   .input-primary {
-    @apply bg-white border-2 border-border px-4 py-2 focus:outline-none focus:border-accent text-ink transition-all duration-200 placeholder:text-gray-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-[2px_2px_0px_0px_rgba(124,58,237,1)];
+    @apply bg-white border-2 border-border px-4 py-2 focus:outline-none focus:border-accent text-ink transition-all duration-200 placeholder:text-gray-400 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] focus:translate-x-[1px] focus:translate-y-[1px] focus:shadow-[2px_2px_0px_0px_rgba(124,58,237,1)] disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
   .btn-primary {
@@ -59,6 +70,17 @@
 
   .btn-ghost {
     @apply px-4 py-2 text-[10px] font-black uppercase tracking-widest text-ink/40 hover:text-ink hover:bg-canvas transition-all active:scale-95;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

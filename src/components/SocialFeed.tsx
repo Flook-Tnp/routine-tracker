@@ -6,6 +6,7 @@ import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from '../lib/i18n'
 import { EmptyState } from './EmptyState'
+import { getErrorMessage } from '../lib/errors'
 
 interface SocialFeedProps {
   session: Session | null
@@ -21,6 +22,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
   const [posts, setPosts] = useState<Post[]>([])
   const [newPostContent, setNewPostContent] = useState('')
   const [loading, setLoading] = useState(true)
+  const [isPosting, setIsPosting] = useState(false)
   const [commentingOn, setCommentingOn] = useState<string | null>(null)
   const [newComment, setNewComment] = useState('')
   const [editingPostId, setEditingPostId] = useState<string | null>(null)
@@ -33,32 +35,49 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     try {
       const data = await StorageService.fetchPosts(groupId)
       setPosts(data)
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching posts:', err)
-      alert(`FEED_SYNC_ERROR: ${err.message || 'Check connection'}. Make sure your database schema is up to date (run supabase_schema.sql).`)
+      alert(`FEED_SYNC_ERROR: ${getErrorMessage(err, 'Check connection')}. Make sure your database schema is up to date (run supabase_schema.sql).`)
     } finally {
       setLoading(false)
     }
   }, [groupId])
 
   useEffect(() => {
-    let mounted = true
-    if (mounted) {
-      fetchPosts()
+    let cancelled = false
+
+    StorageService.fetchPosts(groupId)
+      .then((data) => {
+        if (!cancelled) setPosts(data)
+      })
+      .catch((err: unknown) => {
+        console.error('Error fetching posts:', err)
+        if (!cancelled) {
+          alert(`FEED_SYNC_ERROR: ${getErrorMessage(err, 'Check connection')}. Make sure your database schema is up to date (run supabase_schema.sql).`)
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
     }
-    return () => { mounted = false }
-  }, [fetchPosts])
+  }, [groupId])
 
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPostContent.trim() || !session) return
     try {
+      setIsPosting(true)
       await StorageService.createPost(newPostContent, session.user.id, 'manual', {}, groupId)
       setNewPostContent('')
       fetchPosts()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating post:', err)
-      alert(`TRANSMISSION_ERROR: ${err.message || 'Check if posts table exists'}`)
+      alert(`TRANSMISSION_ERROR: ${getErrorMessage(err, 'Check if posts table exists')}`)
+    } finally {
+      setIsPosting(false)
     }
   }
 
@@ -95,7 +114,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     try {
       await StorageService.updateComment(commentId, editCommentContent)
       fetchPosts() // Sync with server
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating comment:', err)
       setPosts(oldPosts) // Rollback
       alert('PROTOCOL_ERROR: Comment update failed.')
@@ -115,7 +134,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     try {
       await StorageService.deleteComment(commentId)
       fetchPosts() // Sync with server
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting comment:', err)
       setPosts(oldPosts) // Rollback
       alert('PROTOCOL_ERROR: Comment could not be terminated.')
@@ -143,7 +162,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     try {
       await StorageService.toggleReaction(postId, emoji, session.user.id)
       fetchPosts() // Sync actual IDs from server
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error toggling reaction:', err)
       setPosts(oldPosts) // Rollback
     }
@@ -154,7 +173,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     try {
       await StorageService.deletePost(postId)
       fetchPosts()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error deleting post:', err)
       alert('PROTOCOL_ERROR: Post could not be terminated.')
     }
@@ -166,7 +185,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       await StorageService.updatePost(postId, editContent)
       setEditingPostId(null)
       fetchPosts()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error updating post:', err)
       alert('PROTOCOL_ERROR: Update transmission failed.')
     }
@@ -198,17 +217,19 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
           <form onSubmit={handleCreatePost} className="space-y-3">
             <textarea
               value={newPostContent}
+              disabled={isPosting}
               onChange={(e) => setNewPostContent(e.target.value)}
               placeholder={t('feed.placeholder')}
               className="w-full bg-white border-2 border-border p-4 text-xs font-mono text-ink focus:outline-none focus:border-accent h-24 resize-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
             />
             <div className="flex justify-end">
               <button 
-                type="submit" 
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black"
+                type="submit"
+                disabled={isPosting || !newPostContent.trim()}
+                className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Send size={12} />
-                {t('feed.post')}
+                {isPosting ? t('status.loading') : t('feed.post')}
               </button>
             </div>
           </form>
@@ -313,7 +334,8 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '🔥')}
-                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-gray-400 hover:text-orange-500'}`}
+                  disabled={!session}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-gray-400 hover:text-orange-500'}`}
                 >
                   <span className="text-xs">🔥</span>
                 </button>
@@ -328,7 +350,8 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '👏')}
-                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'bg-accent text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
+                  disabled={!session}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'bg-accent text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
                 >
                   <span className="text-xs">👏</span>
                 </button>
@@ -342,7 +365,8 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
               <button 
                 onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
-                className={`flex items-center gap-2 px-4 py-1.5 bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none ${commentingOn === post.id ? 'bg-ink text-white' : 'text-gray-400 hover:text-ink'}`}
+                disabled={!session}
+                className={`flex items-center gap-2 px-4 py-1.5 bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-40 disabled:pointer-events-none ${commentingOn === post.id ? 'bg-ink text-white' : 'text-gray-400 hover:text-ink'}`}
               >
                 <MessageSquare size={14} />
                 <span className="text-[10px] font-black">{post.comments?.length || 0}</span>

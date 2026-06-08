@@ -53,7 +53,7 @@ export interface Post {
   user_id: string
   content: string
   type: 'manual' | 'milestone'
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: string
   group_id?: string
   profiles?: { username: string, avatar_url?: string | null }
