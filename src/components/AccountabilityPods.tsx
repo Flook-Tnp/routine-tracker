@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil, Lock, Globe2 } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil, Lock, Globe2, Copy } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -40,6 +40,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [editDescription, setEditDescription] = useState('')
   const [editVisibility, setEditVisibility] = useState<'public' | 'private'>('public')
   const [editAccessCode, setEditAccessCode] = useState('')
+  const [ownerAccessCode, setOwnerAccessCode] = useState<string | null>(null)
+  const [ownerAccessCodeGroupId, setOwnerAccessCodeGroupId] = useState<string | null>(null)
+  const [accessCodeCopied, setAccessCodeCopied] = useState(false)
   const [loading, setLoading] = useState(true)
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
@@ -182,6 +185,28 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }, [selectedPod, selectedDateStr, todayStr, yesterdayStr])
 
+  useEffect(() => {
+    if (!selectedPod || selectedPod.visibility !== 'private' || selectedPod.created_by !== session?.user?.id) {
+      return
+    }
+
+    let cancelled = false
+    StorageService.fetchGroupAccessCode(selectedPod.id)
+      .then((code) => {
+        if (!cancelled) {
+          setOwnerAccessCode(code)
+          setOwnerAccessCodeGroupId(selectedPod.id)
+        }
+      })
+      .catch((err) => {
+        console.error('Room code fetch failed:', err)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPod, session?.user?.id])
+
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newName.trim() || !session) return
@@ -189,6 +214,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     try {
       const pod = await StorageService.createGroup(newName, newDescription, session.user.id, newVisibility, newAccessCode)
       setGroups([...groups, pod])
+      setOwnerAccessCode(newVisibility === 'private' ? newAccessCode.trim() : null)
+      setOwnerAccessCodeGroupId(newVisibility === 'private' ? pod.id : null)
       setNewName('')
       setNewDescription('')
       setNewVisibility('public')
@@ -248,6 +275,13 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       }, editAccessCode)
       onSelectPod(updatedPod)
       setGroups(groups.map(g => g.id === updatedPod.id ? updatedPod : g))
+      if (editVisibility === 'public') {
+        setOwnerAccessCode(null)
+        setOwnerAccessCodeGroupId(null)
+      } else if (editAccessCode.trim()) {
+        setOwnerAccessCode(editAccessCode.trim())
+        setOwnerAccessCodeGroupId(updatedPod.id)
+      }
       setEditAccessCode('')
       setIsEditingPod(false)
     } catch (err) {
@@ -328,6 +362,18 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }
 
+  const handleCopyAccessCode = async () => {
+    if (!ownerAccessCode) return
+    try {
+      await navigator.clipboard.writeText(ownerAccessCode)
+      setAccessCodeCopied(true)
+      window.setTimeout(() => setAccessCodeCopied(false), 1600)
+    } catch (err) {
+      console.error('Copy room code failed:', err)
+      window.prompt(t('pods.room_code'), ownerAccessCode)
+    }
+  }
+
   const dismissMissedNudge = (key: string) => {
     localStorage.setItem(key, '1')
     setDismissedMissedNudges(prev => ({ ...prev, [key]: true }))
@@ -342,6 +388,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     !hasYesterdayPodCompletion &&
     !dismissedMissedNudges[podMissedYesterdayKey] &&
     localStorage.getItem(podMissedYesterdayKey) !== '1'
+  const canViewOwnerAccessCode = selectedPod?.visibility === 'private' && selectedPod.created_by === session?.user?.id
+  const visibleOwnerAccessCode = canViewOwnerAccessCode && ownerAccessCodeGroupId === selectedPod?.id ? ownerAccessCode : null
 
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-ink font-mono">{t('pods.loading')}</div>
 
@@ -437,6 +485,28 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               </div>
               <div className="w-full md:w-auto text-left md:text-right flex flex-col md:items-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-border md:border-none">
                 <p className="text-[8px] text-ink/50 uppercase font-black tracking-widest">{t('pods.established')} {new Date(selectedPod.created_at).toLocaleDateString()}</p>
+                {canViewOwnerAccessCode && (
+                  <div className="w-full md:w-72 border-2 border-accent bg-accent-soft p-3 text-left shadow-[3px_3px_0px_0px_rgba(236,72,153,0.25)]">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[8px] uppercase tracking-[0.22em] font-black text-accent flex items-center gap-2">
+                        <Lock size={12} />
+                        {t('pods.room_code')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyAccessCode}
+                        disabled={!visibleOwnerAccessCode}
+                        className="text-[8px] uppercase tracking-widest font-black text-accent hover:text-ink flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed active:scale-95"
+                      >
+                        {accessCodeCopied ? <Check size={12} /> : <Copy size={12} />}
+                        {accessCodeCopied ? t('pods.code_copied') : t('pods.copy_code')}
+                      </button>
+                    </div>
+                    <div className="mt-2 bg-white border-2 border-border px-3 py-2 text-sm font-black tracking-[0.18em] text-ink break-all">
+                      {visibleOwnerAccessCode || t('status.loading')}
+                    </div>
+                  </div>
+                )}
                 {selectedPod.created_by === session?.user?.id ? (
                   <div className="flex flex-col md:items-end gap-3">
                     <button 

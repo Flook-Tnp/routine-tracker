@@ -413,6 +413,17 @@ export const StorageService = {
     return group as Group
   },
 
+  async fetchGroupAccessCode(groupId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('group_access_codes')
+      .select('access_code')
+      .eq('group_id', groupId)
+      .maybeSingle()
+
+    if (error) throw error
+    return data?.access_code ?? null
+  },
+
   async joinGroup(groupId: string, userId: string, accessCode?: string): Promise<{ user_id: string; group_id: string }> {
     const { data: joined, error: joinError } = await supabase
       .rpc('join_group_with_code', {
