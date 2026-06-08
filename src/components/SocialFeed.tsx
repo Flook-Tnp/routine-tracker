@@ -220,13 +220,13 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               disabled={isPosting}
               onChange={(e) => setNewPostContent(e.target.value)}
               placeholder={t('feed.placeholder')}
-              className="w-full bg-white border-2 border-border p-4 text-xs font-mono text-ink focus:outline-none focus:border-accent h-24 resize-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              className="w-full bg-white border-2 border-border p-4 text-xs font-mono text-ink focus:outline-none focus:border-accent h-24 resize-none shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]"
             />
             <div className="flex justify-end">
               <button 
                 type="submit"
                 disabled={isPosting || !newPostContent.trim()}
-                className="flex items-center gap-2 bg-black text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black disabled:opacity-40 disabled:pointer-events-none"
+                className="flex items-center gap-2 bg-accent text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-border disabled:opacity-40 disabled:pointer-events-none"
               >
                 <Send size={12} />
                 {isPosting ? t('status.loading') : t('feed.post')}
@@ -244,13 +244,13 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
         {posts.map((post) => {
           const isMe = post.user_id === session?.user?.id
           return (
-            <div key={post.id} className="bg-white border-2 border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[6px_6px_0px_0px_rgba(124,58,237,1)] transition-all">
+            <div key={post.id} className="bg-white border-2 border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[6px_6px_0px_0px_rgba(236,72,153,0.48)] transition-all">
             <div className="flex justify-between items-start mb-2">
               <div 
                 className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
                 onClick={() => !isMe && post.user_id && onSelectUser?.(post.user_id)}
               >
-                <div className={`w-10 h-10 bg-canvas border-2 border-black flex items-center justify-center text-[12px] font-black text-accent uppercase overflow-hidden transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${!isMe && 'group-hover/user:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)] group-hover/user:-translate-y-0.5'}`}>
+                <div className={`w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center text-[12px] font-black text-accent uppercase overflow-hidden transition-all shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)] ${!isMe && 'group-hover/user:shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)] group-hover/user:-translate-y-0.5'}`}>
                   {post.profiles?.avatar_url ? (
                     <img src={post.profiles.avatar_url} alt={post.profiles.username} className="w-full h-full object-cover" />
                   ) : (
@@ -267,18 +267,18 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
               <div className="flex items-center gap-2">
                 {post.type === 'milestone' && (
-                  <span className="px-2 py-0.5 bg-orange-500 text-white border-2 border-black text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <span className="px-2 py-0.5 bg-sync text-white border-2 border-border text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                     MILESTONE
                   </span>
                 )}
                 {isMe && (
-                  <div className="flex items-center bg-canvas border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="flex items-center bg-canvas border-2 border-border shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                     <button 
                       onClick={() => {
                         setEditingPostId(post.id)
                         setEditContent(post.content)
                       }}
-                      className="p-1.5 text-gray-400 hover:text-accent border-r-2 border-black transition-colors"
+                      className="p-1.5 text-gray-400 hover:text-accent border-r-2 border-border transition-colors"
                       title="Edit Post"
                     >
                       <Pencil size={12} />
@@ -302,7 +302,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                     autoFocus
                     value={editContent}
                     onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full bg-canvas border-2 border-black p-4 text-sm font-mono text-ink focus:outline-none focus:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] h-32 resize-none"
+                    className="w-full bg-canvas border-2 border-border p-4 text-sm font-mono text-ink focus:outline-none focus:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] h-32 resize-none"
                   />
                   <div className="flex justify-end gap-2">
                     <button 
@@ -314,7 +314,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                     </button>
                     <button 
                       onClick={() => handleUpdatePost(post.id)}
-                      className="flex items-center gap-2 bg-black text-white px-5 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-black"
+                      className="flex items-center gap-2 bg-accent text-white px-5 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none border-2 border-border"
                     >
                       <Check size={12} />
                       {t('common.save')}
@@ -330,12 +330,12 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               )}
             </div>
 
-            <div className="flex items-stretch gap-2 pt-4 mt-2 border-t-2 border-black/5">
-              <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-stretch gap-2 pt-4 mt-2 border-t-2 border-border/5">
+              <div className="flex bg-canvas border-2 border-border shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '🔥')}
                   disabled={!session}
-                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'bg-orange-500 text-white' : 'hover:bg-orange-50 text-gray-400 hover:text-orange-500'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-border transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '🔥') ? 'bg-sync text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
                 >
                   <span className="text-xs">🔥</span>
                 </button>
@@ -347,11 +347,11 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
                 </button>
               </div>
 
-              <div className="flex bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)]">
+              <div className="flex bg-canvas border-2 border-border shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)]">
                 <button 
                   onClick={() => handleToggleReaction(post.id, '👏')}
                   disabled={!session}
-                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-black transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'bg-accent text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 border-r-2 border-border transition-all disabled:opacity-40 disabled:pointer-events-none ${post.reactions?.some((r: Reaction) => r.user_id === session?.user?.id && r.emoji === '👏') ? 'bg-accent text-white' : 'hover:bg-accent-soft text-gray-400 hover:text-accent'}`}
                 >
                   <span className="text-xs">👏</span>
                 </button>
@@ -366,7 +366,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               <button 
                 onClick={() => setCommentingOn(commentingOn === post.id ? null : post.id)}
                 disabled={!session}
-                className={`flex items-center gap-2 px-4 py-1.5 bg-canvas border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-40 disabled:pointer-events-none ${commentingOn === post.id ? 'bg-ink text-white' : 'text-gray-400 hover:text-ink'}`}
+                className={`flex items-center gap-2 px-4 py-1.5 bg-canvas border-2 border-border shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)] transition-all hover:-translate-y-0.5 active:translate-y-0 active:shadow-none disabled:opacity-40 disabled:pointer-events-none ${commentingOn === post.id ? 'bg-ink text-white' : 'text-gray-400 hover:text-ink'}`}
               >
                 <MessageSquare size={14} />
                 <span className="text-[10px] font-black">{post.comments?.length || 0}</span>
@@ -494,9 +494,9 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       </div>
 
       {viewingReactions && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border-4 border-black w-full max-w-md shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[80vh]">
-            <div className="p-4 border-b-4 border-black flex justify-between items-center bg-accent text-white">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-ink/55 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white border-4 border-border w-full max-w-md shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)] overflow-hidden flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b-4 border-border flex justify-between items-center bg-accent text-white">
               <h3 className="text-[10px] font-black uppercase tracking-[0.2em]">REACTION_LOG</h3>
               <button 
                 onClick={() => setViewingReactions(null)}
@@ -544,10 +544,10 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
               )}
             </div>
 
-            <div className="p-4 border-t-4 border-black bg-canvas">
+            <div className="p-4 border-t-4 border-border bg-canvas">
               <button 
                 onClick={() => setViewingReactions(null)}
-                className="w-full py-3 bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                className="w-full py-3 bg-accent text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-accent transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               >
                 CLOSE_TRANSMISSION
               </button>

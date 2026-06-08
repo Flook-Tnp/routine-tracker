@@ -99,7 +99,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-white/90 backdrop-blur-md">
-      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto custom-scrollbar bg-white border-2 border-border p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="relative w-full max-w-md max-h-[92vh] overflow-y-auto custom-scrollbar bg-white border-2 border-border p-6 md:p-8 shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)]">
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-ink/40 hover:text-accent transition-colors p-2 z-[110]"
@@ -221,13 +221,13 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border-2 border-red-500 text-red-600 text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="p-3 bg-red-50 border-2 border-red-500 text-red-600 text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
               {error}
             </div>
           )}
 
           {message && (
-            <div className="p-3 bg-accent-soft border-2 border-accent text-accent text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="p-3 bg-accent-soft border-2 border-accent text-accent text-[10px] uppercase font-black text-center shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
               {message}
             </div>
           )}
@@ -235,7 +235,7 @@ export function AuthModal({ onClose, initialView = 'sign_in' }: AuthModalProps) 
           <button
             disabled={loading}
             type="submit"
-            className="w-full bg-black text-white py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+            className="w-full bg-accent text-white py-4 text-xs font-black uppercase tracking-[0.3em] hover:bg-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
           >
             {loading ? t('auth.processing') : (
               <>

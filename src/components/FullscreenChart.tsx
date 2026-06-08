@@ -17,6 +17,8 @@ interface FullscreenChartProps {
   setIsAutoZoom: (val: boolean) => void
 }
 
+const CHART_LINE_COLORS = ['#14B8A6', '#EC4899', '#2DD4BF', '#F9A8D4', '#0F766E', '#BE185D']
+
 export function FullscreenChart({
   isChartFullscreen,
   setIsChartFullscreen,
@@ -76,39 +78,39 @@ export function FullscreenChart({
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsAutoZoom(!isAutoZoom)}
-            className={`px-4 py-2 border-2 text-[10px] font-black uppercase transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-black' : 'bg-white border-border text-ink'}`}
+            className={`px-4 py-2 border-2 text-[10px] font-black uppercase transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-border' : 'bg-white border-border text-ink'}`}
           >
             {isAutoZoom ? 'FIXED_SCALE' : 'AUTO_ZOOM_Y'}
           </button>
           <button 
             onClick={() => setIsChartFullscreen(false)}
-            className="p-3 bg-white border-2 border-border text-ink hover:bg-red-50 hover:text-red-600 transition-all rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+            className="p-3 bg-white border-2 border-border text-ink hover:bg-red-50 hover:text-red-600 transition-all rounded-none shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
           >
             <Minimize2 size={24} />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 bg-white border-2 border-border p-6 md:p-10 relative shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="flex-1 bg-white border-2 border-border p-6 md:p-10 relative shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={lifetimeChartData}>
             <defs>
               <linearGradient id="colorTotalFS" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#EC4899" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#EC4899" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#F0E4EA" vertical={false} />
             <XAxis
               dataKey="name"
-              stroke="#000000"
+              stroke="#241522"
               fontSize={10}
               tickLine={false}
               axisLine={false}
               minTickGap={60}
             />
             <YAxis
-              stroke="#000000"
+              stroke="#241522"
               fontSize={10}
               tickLine={false}
               axisLine={false}
@@ -117,20 +119,20 @@ export function FullscreenChart({
               tickFormatter={(val) => `${Math.round(val)}%`}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: '#FFF', border: '2px solid #000', fontSize: '12px', fontFamily: 'JetBrains Mono' }}
-              cursor={{ stroke: '#7C3AED', strokeWidth: 2 }}
+              contentStyle={{ backgroundColor: '#FFF', border: '2px solid #241522', fontSize: '12px', fontFamily: 'JetBrains Mono' }}
+              cursor={{ stroke: '#14B8A6', strokeWidth: 2 }}
               formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
             />
             {!hiddenRoutines.has('Total') && (
               <Area
                 type="monotone"
                 dataKey="Total"
-                stroke="#7C3AED"
+                stroke="#EC4899"
                 strokeWidth={4}
                 fillOpacity={1}
                 fill="url(#colorTotalFS)"
                 dot={false}
-                activeDot={{ r: 6, fill: '#7C3AED', stroke: '#000', strokeWidth: 2 }}
+                activeDot={{ r: 6, fill: '#EC4899', stroke: '#241522', strokeWidth: 2 }}
               />
             )}
             {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
@@ -138,7 +140,7 @@ export function FullscreenChart({
                 key={r.id}
                 type="monotone"
                 dataKey={r.title}
-                stroke={`hsl(${(i * 60) % 360}, 60%, 45%)`}
+                stroke={CHART_LINE_COLORS[i % CHART_LINE_COLORS.length]}
                 strokeWidth={2}
                 dot={false}
                 opacity={0.7}
@@ -151,7 +153,7 @@ export function FullscreenChart({
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <button
           onClick={() => toggleRoutine('Total')}
-          className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
+          className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
         >
           <div className={`w-3 h-1 ${!hiddenRoutines.has('Total') ? 'bg-white' : 'bg-ink/10'}`} /> Total Average
         </button>
@@ -160,10 +162,10 @@ export function FullscreenChart({
           <button 
             key={r.id} 
             onClick={() => toggleRoutine(r.title)}
-            className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has(r.title) ? 'bg-white border-border text-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]'}`}
-            style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 60%, 45%)` : '#E5E7EB', borderLeftWidth: '4px' }}
+            className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has(r.title) ? 'bg-white border-border text-ink shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
+            style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA', borderLeftWidth: '4px' }}
           >
-            <div className="w-3 h-1" style={{ backgroundColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 60%, 45%)` : '#E5E7EB' }} /> {r.title}
+            <div className="w-3 h-1" style={{ backgroundColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA' }} /> {r.title}
           </button>
         ))}
       </div>

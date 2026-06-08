@@ -50,7 +50,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   const [newUsername, setNewUsername] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
   // Cropping State
@@ -87,7 +87,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   // Permanently award badges if they don't exist
   const checkMilestones = useCallback(async () => {
     if (isPublic || !profile) return
-    
+
     const currentBadges = profile.badges || []
     const newBadges = [...currentBadges]
     let changed = false
@@ -132,7 +132,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     const streaks: Record<string, number> = {}
     const wStreaks: Record<string, number> = {}
     const cats = Array.from(new Set((routines || []).map(r => r.category || 'General')))
-    
+
     // Pre-group completions by routine ID for O(1) access
     const routineCompletionsMap = new Map<string, Set<string>>()
     completions.forEach(c => {
@@ -145,7 +145,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     cats.forEach(cat => {
       const categoryRoutines = routines.filter(r => (r.category || 'General') === cat)
       const categoryRoutineIds = categoryRoutines.map(r => r.id)
-      
+
       // Merge all completion dates for this category
       const doneDates = new Set<string>()
       categoryRoutineIds.forEach(id => {
@@ -162,7 +162,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       while (isDateFinished(checkDate)) {
         streak++
         checkDate = subDays(checkDate, 1)
-        if (streak > 10000) break 
+        if (streak > 10000) break
       }
       streaks[cat] = streak
 
@@ -177,7 +177,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         })
         return activeDaysCount >= 3
       }
-      
+
       let currentCheck = new Date()
       if (!isWeekSuccessful(currentCheck)) currentCheck = subDays(currentCheck, 7)
       while (isWeekSuccessful(currentCheck)) {
@@ -218,14 +218,14 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         <p className="text-[8px] text-ink/20 font-black">Status: Establishing secure connection to profile sector</p>
       </div>
       <div className="flex flex-col items-center gap-4">
-        <button 
+        <button
           onClick={() => onBack ? onBack() : window.location.reload()}
           className="btn-primary w-64"
         >
           {onBack ? 'Return_to_Standings' : 'Re-Initialize_System'}
         </button>
         {!isPublic && (
-          <button 
+          <button
             onClick={() => supabase.auth.signOut()}
             className="text-[10px] font-black uppercase tracking-widest text-ink/40 hover:text-red-500 transition-colors"
           >
@@ -274,7 +274,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       const file = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' })
       const url = await StorageService.uploadAvatar(profile.id, file)
       await StorageService.updateProfile(profile.id, { avatar_url: url })
-      
+
       if (onProfileUpdate) onProfileUpdate({ ...profile, avatar_url: url })
       setImageToCrop(null)
     } catch (err: unknown) {
@@ -304,7 +304,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   return (
     <div className="space-y-12 view-enter font-mono">
       {isPublic && (
-        <button 
+        <button
           onClick={onBack}
           className="text-[10px] uppercase tracking-widest text-ink/40 hover:text-accent transition-colors flex items-center gap-2 font-black active:scale-95 px-1"
         >
@@ -315,7 +315,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       {/* Cropper Modal */}
       {imageToCrop && createPortal(
         <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-md flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
-          <div className="w-full max-w-xl bg-white border-2 border-border shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden flex flex-col">
+          <div className="w-full max-w-xl bg-white border-2 border-border shadow-[12px_12px_0px_0px_rgba(20,184,166,0.34)] relative overflow-hidden flex flex-col">
             <div className="p-4 border-b-2 border-border flex justify-between items-center bg-canvas">
               <span className="text-[10px] uppercase font-black text-accent tracking-[0.3em] flex items-center gap-2">
                 <Scissors size={14} /> [Identity_Adjustment_Protocol]
@@ -324,8 +324,8 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                 <X size={20} />
               </button>
             </div>
-            
-            <div className="relative h-[300px] md:h-[400px] bg-black">
+
+            <div className="relative h-[300px] md:h-[400px] bg-accent">
               <Cropper
                 image={imageToCrop}
                 crop={crop}
@@ -358,16 +358,16 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               </div>
 
               <div className="flex gap-3">
-                <button 
+                <button
                   onClick={handleSaveCrop}
                   disabled={isUploading}
-                  className="flex-1 py-4 bg-accent text-white text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-black transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none disabled:opacity-50"
+                  className="flex-1 py-4 bg-accent text-white text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-accent transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:shadow-none disabled:opacity-50"
                 >
                   {isUploading ? t('profile.saving') : t('profile.save_picture')}
                 </button>
-                <button 
+                <button
                   onClick={() => setImageToCrop(null)}
-                  className="px-8 py-4 bg-canvas text-ink/40 text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-none"
+                  className="px-8 py-4 bg-canvas text-ink/40 text-[10px] font-black uppercase tracking-[0.2em] border-2 border-border hover:bg-white transition-all active:translate-x-[2px] active:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:shadow-none"
                 >
                   {t('common.cancel')}
                 </button>
@@ -380,7 +380,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
 
       <section className="text-center space-y-6">
         <div className="relative inline-block">
-          <div className="p-1.5 border-2 border-accent rounded-full mb-2 overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]">
+          <div className="p-1.5 border-2 border-accent rounded-full mb-2 overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
             <div className="w-28 h-28 bg-canvas rounded-full flex items-center justify-center text-4xl font-black text-accent overflow-hidden">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
@@ -391,18 +391,18 @@ export function Profile({ profile, routines, completions: initialCompletions, da
           </div>
           {!isPublic && (
             <div className="flex justify-center gap-3 absolute -bottom-2 left-1/2 -translate-x-1/2">
-              <button 
+              <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading}
-                className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
               >
                 <Camera size={16} className={isUploading ? 'animate-pulse' : ''} />
               </button>
               {profile.avatar_url && (
-                <button 
+                <button
                   onClick={handleAvatarDelete}
                   disabled={isUploading}
-                  className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   title="Delete Profile Picture"
                 >
                   <Trash2 size={16} />
@@ -410,18 +410,18 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               )}
             </div>
           )}
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileChange} 
-            accept="image/*" 
-            className="hidden" 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
           />
         </div>
 
         <div className="flex flex-col items-center gap-3 pt-4">
           {isEditing && !isPublic ? (
-            <div className="flex items-center gap-2 bg-white border-2 border-accent px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="flex items-center gap-2 bg-white border-2 border-accent px-4 py-2 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
               <input
                 autoFocus
                 type="text"
@@ -441,7 +441,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             <div className="flex items-center gap-3 group">
               <h2 className="text-3xl font-black text-ink uppercase tracking-tighter md:text-4xl">{profile.username || 'Anonymous_User'}</h2>
               {!isPublic && (
-                <button 
+                <button
                   onClick={() => {
                     setNewUsername(profile.username)
                     setIsEditing(true)
@@ -453,11 +453,11 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               )}
             </div>
           )}
-          
+
           <div className="flex flex-col items-center gap-4">
             <div className="flex justify-center flex-wrap gap-2">
               {profile.badges?.map((badge) => (
-                <div key={badge.id} className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-[10px] uppercase font-black text-accent flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div key={badge.id} className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-[10px] uppercase font-black text-accent flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                   <span className="text-sm">{badge.icon}</span>
                   {badge.name}
                 </div>
@@ -471,17 +471,17 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <Zap size={24} className="text-accent mx-auto mb-2" />
           <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.lifetime_xp')}</p>
           <p className="text-4xl font-black text-ink tracking-tighter">{(profile.lifetime_xp || profile.total_xp || 0).toLocaleString()}</p>
         </div>
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <Flame size={24} fill="currentColor" className="text-accent mx-auto mb-2" />
           <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.daily_streak')}</p>
           <p className="text-4xl font-black text-ink tracking-tighter">{dailyStreak || 0}</p>
         </div>
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <Trophy size={24} className="text-accent mx-auto mb-2" />
           <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.weekly_streak')}</p>
           <p className="text-4xl font-black text-ink tracking-tighter">{weeklyStreak || 0}</p>
@@ -496,12 +496,12 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             const streak = categoryStreaks[cat] || 0
             const wStreak = categoryWeeklyStreaks[cat] || 0
             return (
-              <button 
-                key={cat} 
+              <button
+                key={cat}
                 onClick={() => setSelectedCategory(isSelected ? null : cat)}
-                className={`px-4 py-3 border-2 text-[10px] uppercase tracking-widest font-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center gap-2 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
-                  isSelected 
-                    ? 'bg-accent border-border text-white' 
+                className={`px-4 py-3 border-2 text-[10px] uppercase tracking-widest font-black shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] transition-all flex items-center gap-2 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+                  isSelected
+                    ? 'bg-accent border-border text-white'
                     : 'bg-white border-border text-ink hover:bg-canvas'
                 }`}
               >
@@ -531,14 +531,14 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-ink/40 font-black border-b-2 border-border pb-3">{t('profile.achievements')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Streak Evolving Badge */}
-          <button 
+          <button
             onClick={() => setShowTrophyRoom('streak')}
-            className="group relative bg-white border-2 border-border p-8 flex flex-col items-center gap-4 transition-all hover:border-accent shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(124,58,237,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none overflow-hidden"
+            className="group relative bg-white border-2 border-border p-8 flex flex-col items-center gap-4 transition-all hover:border-accent shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[8px_8px_0px_0px_rgba(236,72,153,0.48)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
               <Trophy size={16} className="text-accent" />
             </div>
-            
+
             <div className="relative">
               <div className="text-6xl mb-2 group-hover:scale-110 transition-transform duration-500">
                 {streakProgress.current?.icon || '⏳'}
@@ -559,7 +559,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                   <span>{dailyStreak} / {streakProgress.next.count} Days</span>
                 </div>
                 <div className="h-1.5 w-full bg-canvas border-2 border-border/10 overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-accent transition-all duration-1000"
                     style={{ width: `${Math.min(100, (dailyStreak / streakProgress.next.count) * 100)}%` }}
                   />
@@ -569,9 +569,9 @@ export function Profile({ profile, routines, completions: initialCompletions, da
           </button>
 
           {/* XP Evolving Badge */}
-          <button 
+          <button
             onClick={() => setShowTrophyRoom('xp')}
-            className="group relative bg-white border-2 border-border p-8 flex flex-col items-center gap-4 transition-all hover:border-accent shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(124,58,237,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none overflow-hidden"
+            className="group relative bg-white border-2 border-border p-8 flex flex-col items-center gap-4 transition-all hover:border-accent shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[8px_8px_0px_0px_rgba(236,72,153,0.48)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none overflow-hidden"
           >
             <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
               <Trophy size={16} className="text-accent" />
@@ -597,7 +597,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                   <span>{(profile?.lifetime_xp || profile?.total_xp || 0).toLocaleString()} / {xpProgress.next.count.toLocaleString()} XP</span>
                 </div>
                 <div className="h-1.5 w-full bg-canvas border-2 border-border/10 overflow-hidden">
-                  <div 
+                  <div
                     className="h-full bg-accent transition-all duration-1000"
                     style={{ width: `${Math.min(100, ((profile?.lifetime_xp || profile?.total_xp || 0) / xpProgress.next.count) * 100)}%` }}
                   />
@@ -614,7 +614,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             onClick={() => {
               supabase.auth.signOut()
             }}
-            className="w-full py-5 bg-canvas border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-black hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+            className="w-full py-5 bg-canvas border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-[0.3em] hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
           >
             [Log_Out]
           </button>
@@ -623,7 +623,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
       {/* Trophy Room Modal */}
       {showTrophyRoom && createPortal(
         <div className="fixed inset-0 z-[110] bg-white/95 backdrop-blur-xl flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
-          <div className="w-full h-full md:h-auto md:max-w-6xl bg-white border-none md:border-2 md:border-border shadow-none md:shadow-[16px_16px_0px_0px_rgba(0,0,0,1)] flex flex-col md:max-h-[90vh]">
+          <div className="w-full h-full md:h-auto md:max-w-6xl bg-white border-none md:border-2 md:border-border shadow-none md:shadow-[16px_16px_0px_0px_rgba(20,184,166,0.34)] flex flex-col md:max-h-[90vh]">
             <div className="p-6 md:p-8 border-b-2 border-border flex justify-between items-center bg-canvas">
               <span className="text-xs md:text-sm uppercase font-black text-accent tracking-[0.4em] flex items-center gap-3">
                 <Trophy size={20} /> [Trophy_Room_Protocol: {showTrophyRoom.toUpperCase()}]
@@ -637,23 +637,23 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                 {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
                   const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
-                  const isEarned = showTrophyRoom === 'streak' 
+                  const isEarned = showTrophyRoom === 'streak'
                     ? (dailyStreak >= m.count && uniqueLoggingDays >= m.count)
                     : (totalXp >= m.count)
-                  
+
                   return (
-                    <div 
+                    <div
                       key={m.id}
                       className={`relative p-6 border-2 flex flex-col items-center text-center gap-4 transition-all duration-500 ${
-                        isEarned 
-                          ? 'bg-white border-accent shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]' 
+                        isEarned
+                          ? 'bg-white border-accent shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]'
                           : 'bg-canvas/30 border-dashed border-border/20 opacity-40'
                       }`}
                     >
                       <div className={`text-6xl transition-transform duration-700 ${isEarned ? 'scale-110' : 'scale-90 grayscale'}`}>
                         {m.icon}
                       </div>
-                      
+
                       <div className="space-y-1">
                         <h5 className={`text-xs font-black uppercase tracking-widest ${isEarned ? 'text-ink' : 'text-ink/40'}`}>
                           {m.name}
@@ -664,12 +664,12 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                       </div>
 
                       {isEarned ? (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-accent text-white rounded-full flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <div className="absolute top-2 right-2 w-5 h-5 bg-accent text-white rounded-full flex items-center justify-center shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                           <Check size={12} strokeWidth={4} />
                         </div>
                       ) : (
                         <div className="mt-2 w-full h-1 bg-border/10 overflow-hidden">
-                           <div 
+                           <div
                              className="h-full bg-ink/10 transition-all duration-1000"
                              style={{ width: `${Math.min(100, ( (showTrophyRoom === 'streak' ? dailyStreak : totalXp) / m.count) * 100)}%` }}
                            />
@@ -686,11 +686,11 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                 })}
               </div>
             </div>
-            
+
             <div className="p-4 border-t-2 border-border bg-canvas">
-              <button 
+              <button
                 onClick={() => setShowTrophyRoom(null)}
-                className="w-full py-4 bg-white border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-widest hover:text-ink hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
+                className="w-full py-4 bg-white border-2 border-border text-ink/40 text-[10px] font-black uppercase tracking-widest hover:text-ink hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none"
               >
                 Close_Archive
               </button>

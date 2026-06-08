@@ -30,7 +30,7 @@ export function Leaderboard({ onSelectUser, currentUserId }: LeaderboardProps) {
         <p className="text-[8px] text-ink/60 uppercase font-black tracking-widest">{t('leaderboard.subtitle')}</p>
       </section>
 
-      <div className="bg-white border-2 border-border overflow-hidden shadow-[8px_8px_0px_0px_rgba(0,0,0,1)]">
+      <div className="bg-white border-2 border-border overflow-hidden shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)]">
         {/* Header - Now visible on mobile with adjusted columns */}
         <div className="grid grid-cols-[50px_1fr_80px] md:grid-cols-[80px_1fr_120px] border-b-2 border-border text-[8px] md:text-[9px] uppercase tracking-widest text-ink/40 font-black bg-canvas">
           <div className="px-4 md:px-6 py-4">{t('leaderboard.rank')}</div>

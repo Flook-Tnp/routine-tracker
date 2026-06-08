@@ -26,6 +26,8 @@ const NAV_ITEMS = [
   { id: 'profile', label: 'nav.profile', icon: CircleUser, authRequired: true }
 ] as const;
 
+const CHART_LINE_COLORS = ['#14B8A6', '#EC4899', '#2DD4BF', '#F9A8D4', '#0F766E', '#BE185D']
+
 const KanbanBoard = lazy(() => import('./components/KanbanBoard').then((mod) => ({ default: mod.KanbanBoard })))
 const FullscreenChart = lazy(() => import('./components/FullscreenChart').then((mod) => ({ default: mod.FullscreenChart })))
 const Leaderboard = lazy(() => import('./components/Leaderboard').then((mod) => ({ default: mod.Leaderboard })))
@@ -90,12 +92,12 @@ function App() {
       if (showNotifications) {
         const isOutsideDesktop = notificationsRefDesktop.current && !notificationsRefDesktop.current.contains(event.target as Node)
         const isOutsideMobile = notificationsRefMobile.current && !notificationsRefMobile.current.contains(event.target as Node)
-        
+
         // On mobile, the desktop ref won't exist or be visible, and vice-versa
         // We only close if it's outside BOTH if both exist, or outside the one that exists
-        const outsideAllNotifications = (!notificationsRefDesktop.current || isOutsideDesktop) && 
+        const outsideAllNotifications = (!notificationsRefDesktop.current || isOutsideDesktop) &&
                                        (!notificationsRefMobile.current || isOutsideMobile)
-        
+
         if (outsideAllNotifications) {
           setShowNotifications(false)
         }
@@ -118,7 +120,7 @@ function App() {
 
   const calculateStreaks = (userRoutines: Routine[], userCompletions: RoutineCompletion[]) => {
     if (userRoutines.length === 0 || userCompletions.length === 0) return { daily: 0, weekly: 0 }
-    
+
     // Pre-group completions by routine ID for O(1) access
     const routineCompletionsMap = new Map<string, Set<string>>()
     userCompletions.forEach(c => {
@@ -135,7 +137,7 @@ function App() {
 
     categories.forEach(cat => {
       const catRoutineIds = userRoutines.filter(r => (r.category || 'General') === cat).map(r => r.id)
-      
+
       // Merge all completion dates for this category
       const doneDates = new Set<string>()
       catRoutineIds.forEach(id => {
@@ -152,13 +154,13 @@ function App() {
       while (isDateFinished(checkDate)) {
         daily++
         checkDate = subDays(checkDate, 1)
-        if (daily > 10000) break 
+        if (daily > 10000) break
       }
       if (daily > maxDaily) maxDaily = daily
 
       let weekly = 0
       const isWeekSuccessful = (dateInWeek: Date) => {
-        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
+        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay()))
         const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
         let activeDaysCount = 0
         weekDays.forEach(d => {
@@ -171,7 +173,7 @@ function App() {
       while (isWeekSuccessful(currentCheck)) {
         weekly++
         currentCheck = subDays(currentCheck, 7)
-        if (weekly > 500) break 
+        if (weekly > 500) break
       }
       if (weekly > maxWeekly) maxWeekly = weekly
     })
@@ -272,13 +274,13 @@ function App() {
 
     const handleSession = async (currentSession: Session | null) => {
       if (!mounted) return
-      
+
       const currentUserId = currentSession?.user?.id
       const identityChanged = currentUserId !== lastUserId.current
       lastUserId.current = currentUserId
 
       setSession(currentSession)
-      
+
       if (currentSession?.user) {
         try {
           // Fetch data separately so one failure doesn't block the others
@@ -289,7 +291,7 @@ function App() {
               if (currentSession.user.id) {
                 try {
                   const newProfile = await StorageService.createProfile(
-                    currentSession.user.id, 
+                    currentSession.user.id,
                     currentSession.user.email?.split('@')[0] || 'User'
                   )
                   if (mounted) {
@@ -309,7 +311,7 @@ function App() {
             StorageService.fetchTasks(currentSession.user.id),
             StorageService.fetchNotifications(currentSession.user.id)
           ])
-          
+
           if (mounted) {
             setRoutines(routinesData)
             setCompletions(allCompletions)
@@ -393,9 +395,9 @@ function App() {
     e.preventDefault()
     if (!newTaskTitle.trim()) return
 
-    const newTask: Partial<Task> = { 
-      title: newTaskTitle, 
-      status: 'todo', 
+    const newTask: Partial<Task> = {
+      title: newTaskTitle,
+      status: 'todo',
       category: 'General',
       created_at: new Date().toISOString()
     }
@@ -509,8 +511,8 @@ function App() {
     if (!newRoutineTitle.trim()) return
 
     const targetCategory = activeCategory || 'General'
-    const newRoutine: Partial<Routine> = { 
-      title: newRoutineTitle, 
+    const newRoutine: Partial<Routine> = {
+      title: newRoutineTitle,
       category: targetCategory,
       is_active: true,
       created_at: new Date().toISOString()
@@ -547,7 +549,7 @@ function App() {
     )
 
     // Calculate XP based on current streak
-    const currentStreak = dailyStreak 
+    const currentStreak = dailyStreak
     const xp = existing?.xp_earned ?? calculateXP(currentStreak)
 
     // 1. Optimistic local update
@@ -556,18 +558,18 @@ function App() {
       setCompletions(completions.filter(c => c.id !== existing.id))
     } else {
       const tempId = crypto.randomUUID()
-      setCompletions([...completions, { 
-        id: tempId, 
-        routine_id: routineId, 
+      setCompletions([...completions, {
+        id: tempId,
+        routine_id: routineId,
         completed_date: selectedDateStr,
-        xp_earned: xp 
+        xp_earned: xp
       }])
     }
 
     if (session) {
       try {
         const result = await StorageService.toggleCompletion(routineId, selectedDateStr, xp, session.user.id, existing?.id)
-        
+
         // Silently sync the actual result from server
         if (result) {
           setCompletions(prev => prev.map(c => c.routine_id === routineId && c.completed_date === selectedDateStr ? result : c))
@@ -587,9 +589,9 @@ function App() {
   const dailyStats = useMemo(() => {
     const total = filteredRoutines.length
     if (total === 0) return { completed: 0, total: 0, percentage: 0 }
-    
-    const completed = completions.filter(c => 
-      c.completed_date === selectedDateStr && 
+
+    const completed = completions.filter(c =>
+      c.completed_date === selectedDateStr &&
       filteredRoutines.some(r => r.id === c.routine_id)
     ).length
     return {
@@ -602,7 +604,7 @@ function App() {
   const { dailyStreak, weeklyStreak } = useMemo(() => {
     try {
       if (filteredRoutines.length === 0 || completions.length === 0) return { dailyStreak: 0, weeklyStreak: 0 }
-      
+
       const activeRoutineIds = new Set(filteredRoutines.map(r => r.id))
       const doneDates = new Set(
         completions
@@ -618,13 +620,13 @@ function App() {
       while (isDateFinished(checkDate)) {
         daily++
         checkDate = subDays(checkDate, 1)
-        if (daily > 10000) break 
+        if (daily > 10000) break
       }
 
       // Calculate Category Weekly
       let weekly = 0
       const isWeekSuccessful = (dateInWeek: Date) => {
-        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay())) 
+        const start = startOfDay(subDays(dateInWeek, dateInWeek.getDay()))
         const weekDays = eachDayOfInterval({ start, end: subDays(start, -6) })
         let activeDaysCount = 0
         weekDays.forEach(d => {
@@ -638,7 +640,7 @@ function App() {
       while (isWeekSuccessful(currentCheck)) {
         weekly++
         currentCheck = subDays(currentCheck, 7)
-        if (weekly > 500) break 
+        if (weekly > 500) break
       }
 
       return { dailyStreak: daily, weeklyStreak: weekly }
@@ -702,7 +704,7 @@ function App() {
 
       // 2. Map routines in current category to their unified stats
       const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
-      
+
       return activeTitles.map(title => {
         const habitComps = [...(titleToCompletions[title] || [])].sort()
         let trueStartStr = ''
@@ -725,7 +727,7 @@ function App() {
         const start = startOfDay(parseISO(trueStartStr))
         const today = startOfDay(new Date())
         const activeDays = eachDayOfInterval({ start, end: today }).length
-        
+
         // Count completions ONLY since true start
         const validComps = habitComps.filter(d => d >= trueStartStr).length
 
@@ -746,9 +748,9 @@ function App() {
   const lifetimeStats = useMemo(() => {
     try {
       if (taskBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
-      
+
       const showTotal = !hiddenRoutines.has('Total')
-      const relevantBreakdown = taskBreakdown.filter(t => 
+      const relevantBreakdown = taskBreakdown.filter(t =>
         showTotal || !hiddenRoutines.has(t.title)
       )
 
@@ -756,7 +758,7 @@ function App() {
 
       const totalPercentage = relevantBreakdown.reduce((acc, task) => acc + task.percentage, 0)
       const averagePercentage = Math.round(totalPercentage / relevantBreakdown.length)
-      
+
       // Calculate overall total days since the oldest relevant start date
       const creationDates = relevantBreakdown.map(t => parseISO(t.startDate))
       const oldestDate = creationDates.length > 0 ? creationDates.reduce((a, b) => a < b ? a : b) : new Date()
@@ -885,7 +887,7 @@ function App() {
           entry['Total'] = Number(avgPct.toFixed(1))
         }
         data.push(entry)
-      })      
+      })
       return data
     } catch (err) {
       console.error('Error in chart data:', err)
@@ -921,11 +923,11 @@ function App() {
     let perfectDays = 0
     let totalTasks = 0
     let completedTasks = 0
-    
+
     thirtyDays.forEach(d => {
       const dStr = format(d, 'yyyy-MM-dd')
-      const done = completions.filter(c => 
-        c.completed_date === dStr && 
+      const done = completions.filter(c =>
+        c.completed_date === dStr &&
         filteredRoutines.some(r => r.id === c.routine_id)
       ).length
       if (filteredRoutines.length > 0) {
@@ -934,7 +936,7 @@ function App() {
         if (done === filteredRoutines.length) perfectDays++
       }
     })
-    
+
     return {
       perfectDays,
       avg: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
@@ -952,20 +954,20 @@ function App() {
 
   return (
     <div className="min-h-screen bg-canvas text-ink font-mono selection:bg-accent/30">
-      
+
       {/* Integrated Header Container - Sticky on All Devices */}
-      <div className="sticky top-0 z-[100] bg-white border-b-2 border-border shadow-sm">
+      <div className="sticky top-0 z-[100] bg-white/90 backdrop-blur-xl border-b-2 border-border shadow-[0_8px_24px_rgba(20,184,166,0.12)]">
         <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 md:py-6">
           <header className="space-y-4 md:space-y-6">
             {/* Top Row: Title, Notifications, and Identity */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h1 className="text-xl md:text-2xl font-black text-ink tracking-tighter uppercase">{t('app.title')}</h1>
+                <h1 className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-accent to-sync tracking-tighter uppercase">{t('app.title')}</h1>
                 <div className="flex items-center gap-2">
                   <div className="relative" ref={notificationsRefDesktop}>
-                    <button 
+                    <button
                       onClick={handleToggleNotifications}
-                      className={`relative p-1 transition-colors ${notifications.length > 0 ? 'text-orange-500 animate-pulse' : 'text-gray-500 hover:text-accent'}`}
+                      className={`relative p-1 transition-colors ${notifications.length > 0 ? 'text-accent animate-pulse' : 'text-gray-500 hover:text-accent'}`}
                     >
                       <Bell size={18} />
                       {notifications.length > 0 && (
@@ -1041,7 +1043,7 @@ function App() {
                       {format(selectedDate, 'EEE, MMM d')}
                     </button>
                     {showDatePicker && (
-                      <BrutalistDatePicker 
+                      <BrutalistDatePicker
                         selectedDate={selectedDate}
                         onSelect={setSelectedDate}
                         onClose={() => setShowDatePicker(false)}
@@ -1049,12 +1051,12 @@ function App() {
                     )}
                   </div>
                   <button onClick={() => setSelectedDate(subDays(selectedDate, -1))} className="p-1.5 md:p-2 text-gray-500 hover:text-accent border-2 border-border bg-white active:translate-y-[1px] transition-all"><ChevronRight size={18} /></button>
-                  
+
                   {/* Today Button - Visible on All Devices when not today */}
                   {format(selectedDate, 'yyyy-MM-dd') !== format(new Date(), 'yyyy-MM-dd') && (
-                    <button 
+                    <button
                       onClick={() => setSelectedDate(startOfDay(new Date()))}
-                      className="ml-1 px-3 py-2 bg-black text-white text-[10px] font-black uppercase tracking-widest border-2 border-black active:translate-y-[2px] transition-all shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]"
+                      className="ml-1 px-3 py-2 bg-sync text-white text-[10px] font-black uppercase tracking-widest border-2 border-border active:translate-y-[2px] transition-all shadow-[2px_2px_0px_0px_rgba(236,72,153,0.48)]"
                     >
                       {t('action.today')}
                     </button>
@@ -1062,7 +1064,7 @@ function App() {
                 </div>
 
                 {/* Desktop Top Navigation (Hidden on Mobile) */}
-                <div className="hidden md:flex gap-1 bg-white p-1 border-2 border-border shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="hidden md:flex gap-1 bg-white p-1 border-2 border-border shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
                   {NAV_ITEMS.map((item) => {
                     if (item.authRequired && !session) return null;
                     const Icon = item.icon;
@@ -1074,7 +1076,7 @@ function App() {
                           if (item.id === 'profile') setViewedProfileId(null);
                           setCurrentView(item.id);
                         }}
-                        className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${isActive ? 'bg-black text-white border-border shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' : 'text-ink/60 hover:text-ink hover:border-border/20'}`}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-[10px] font-black uppercase transition-all border-2 border-transparent ${isActive ? 'bg-accent text-white border-border shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'text-ink/60 hover:text-accent hover:border-border/20'}`}
                       >
                         <Icon size={14} />
                         {t(item.label)}
@@ -1086,14 +1088,14 @@ function App() {
 
               {/* Streaks Display */}
               <div className="flex items-center gap-6 md:gap-8 bg-canvas/50 md:bg-transparent p-3 md:p-0 border-2 border-dashed border-border md:border-0">
-                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-orange-500">
+                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-accent">
                   <Flame size={18} fill="currentColor" />
                   <div className="flex flex-col items-center md:items-end">
                     <span className="text-xl md:text-2xl font-black tracking-tighter text-ink leading-none">{dailyStreak}</span>
                     <p className="text-[7px] md:text-[8px] text-gray-500 uppercase tracking-widest font-black">{t('streak.daily')}</p>
                   </div>
                 </div>
-                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-accent">
+                <div className="flex-1 md:flex-none flex items-center justify-center md:justify-end gap-2 text-sync">
                   <Trophy size={18} />
                   <div className="flex flex-col items-center md:items-end">
                     <span className="text-xl md:text-2xl font-black tracking-tighter text-ink leading-none">{weeklyStreak}</span>
@@ -1104,7 +1106,7 @@ function App() {
             </div>
 
             {/* Date Strip */}
-            <div 
+            <div
               ref={dateStripRef}
               className="flex md:grid md:grid-cols-7 gap-1 overflow-x-auto md:overflow-x-visible snap-x no-scrollbar pb-1 md:pb-0"
             >
@@ -1117,8 +1119,8 @@ function App() {
                     data-active={isActive}
                     onClick={() => setSelectedDate(date)}
                     className={`flex-shrink-0 w-[48px] md:w-auto flex flex-col items-center py-2 md:py-3 border transition-all snap-center ${
-                      isActive 
-                        ? 'bg-accent border-border text-white font-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' 
+                      isActive
+                        ? 'bg-accent border-border text-white font-black shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'
                         : 'bg-white border-border text-gray-400 hover:border-accent hover:text-accent'
                     }`}
                   >
@@ -1165,9 +1167,9 @@ function App() {
                       setNewCategoryTitle(cat)
                     }}
                     className={`px-4 py-1.5 h-[34px] text-[10px] uppercase tracking-widest border transition-all flex items-center gap-2 ${
-                      activeCategory === cat 
-                        ? 'bg-black text-white border-black font-black shadow-[2px_2px_0px_0px_rgba(124,58,237,1)]' 
-                        : 'bg-white border-border text-gray-500 hover:border-black hover:text-ink'
+                      activeCategory === cat
+                        ? 'bg-accent text-white border-border font-black shadow-[2px_2px_0px_0px_rgba(236,72,153,0.48)]'
+                        : 'bg-white border-border text-gray-500 hover:border-border hover:text-ink'
                     }`}
                   >
                     {cat}
@@ -1176,7 +1178,7 @@ function App() {
                 {activeCategory === cat && !editingCategory && (
                   <div className="flex">
                     {cat !== 'General' && (
-                      <button 
+                      <button
                         onClick={() => {
                           setEditingCategory(cat)
                           setNewCategoryTitle(cat)
@@ -1188,7 +1190,7 @@ function App() {
                       </button>
                     )}
                     {cat !== 'General' && (
-                      <button 
+                      <button
                         onClick={() => {
                           setConfirmDelete({
                             isOpen: true,
@@ -1226,18 +1228,18 @@ function App() {
               + {t('action.new_category')}
             </button>
           </div>
-          
+
           {isAddingCategory && (
             <form onSubmit={addCategory} className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
-              <input 
+              <input
                 autoFocus
-                type="text" 
+                type="text"
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder={t('action.enter_category_name')}
                 className="flex-1 input-primary text-[10px] uppercase tracking-widest py-3"
               />
-              <button type="submit" className="bg-black text-white px-6 py-1 text-[10px] font-black hover:bg-accent transition-all uppercase tracking-widest border border-black">
+              <button type="submit" className="bg-accent text-white px-6 py-1 text-[10px] font-black hover:bg-sync transition-all uppercase tracking-widest border border-border">
                 {t('common.confirm')}
               </button>
             </form>
@@ -1254,7 +1256,7 @@ function App() {
             </span>
           </div>
           <div className={`h-4 bg-white border-2 border-border rounded-none overflow-hidden p-[2px] relative group ${dailyStats.percentage === 100 ? 'ring-2 ring-accent ring-offset-2 animate-success-pop' : ''}`}>
-            <div 
+            <div
               className="h-full bg-accent transition-all duration-1000 ease-out relative"
               style={{ width: `${dailyStats.percentage}%` }}
             >
@@ -1268,12 +1270,12 @@ function App() {
               </div>
             )}
             {/* Background Grid Pattern */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none" 
-                 style={{ backgroundImage: 'linear-gradient(90deg, #000 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
+            <div className="absolute inset-0 opacity-5 pointer-events-none"
+                 style={{ backgroundImage: 'linear-gradient(90deg, #241522 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
           </div>
         </section>
 
-        <section className="bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <section className="bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <div className="grid grid-cols-7 gap-2 h-16 items-end">
             {last7Days.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-2">
@@ -1282,7 +1284,7 @@ function App() {
                     className="absolute bottom-0 left-0 right-0 transition-all duration-500"
                     style={{
                       height: `${day.percentage}%`,
-                      backgroundColor: day.percentage === 100 ? '#7C3AED' : '#000000'
+                      backgroundColor: day.percentage === 100 ? '#EC4899' : '#14B8A6'
                     }}
                   />
                 </div>
@@ -1294,11 +1296,11 @@ function App() {
         <section className="space-y-4">
           <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">{t('stats.thirty_days')}</h2>
           <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
               <p className="text-[8px] text-gray-500 uppercase tracking-widest">{t('stats.perfect_days')}</p>
               <p className="text-3xl font-black text-ink tracking-tight">{thirtyDayStats.perfectDays}</p>
             </div>
-            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            <div className="bg-white border-2 border-border p-6 text-center space-y-1 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
               <p className="text-[8px] text-gray-500 uppercase tracking-widest">{t('stats.avg_efficiency')}</p>
               <p className="text-3xl font-black text-accent tracking-tight">{thirtyDayStats.avg}%</p>
             </div>
@@ -1312,9 +1314,9 @@ function App() {
                 <p className="text-[10px] text-gray-400 uppercase mt-1">Total Days Tracked: {lifetimeStats.totalDays}</p>
               </div>
               <div className="flex items-center gap-4">
-                <button 
+                <button
                   onClick={() => setIsChartFullscreen(true)}
-                  className="p-2 bg-white border-2 border-border text-ink/40 hover:text-accent transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  className="p-2 bg-white border-2 border-border text-ink/40 hover:text-accent transition-all shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   title="Fullscreen View"
                 >
                   <Maximize2 size={16} />
@@ -1333,7 +1335,7 @@ function App() {
                     else next.add('Total')
                     setHiddenRoutines(next)
                   }}
-                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border text-gray-400 hover:border-black'}`}
+                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-gray-400 hover:border-border'}`}
                 >
                   OVERALL_TOTAL
                 </button>
@@ -1346,8 +1348,8 @@ function App() {
                       else next.add(r.title)
                       setHiddenRoutines(next)
                     }}
-                    className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]' : 'border-border bg-white text-gray-400'}`}
-                    style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? `hsl(${(i * 60) % 360}, 40%, 40%)` : undefined, borderLeftWidth: '4px' }}
+                    className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'border-border bg-white text-gray-400'}`}
+                    style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : undefined, borderLeftWidth: '4px' }}
                   >
                     {r.title}
                   </button>
@@ -1355,33 +1357,33 @@ function App() {
               </div>
               <button
                 onClick={() => setIsAutoZoom(!isAutoZoom)}
-                className={`px-3 py-1 border-2 text-[8px] font-black uppercase transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-black' : 'bg-white border-border text-ink'}`}
+                className={`px-3 py-1 border-2 text-[8px] font-black uppercase transition-all shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${isAutoZoom ? 'bg-ink text-white border-border' : 'bg-white border-border text-ink'}`}
               >
                 {isAutoZoom ? 'FIXED_SCALE' : 'AUTO_ZOOM_Y'}
               </button>
             </div>
 
-            <div className="h-[350px] w-full bg-white border-2 border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+            <div className="h-[350px] w-full bg-white border-2 border-border p-4 pt-8 group shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
               {lifetimeChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={lifetimeChartData}>
                   <defs>
                     <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7C3AED" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#7C3AED" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#EC4899" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#EC4899" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#000000" 
-                    fontSize={9} 
-                    tickLine={false} 
+                  <CartesianGrid strokeDasharray="3 3" stroke="#F0E4EA" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    stroke="#241522"
+                    fontSize={9}
+                    tickLine={false}
                     axisLine={false}
                     minTickGap={60}
                   />
                   <YAxis
-                   stroke="#000000"
+                   stroke="#241522"
                    fontSize={9}
                    tickLine={false}
                    axisLine={false}
@@ -1390,21 +1392,21 @@ function App() {
                    tickFormatter={(val) => `${Math.round(val)}%`}
                   />
                   <Tooltip
-                   contentStyle={{ backgroundColor: '#fff', border: '2px solid #000', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
-                   itemStyle={{ padding: '0px', color: '#000' }}
-                   cursor={{ stroke: '#000', strokeWidth: 2 }}
+                   contentStyle={{ backgroundColor: '#fff', border: '2px solid #241522', fontSize: '10px', fontFamily: 'JetBrains Mono' }}
+                   itemStyle={{ padding: '0px', color: '#241522' }}
+                   cursor={{ stroke: '#14B8A6', strokeWidth: 2 }}
 	                   formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
                   />
                   {!hiddenRoutines.has('Total') && (
                    <Area
                      type="monotone"
                      dataKey="Total"
-                     stroke="#7C3AED"
+                     stroke="#EC4899"
                      strokeWidth={3}
                      fillOpacity={1}
                      fill="url(#colorTotal)"
                      dot={false}
-                     activeDot={{ r: 4, fill: '#7C3AED', stroke: '#fff', strokeWidth: 2 }}
+                     activeDot={{ r: 4, fill: '#EC4899', stroke: '#fff', strokeWidth: 2 }}
                      animationDuration={1000}
                    />
                   )}
@@ -1413,7 +1415,7 @@ function App() {
                      key={r.id}
                      type="monotone"
                      dataKey={r.title}
-                     stroke={`hsl(${(i * 60) % 360}, 40%, 40%)`}
+                     stroke={CHART_LINE_COLORS[i % CHART_LINE_COLORS.length]}
                      strokeWidth={2}
                      dot={false}
                      opacity={0.6}
@@ -1432,7 +1434,7 @@ function App() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {taskBreakdown.filter(t => !hiddenRoutines.has(t.title)).map((task, index) => (
-                <div key={index} className="bg-white border-2 border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <div key={index} className="bg-white border-2 border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <span className="text-[10px] uppercase tracking-widest text-gray-500 block truncate max-w-[150px] font-bold">{task.title}</span>
@@ -1440,11 +1442,11 @@ function App() {
                     </div>
                     <span className="text-xl font-black text-accent">{task.percentage}%</span>
                   </div>
-                  
+
                   <div className="h-1 bg-canvas overflow-hidden">
-                    <div 
+                    <div
                       className="h-full transition-all duration-1000"
-                      style={{ width: `${task.percentage}%`, backgroundColor: task.percentage > 80 ? '#7C3AED' : '#000000' }}
+                      style={{ width: `${task.percentage}%`, backgroundColor: task.percentage > 80 ? '#EC4899' : '#14B8A6' }}
                     />
                   </div>
 
@@ -1465,7 +1467,7 @@ function App() {
               value={newRoutineTitle}
               onChange={(e) => setNewRoutineTitle(e.target.value)}
               placeholder={t('action.new_habit', { category: activeCategory.toUpperCase() })}
-              className="flex-1 input-primary text-sm font-mono shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
+              className="flex-1 input-primary text-sm font-mono shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]"
             />
             <button type="submit" className="btn-primary">
               <Plus size={20} />
@@ -1474,7 +1476,7 @@ function App() {
 
           <div className="space-y-2">
             {filteredRoutines.length === 0 && (
-              <EmptyState 
+              <EmptyState
                 icon={ListTodo}
                 title={t('status.no_habits', { category: activeCategory })}
                 subtitle="Initialize your first habit mission to begin tracking performance."
@@ -1536,15 +1538,15 @@ function App() {
           ) : currentView === 'leaderboard' ? (
             <Leaderboard onSelectUser={handleSelectUser} currentUserId={session?.user?.id} />
           ) : currentView === 'social' ? (
-            <SocialFeed 
-              session={session} 
+            <SocialFeed
+              session={session}
               onShareStreak={handleShareStreak}
               dailyStreak={dailyStreak}
               onSelectUser={handleSelectUser}
             />
           ) : currentView === 'pods' ? (
-            <AccountabilityPods 
-              session={session} 
+            <AccountabilityPods
+              session={session}
               onShareStreak={handleShareStreak}
               dailyStreak={dailyStreak}
               onSelectUser={handleSelectUser}
@@ -1573,15 +1575,15 @@ function App() {
 
       {showManual && <ManualModal onClose={() => setShowManual(false)} />}
       {isAuthModalOpen && (
-        <AuthModal 
+        <AuthModal
           onClose={() => {
             setIsAuthModalOpen(false)
             setAuthInitialView('sign_in')
-          }} 
+          }}
           initialView={authInitialView}
         />
       )}
-      
+
       {confirmDelete && (
         <ConfirmDialog
           isOpen={confirmDelete.isOpen}
@@ -1608,7 +1610,7 @@ function App() {
       </Suspense>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t-4 border-black px-1 py-1 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-lg border-t-4 border-border px-1 py-1 pb-safe shadow-[0_-10px_40px_rgba(20,184,166,0.16)]">
         <div className="flex justify-between items-stretch h-16 max-w-lg mx-auto">
           {NAV_ITEMS.map((item) => {
             if (item.authRequired && !session) return null;
@@ -1621,7 +1623,7 @@ function App() {
                   if (item.id === 'profile') setViewedProfileId(null);
                   setCurrentView(item.id);
                 }}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'bg-black text-white' : 'text-ink/40'}`}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 transition-all ${isActive ? 'bg-accent text-white' : 'text-ink/40'}`}
               >
                 <Icon size={20} className={isActive ? 'animate-success-pop' : ''} />
                 <span className="text-[7px] font-black uppercase tracking-widest">{t(item.label)}</span>

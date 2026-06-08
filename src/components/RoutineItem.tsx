@@ -26,17 +26,17 @@ export function RoutineItem({
 }: RoutineItemProps) {
 
   return (
-    <div 
+    <div
       onClick={() => toggleCompletion(routine.id)}
       className={`group flex items-center justify-between p-4 md:p-5 border-2 transition-all duration-300 cursor-pointer font-mono ${
-        isCompleted 
-          ? 'bg-accent-soft border-accent text-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' 
-          : 'bg-white border-border hover:border-accent text-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]'
+        isCompleted
+          ? 'bg-accent-soft border-accent text-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]'
+          : 'bg-white border-border hover:border-accent text-ink shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]'
       }`}
     >
       <div className="flex items-center gap-4 flex-1">
-        {isCompleted 
-          ? <CheckCircle2 size={24} className="text-accent flex-shrink-0 animate-success-pop" /> 
+        {isCompleted
+          ? <CheckCircle2 size={24} className="text-accent flex-shrink-0 animate-success-pop" />
           : <Circle size={24} className="text-border/10 flex-shrink-0" />
         }
         {editingRoutineId === routine.id ? (
@@ -51,7 +51,7 @@ export function RoutineItem({
             className="bg-canvas border-b-2 border-accent text-base tracking-tight text-ink focus:outline-none font-black uppercase w-full px-2"
           />
         ) : (
-          <span 
+          <span
             onDoubleClick={(e) => {
               e.stopPropagation()
               setEditingRoutineId(routine.id)
@@ -64,7 +64,7 @@ export function RoutineItem({
         )}
       </div>
       <div className="md:opacity-0 group-hover:opacity-100 transition-opacity flex gap-3 ml-4">
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation()
             setEditingRoutineId(routine.id)
@@ -75,7 +75,7 @@ export function RoutineItem({
         >
           <Pencil size={16} />
         </button>
-        <button 
+        <button
           onClick={(e) => {
             e.stopPropagation()
             deleteRoutine(routine.id, routine.title)

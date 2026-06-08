@@ -301,7 +301,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
           <ChevronLeft size={16} /> Back_to_Network
         </button>
 
-        <section className="bg-white border-2 border-border p-5 md:p-8 space-y-6 md:space-y-8 relative shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <section className="bg-white border-2 border-border p-5 md:p-8 space-y-6 md:space-y-8 relative shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           {isEditingPod ? (
             <form onSubmit={handleUpdateGroup} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="space-y-2">
@@ -332,7 +332,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
                   <h2 className="text-2xl md:text-3xl font-black text-ink uppercase tracking-tighter">{selectedPod.name}</h2>
-                  <div className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                  <div className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-accent text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                     <Flame size={14} fill="currentColor" />
                     Group_Streak: {podMembers[0]?.pod_current_streak ?? 0}
                   </div>
@@ -373,7 +373,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   <Activity size={14} className="text-accent" /> Mission_Objectives
                 </h3>
 
-                <div className="bg-canvas border-2 border-border p-4 md:p-6 space-y-6 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="bg-canvas border-2 border-border p-4 md:p-6 space-y-6 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
                   {selectedPod.created_by === session?.user?.id && (
                     <div className="border-b-2 border-border/10 pb-6">
                       {isAddingTask ? (
@@ -403,7 +403,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                     {groupTasks.map((task) => {
                       const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
                       return (
-                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border-2 transition-all ${isDone ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]' : 'bg-white border-border hover:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'}`}>
+                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border-2 transition-all ${isDone ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border hover:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]'}`}>
                           <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
                             <div className={`w-7 h-7 md:w-6 md:h-6 border-2 transition-all flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-accent border-accent' : 'border-border bg-white'}`}>
                               {isDone && <Check size={16} className="text-white stroke-[4px]" />}
@@ -446,10 +446,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   const isMe = member.id === session?.user?.id
                   const isDone = member.group_tasks_completed > 0
                   return (
-                    <div key={member.id} className={`relative bg-white border-2 ${isDone ? 'border-accent bg-accent-soft' : 'border-border'} p-4 space-y-4 group/card transition-all hover:border-accent shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
+                    <div key={member.id} className={`relative bg-white border-2 ${isDone ? 'border-accent bg-accent-soft' : 'border-border'} p-4 space-y-4 group/card transition-all hover:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]`}>
                       <div className="flex items-center gap-3 pr-8">
                         <div className={`flex items-center gap-3 flex-1 min-w-0 ${!isMe && 'cursor-pointer active:scale-95 transition-transform'}`} onClick={() => !isMe && member.id && onSelectUser?.(member.id)}>
-                          <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex-shrink-0">
+                          <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] flex-shrink-0">
                             {member.avatar_url ? <img src={member.avatar_url} className="w-full h-full object-cover" /> : <span className="text-sm font-black text-ink/30">{member.username?.[0]?.toUpperCase()}</span>}
                           </div>
                           <div className="min-w-0">
@@ -504,7 +504,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       </section>
 
       {isCreating && (
-        <form onSubmit={handleCreateGroup} className="bg-white border-2 border-accent p-6 space-y-5 animate-in fade-in slide-in-from-top-4 duration-500 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+        <form onSubmit={handleCreateGroup} className="bg-white border-2 border-accent p-6 space-y-5 animate-in fade-in slide-in-from-top-4 duration-500 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <div className="space-y-2">
             <label className="text-[10px] uppercase text-ink/50 font-black tracking-widest">{t('pods.name_label')}</label>
             <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g., NEURAL_LEARNERS" className="w-full input-primary text-sm py-3" />
@@ -536,7 +536,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         {groups.map((group) => {
           const isMember = group.group_members?.some(m => m.user_id === session?.user?.id)
           return (
-            <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(124,58,237,1)]">
+            <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
               <div className="space-y-2">
                 <h3 className="text-xl md:text-2xl font-black text-ink uppercase tracking-tighter group-hover:text-accent transition-colors">{group.name}</h3>
                 <p className="text-xs text-ink/60 line-clamp-2 leading-relaxed">{group.description}</p>
