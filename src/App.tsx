@@ -8,6 +8,7 @@ import { RoutineItem } from './components/RoutineItem'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { BrutalistDatePicker } from './components/BrutalistDatePicker'
 import { AuthModal } from './components/Auth'
+import { MissedYesterdayBar } from './components/MissedYesterdayBar'
 import { StorageService } from './lib/storage'
 import type { Routine, RoutineCompletion, Task, TaskLog, TaskBreakdownItem, Profile, Group } from './types'
 import type { Session } from '@supabase/supabase-js'
@@ -73,6 +74,7 @@ function App() {
   const [hiddenRoutines, setHiddenRoutines] = useState<Set<string>>(new Set())
   const [isAutoZoom, setIsAutoZoom] = useState(false)
   const [authInitialView, setAuthInitialView] = useState<'sign_in' | 'sign_up' | 'forgot_password' | 'update_password'>('sign_in')
+  const [dismissedMissedNudges, setDismissedMissedNudges] = useState<Record<string, boolean>>({})
 
   const [editingRoutineId, setEditingRoutineId] = useState<string | null>(null)
   const [editingRoutineTitle, setEditingRoutineTitle] = useState('')
@@ -247,6 +249,10 @@ function App() {
     }
   }, [selectedDate])
 
+  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), [])
+  const yesterday = useMemo(() => startOfDay(subDays(new Date(), 1)), [])
+  const yesterdayStr = useMemo(() => format(yesterday, 'yyyy-MM-dd'), [yesterday])
+
   // Auto-scroll active date into view
   useEffect(() => {
     if (dateStripRef.current) {
@@ -269,6 +275,26 @@ function App() {
   const filteredRoutines = useMemo(() => {
     return routines.filter(r => (r.category || 'General') === activeCategory)
   }, [routines, activeCategory])
+
+  const dismissMissedNudge = (key: string) => {
+    localStorage.setItem(key, '1')
+    setDismissedMissedNudges(prev => ({ ...prev, [key]: true }))
+  }
+
+  const trackerMissedYesterdayKey = `missed-yesterday:tracker:${activeCategory}:${yesterdayStr}`
+  const hasYesterdayRoutineCompletion = filteredRoutines.some(routine =>
+    completions.some(completion => completion.routine_id === routine.id && completion.completed_date === yesterdayStr)
+  )
+  const shouldShowTrackerMissedYesterday =
+    selectedDateStr === todayStr &&
+    filteredRoutines.length > 0 &&
+    !hasYesterdayRoutineCompletion &&
+    !dismissedMissedNudges[trackerMissedYesterdayKey] &&
+    localStorage.getItem(trackerMissedYesterdayKey) !== '1'
+
+  const recoverYesterday = () => {
+    setSelectedDate(yesterday)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -1286,6 +1312,17 @@ function App() {
           )}
         </section>
 
+        {shouldShowTrackerMissedYesterday && (
+          <MissedYesterdayBar
+            title={t('recovery.tracker_title')}
+            subtitle={t('recovery.tracker_subtitle')}
+            actionLabel={t('recovery.log_yesterday')}
+            dismissLabel={t('recovery.dismiss')}
+            onRecover={recoverYesterday}
+            onDismiss={() => dismissMissedNudge(trackerMissedYesterdayKey)}
+          />
+        )}
+
         <section className="space-y-3">
           <div className="flex justify-between items-end">
             <div className="space-y-1">
@@ -1595,6 +1632,9 @@ function App() {
               selectedPod={selectedPod}
               onSelectPod={setSelectedPod}
               selectedDateStr={selectedDateStr}
+              todayStr={todayStr}
+              yesterdayStr={yesterdayStr}
+              onRecoverYesterday={recoverYesterday}
             />
           ) : (
             <ProfileComponent

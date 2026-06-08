@@ -6,6 +6,7 @@ import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../type
 import type { Session } from '@supabase/supabase-js'
 import { useTranslation } from '../lib/i18n'
 import { EmptyState } from './EmptyState'
+import { MissedYesterdayBar } from './MissedYesterdayBar'
 import { getErrorMessage } from '../lib/errors'
 
 interface PodsProps {
@@ -16,9 +17,12 @@ interface PodsProps {
   selectedPod: Group | null
   onSelectPod: (pod: Group | null) => void
   selectedDateStr: string
+  todayStr: string
+  yesterdayStr: string
+  onRecoverYesterday: () => void
 }
 
-export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod, selectedDateStr }: PodsProps) {
+export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSelectUser, selectedPod, onSelectPod, selectedDateStr, todayStr, yesterdayStr, onRecoverYesterday }: PodsProps) {
   const { t } = useTranslation();
 
   const [groups, setGroups] = useState<Group[]>([])
@@ -34,6 +38,8 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
   const [loading, setLoading] = useState(true)
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [yesterdayCompletions, setYesterdayCompletions] = useState<GroupTaskCompletion[]>([])
+  const [dismissedMissedNudges, setDismissedMissedNudges] = useState<Record<string, boolean>>({})
 
   const fetchGroups = useCallback(async () => {
     try {
@@ -150,6 +156,26 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       cancelled = true
     }
   }, [selectedPod, selectedDateStr])
+
+  useEffect(() => {
+    if (!selectedPod || selectedDateStr !== todayStr) {
+      return
+    }
+
+    let cancelled = false
+    StorageService.fetchGroupTaskCompletions(selectedPod.id, yesterdayStr)
+      .then((data) => {
+        if (!cancelled) setYesterdayCompletions(data)
+      })
+      .catch((err) => {
+        console.error('Yesterday pod completions failed:', err)
+        if (!cancelled) setYesterdayCompletions([])
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedPod, selectedDateStr, todayStr, yesterdayStr])
 
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -289,6 +315,21 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     }
   }
 
+  const dismissMissedNudge = (key: string) => {
+    localStorage.setItem(key, '1')
+    setDismissedMissedNudges(prev => ({ ...prev, [key]: true }))
+  }
+
+  const podMissedYesterdayKey = selectedPod ? `missed-yesterday:pod:${selectedPod.id}:${yesterdayStr}` : ''
+  const hasYesterdayPodCompletion = yesterdayCompletions.some(completion => completion.user_id === session?.user?.id)
+  const shouldShowPodMissedYesterday =
+    Boolean(session && selectedPod) &&
+    selectedDateStr === todayStr &&
+    groupTasks.length > 0 &&
+    !hasYesterdayPodCompletion &&
+    !dismissedMissedNudges[podMissedYesterdayKey] &&
+    localStorage.getItem(podMissedYesterdayKey) !== '1'
+
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-ink font-mono">{t('pods.loading')}</div>
 
   if (selectedPod) {
@@ -300,6 +341,17 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
         >
           <ChevronLeft size={16} /> Back_to_Network
         </button>
+
+        {shouldShowPodMissedYesterday && (
+          <MissedYesterdayBar
+            title={t('recovery.pod_title')}
+            subtitle={t('recovery.pod_subtitle')}
+            actionLabel={t('recovery.log_yesterday')}
+            dismissLabel={t('recovery.dismiss')}
+            onRecover={onRecoverYesterday}
+            onDismiss={() => dismissMissedNudge(podMissedYesterdayKey)}
+          />
+        )}
 
         <section className="bg-white border-2 border-border p-5 md:p-8 space-y-6 md:space-y-8 relative shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           {isEditingPod ? (
