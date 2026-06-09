@@ -19,10 +19,44 @@ async function updateXp(rpcName: 'increment_xp' | 'decrement_xp', userId: string
 
   if (isRpcSignatureError(error)) {
     const { error: legacyError } = await supabase.rpc(rpcName, { amount, user_id: userId })
-    return legacyError
+    if (!legacyError) return null
   }
 
-  return error
+  const directError = await adjustProfileXpDirectly(rpcName, userId, amount)
+  if (directError) return directError
+
+  console.warn('XP_RPC_FALLBACK_USED:', error)
+  return null
+}
+
+async function adjustProfileXpDirectly(rpcName: 'increment_xp' | 'decrement_xp', userId: string, amount: number) {
+  const { data: profile, error: fetchError } = await supabase
+    .from('profiles')
+    .select('total_xp, lifetime_xp')
+    .eq('id', userId)
+    .single()
+
+  if (fetchError) return fetchError
+
+  const currentTotal = Number(profile?.total_xp || 0)
+  const currentLifetime = Number(profile?.lifetime_xp || 0)
+  const updates = rpcName === 'increment_xp'
+    ? {
+        total_xp: currentTotal + amount,
+        lifetime_xp: currentLifetime + amount,
+        updated_at: new Date().toISOString()
+      }
+    : {
+        total_xp: Math.max(0, currentTotal - amount),
+        updated_at: new Date().toISOString()
+      }
+
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId)
+
+  return updateError
 }
 
 export const StorageService = {
