@@ -29,6 +29,55 @@ RETURNS TEXT AS $$
   SELECT 'Q' || EXTRACT(QUARTER FROM target_date)::INT || ' ' || EXTRACT(YEAR FROM target_date)::INT;
 $$ LANGUAGE sql IMMUTABLE;
 
+DROP FUNCTION IF EXISTS get_xp_ledger(date);
+CREATE OR REPLACE FUNCTION get_xp_ledger(target_date DATE DEFAULT CURRENT_DATE)
+RETURNS TABLE (
+  user_id UUID,
+  total_xp INT,
+  season_xp INT
+) AS $$
+DECLARE
+  quarter_start DATE;
+  quarter_end DATE;
+BEGIN
+  quarter_start := make_date(EXTRACT(YEAR FROM target_date)::INT, ((EXTRACT(QUARTER FROM target_date)::INT - 1) * 3) + 1, 1);
+  quarter_end := (quarter_start + INTERVAL '3 months - 1 day')::DATE;
+
+  RETURN QUERY
+  WITH active_group_counts AS (
+    SELECT gm.group_id, COUNT(*)::INT AS member_count
+    FROM group_members gm
+    GROUP BY gm.group_id
+  ),
+  xp_events AS (
+    SELECT
+      rc.user_id,
+      rc.completed_date,
+      COALESCE(rc.xp_earned, 0)::INT AS xp
+    FROM routine_completions rc
+    WHERE rc.user_id IS NOT NULL
+
+    UNION ALL
+
+    SELECT
+      gtc.user_id,
+      gtc.completed_date,
+      5 AS xp
+    FROM group_task_completions gtc
+    JOIN group_tasks gt ON gt.id = gtc.task_id
+    JOIN active_group_counts agc ON agc.group_id = gt.group_id
+    WHERE gtc.user_id IS NOT NULL
+      AND agc.member_count > 1
+  )
+  SELECT
+    xe.user_id,
+    COALESCE(SUM(xe.xp), 0)::INT AS total_xp,
+    COALESCE(SUM(xe.xp) FILTER (WHERE xe.completed_date BETWEEN quarter_start AND quarter_end), 0)::INT AS season_xp
+  FROM xp_events xe
+  GROUP BY xe.user_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
 WITH season_xp AS (
   SELECT
     rc.user_id,

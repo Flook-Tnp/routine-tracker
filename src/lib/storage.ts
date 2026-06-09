@@ -6,6 +6,12 @@ type XpLedger = {
   seasonXpByUser: Map<string, number>
 }
 
+type XpLedgerRow = {
+  user_id: string | null
+  total_xp: number | null
+  season_xp: number | null
+}
+
 async function fetchAllRows<T>(table: string, select: string): Promise<T[]> {
   const { count, error: countError } = await supabase
     .from(table)
@@ -100,6 +106,25 @@ async function adjustProfileXpDirectly(rpcName: 'increment_xp' | 'decrement_xp',
 
 export const StorageService = {
   async fetchXpLedger(): Promise<XpLedger> {
+    const targetDate = new Date().toISOString().split('T')[0]
+    const { data: rpcLedger, error: rpcLedgerError } = await supabase
+      .rpc('get_xp_ledger', { target_date: targetDate })
+
+    if (!rpcLedgerError && rpcLedger) {
+      const allTimeXpByUser = new Map<string, number>()
+      const seasonXpByUser = new Map<string, number>()
+
+      ;(rpcLedger as XpLedgerRow[]).forEach((row) => {
+        if (!row.user_id) return
+        allTimeXpByUser.set(row.user_id, Number(row.total_xp || 0))
+        seasonXpByUser.set(row.user_id, Number(row.season_xp || 0))
+      })
+
+      return { allTimeXpByUser, seasonXpByUser }
+    }
+
+    console.warn('XP_LEDGER_RPC_UNAVAILABLE:', rpcLedgerError)
+
     const { startStr, endStr } = getCurrentQuarterRange()
     const allTimeXpByUser = new Map<string, number>()
     const seasonXpByUser = new Map<string, number>()
