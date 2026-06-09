@@ -52,6 +52,15 @@ export interface Profile {
   updated_at: string
 }
 
+export type LeaderboardPeriod = 'season' | 'all_time'
+
+export interface LeaderboardEntry extends Partial<Profile> {
+  id: string
+  score: number
+  rank: number
+  period: LeaderboardPeriod
+}
+
 export interface Badge {
   id: string
   name: string

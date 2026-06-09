@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Routine, RoutineCompletion, Task, TaskLog, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
+import type { Routine, RoutineCompletion, Task, TaskLog, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion, LeaderboardEntry, LeaderboardPeriod } from '../types'
 
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
@@ -232,14 +232,55 @@ export const StorageService = {
     return data as Profile
   },
 
-  async fetchLeaderboard(): Promise<Partial<Profile>[]> {
-    const { data, error } = await supabase
+  async fetchLeaderboard(period: LeaderboardPeriod = 'season'): Promise<LeaderboardEntry[]> {
+    const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
-      .order('total_xp', { ascending: false })
-      .limit(10)
     if (error) throw error
-    return data
+
+    if (period === 'all_time') {
+      return (profiles as Profile[])
+        .map((profile) => ({
+          ...profile,
+          score: profile.lifetime_xp || profile.total_xp || 0,
+          rank: 0,
+          period
+        }))
+        .sort((a, b) => b.score - a.score)
+        .map((entry, index) => ({ ...entry, rank: index + 1 }))
+    }
+
+    const now = new Date()
+    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3
+    const start = new Date(Date.UTC(now.getFullYear(), quarterStartMonth, 1))
+    const end = new Date(Date.UTC(now.getFullYear(), quarterStartMonth + 3, 0))
+    const startStr = start.toISOString().split('T')[0]
+    const endStr = end.toISOString().split('T')[0]
+
+    const { data: completions, error: completionsError } = await supabase
+      .from('routine_completions')
+      .select('user_id, xp_earned, completed_date')
+      .gte('completed_date', startStr)
+      .lte('completed_date', endStr)
+    if (completionsError) throw completionsError
+
+    const seasonXpByUser = new Map<string, number>()
+    ;(completions || []).forEach((completion) => {
+      const userId = completion.user_id as string | null
+      if (!userId) return
+      const xp = Number(completion.xp_earned || 0)
+      seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + xp)
+    })
+
+    return (profiles as Profile[])
+      .map((profile) => ({
+        ...profile,
+        score: seasonXpByUser.get(profile.id) || 0,
+        rank: 0,
+        period
+      }))
+      .sort((a, b) => (b.score - a.score) || ((b.lifetime_xp || b.total_xp || 0) - (a.lifetime_xp || a.total_xp || 0)))
+      .map((entry, index) => ({ ...entry, rank: index + 1 }))
   },
 
   async updateProfile(userId: string, updates: Partial<Profile>): Promise<void> {
