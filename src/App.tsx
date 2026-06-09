@@ -653,26 +653,6 @@ function App() {
     }
   }
 
-  const dailyStats = useMemo(() => {
-    const eligibleRoutines = filteredRoutines.filter(r => {
-      const created = r.created_at ? r.created_at.split('T')[0] : todayStr
-      return created <= selectedDateStr
-    })
-    const eligibleRoutineIds = new Set(eligibleRoutines.map(r => r.id))
-    const total = eligibleRoutines.length
-    if (total === 0) return { completed: 0, total: 0, percentage: 0 }
-
-    const completed = completions.filter(c =>
-      c.completed_date === selectedDateStr &&
-      eligibleRoutineIds.has(c.routine_id)
-    ).length
-    return {
-      completed,
-      total,
-      percentage: Math.round((completed / total) * 100)
-    }
-  }, [filteredRoutines, completions, selectedDateStr, todayStr])
-
   const { dailyStreak, weeklyStreak } = useMemo(() => {
     try {
       if (filteredRoutines.length === 0 || completions.length === 0) return { dailyStreak: 0, weeklyStreak: 0 }
@@ -722,6 +702,40 @@ function App() {
     }
   }, [filteredRoutines, completions])
 
+  const routineStartDates = useMemo(() => {
+    const starts = new Map<string, string>()
+    routines.forEach(routine => {
+      starts.set(routine.id, routine.created_at ? routine.created_at.split('T')[0] : todayStr)
+    })
+    completions.forEach(completion => {
+      const current = starts.get(completion.routine_id)
+      if (!current || completion.completed_date < current) {
+        starts.set(completion.routine_id, completion.completed_date)
+      }
+    })
+    return starts
+  }, [routines, completions, todayStr])
+
+  const dailyStats = useMemo(() => {
+    const eligibleRoutines = filteredRoutines.filter(r => {
+      const start = routineStartDates.get(r.id) || todayStr
+      return start <= selectedDateStr
+    })
+    const eligibleRoutineIds = new Set(eligibleRoutines.map(r => r.id))
+    const total = eligibleRoutines.length
+    if (total === 0) return { completed: 0, total: 0, percentage: 0 }
+
+    const completed = completions.filter(c =>
+      c.completed_date === selectedDateStr &&
+      eligibleRoutineIds.has(c.routine_id)
+    ).length
+    return {
+      completed,
+      total,
+      percentage: Math.round((completed / total) * 100)
+    }
+  }, [filteredRoutines, completions, selectedDateStr, todayStr, routineStartDates])
+
   const last7Days = useMemo(() => {
     return eachDayOfInterval({
       start: subDays(selectedDate, 6),
@@ -730,8 +744,8 @@ function App() {
       const dStr = format(date, 'yyyy-MM-dd')
       const eligibleRoutineIds = new Set(filteredRoutines
         .filter(r => {
-          const created = r.created_at ? r.created_at.split('T')[0] : todayStr
-          return created <= dStr
+          const start = routineStartDates.get(r.id) || todayStr
+          return start <= dStr
         })
         .map(r => r.id))
       const total = eligibleRoutineIds.size
@@ -745,7 +759,7 @@ function App() {
         percentage: total > 0 ? (done / total) * 100 : 0
       }
     })
-  }, [filteredRoutines, completions, selectedDate, todayStr])
+  }, [filteredRoutines, completions, selectedDate, todayStr, routineStartDates])
 
   const taskBreakdown = useMemo<TaskBreakdownItem[]>(() => {
     try {
@@ -760,24 +774,14 @@ function App() {
       })
 
       return filteredRoutines.map(routine => {
-        const createdStr = routine.created_at ? routine.created_at.split('T')[0] : todayStr
+        const startStr = routineStartDates.get(routine.id) || todayStr
         const habitComps = [...(completionsByRoutineId.get(routine.id) || [])].sort()
-        let trueStartStr = createdStr
 
-        for (let i = 0; i < habitComps.length - 1; i++) {
-          const current = parseISO(habitComps[i])
-          const next = parseISO(habitComps[i + 1])
-          const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
-          if (gapDays > 60) trueStartStr = habitComps[i + 1]
-          else break
-        }
-
-        const start = startOfDay(parseISO(trueStartStr))
+        const start = startOfDay(parseISO(startStr))
         const today = startOfDay(new Date())
         const activeDays = eachDayOfInterval({ start, end: today }).length
 
-        // Count completions ONLY since true start
-        const validComps = habitComps.filter(d => d >= trueStartStr).length
+        const validComps = habitComps.filter(d => d >= startStr).length
 
         return {
           routineId: routine.id,
@@ -792,7 +796,7 @@ function App() {
       console.error('Error in taskBreakdown:', err)
       return []
     }
-  }, [filteredRoutines, completions, todayStr])
+  }, [filteredRoutines, completions, todayStr, routineStartDates])
 
   const lifetimeStats = useMemo(() => {
     try {
@@ -850,19 +854,7 @@ function App() {
       const routineIdToTrueStart: Record<string, string> = {}
 
       timelineRoutines.forEach(routine => {
-        const createdStr = routine.created_at ? routine.created_at.split('T')[0] : todayStr
-        const habitComps = [...(completionsByRoutineId.get(routine.id) || [])].sort()
-        let trueStartStr = createdStr
-
-        for (let i = 0; i < habitComps.length - 1; i++) {
-          const current = parseISO(habitComps[i])
-          const next = parseISO(habitComps[i + 1])
-          const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
-          if (gapDays > 60) trueStartStr = habitComps[i + 1]
-          else break
-        }
-
-        routineIdToTrueStart[routine.id] = trueStartStr
+        routineIdToTrueStart[routine.id] = routineStartDates.get(routine.id) || todayStr
       })
 
       // 3. Aggregate all relevant completions for the current view
@@ -926,7 +918,7 @@ function App() {
       console.error('Error in chart data:', err)
       return []
     }
-  }, [completions, filteredRoutines, hiddenRoutines, todayStr])
+  }, [completions, filteredRoutines, hiddenRoutines, todayStr, routineStartDates])
   // Calculate dynamic Y-axis domain (shared logic with FullscreenChart)
   const yDomain = useMemo(() => {
     if (!isAutoZoom || lifetimeChartData.length === 0) return [0, 100]
@@ -961,8 +953,8 @@ function App() {
       const dStr = format(d, 'yyyy-MM-dd')
       const eligibleRoutineIds = new Set(filteredRoutines
         .filter(r => {
-          const created = r.created_at ? r.created_at.split('T')[0] : todayStr
-          return created <= dStr
+          const start = routineStartDates.get(r.id) || todayStr
+          return start <= dStr
         })
         .map(r => r.id))
       const done = completions.filter(c =>
@@ -981,7 +973,7 @@ function App() {
       avg: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       totalExecs: completedTasks
     }
-  }, [filteredRoutines, completions, selectedDate, todayStr])
+  }, [filteredRoutines, completions, selectedDate, todayStr, routineStartDates])
 
   const remainingToday = Math.max(0, dailyStats.total - dailyStats.completed)
   const selectedDateLabel = format(selectedDate, 'EEEE, MMM d')
