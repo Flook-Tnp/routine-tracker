@@ -18,6 +18,7 @@ interface FullscreenChartProps {
 }
 
 const CHART_LINE_COLORS = ['#14B8A6', '#EC4899', '#2DD4BF', '#F9A8D4', '#0F766E', '#BE185D']
+const TOTAL_CHART_KEY = 'Total'
 
 export function FullscreenChart({
   isChartFullscreen,
@@ -40,8 +41,8 @@ export function FullscreenChart({
     let min = 100
     let max = 0
     const visibleKeys = [
-      ...(!hiddenRoutines.has('Total') ? ['Total'] : []),
-      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.title)).map(r => r.title)
+      ...(!hiddenRoutines.has(TOTAL_CHART_KEY) ? [TOTAL_CHART_KEY] : []),
+      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.id)).map(r => r.id)
     ]
 
     lifetimeChartData.forEach(entry => {
@@ -59,10 +60,10 @@ export function FullscreenChart({
     return [Math.max(0, Math.floor(min - padding)), Math.min(100, Math.ceil(max + padding))]
   }, [isAutoZoom, lifetimeChartData, hiddenRoutines, filteredRoutines])
 
-  const toggleRoutine = (title: string) => {
+  const toggleRoutine = (routineKey: string) => {
     const next = new Set(hiddenRoutines)
-    if (next.has(title)) next.delete(title)
-    else next.add(title)
+    if (next.has(routineKey)) next.delete(routineKey)
+    else next.add(routineKey)
     setHiddenRoutines(next)
   }
 
@@ -123,10 +124,11 @@ export function FullscreenChart({
               cursor={{ stroke: '#14B8A6', strokeWidth: 2 }}
               formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
             />
-            {!hiddenRoutines.has('Total') && (
+            {!hiddenRoutines.has(TOTAL_CHART_KEY) && (
               <Area
                 type="monotone"
-                dataKey="Total"
+                dataKey={TOTAL_CHART_KEY}
+                name="Total"
                 stroke="#EC4899"
                 strokeWidth={4}
                 fillOpacity={1}
@@ -135,11 +137,12 @@ export function FullscreenChart({
                 activeDot={{ r: 6, fill: '#EC4899', stroke: '#241522', strokeWidth: 2 }}
               />
             )}
-            {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
+            {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.id) && (
               <Line
                 key={r.id}
                 type="monotone"
-                dataKey={r.title}
+                dataKey={r.id}
+                name={r.title}
                 stroke={CHART_LINE_COLORS[i % CHART_LINE_COLORS.length]}
                 strokeWidth={2}
                 dot={false}
@@ -152,20 +155,20 @@ export function FullscreenChart({
       
       <div className="mt-8 flex flex-wrap justify-center gap-3">
         <button
-          onClick={() => toggleRoutine('Total')}
-          className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
+          onClick={() => toggleRoutine(TOTAL_CHART_KEY)}
+          className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has(TOTAL_CHART_KEY) ? 'bg-accent border-border text-white shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
         >
-          <div className={`w-3 h-1 ${!hiddenRoutines.has('Total') ? 'bg-white' : 'bg-ink/10'}`} /> Total Average
+          <div className={`w-3 h-1 ${!hiddenRoutines.has(TOTAL_CHART_KEY) ? 'bg-white' : 'bg-ink/10'}`} /> Total Average
         </button>
 
         {filteredRoutines.map((r, i) => (
           <button 
             key={r.id} 
-            onClick={() => toggleRoutine(r.title)}
-            className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has(r.title) ? 'bg-white border-border text-ink shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
-            style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA', borderLeftWidth: '4px' }}
+            onClick={() => toggleRoutine(r.id)}
+            className={`flex items-center gap-2 px-4 py-2 border-2 transition-all text-[10px] font-black uppercase tracking-widest ${!hiddenRoutines.has(r.id) ? 'bg-white border-border text-ink shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-ink/20 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]'}`}
+            style={{ borderLeftColor: !hiddenRoutines.has(r.id) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA', borderLeftWidth: '4px' }}
           >
-            <div className="w-3 h-1" style={{ backgroundColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA' }} /> {r.title}
+            <div className="w-3 h-1" style={{ backgroundColor: !hiddenRoutines.has(r.id) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : '#F0E4EA' }} /> {r.title}
           </button>
         ))}
       </div>

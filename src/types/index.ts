@@ -34,6 +34,7 @@ export interface TaskLog {
 }
 
 export interface TaskBreakdownItem {
+  routineId: string
   title: string
   percentage: number
   startDate: string

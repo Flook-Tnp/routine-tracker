@@ -28,6 +28,7 @@ const NAV_ITEMS = [
 ] as const;
 
 const CHART_LINE_COLORS = ['#14B8A6', '#EC4899', '#2DD4BF', '#F9A8D4', '#0F766E', '#BE185D']
+const TOTAL_CHART_KEY = 'Total'
 
 const KanbanBoard = lazy(() => import('./components/KanbanBoard').then((mod) => ({ default: mod.KanbanBoard })))
 const FullscreenChart = lazy(() => import('./components/FullscreenChart').then((mod) => ({ default: mod.FullscreenChart })))
@@ -653,19 +654,24 @@ function App() {
   }
 
   const dailyStats = useMemo(() => {
-    const total = filteredRoutines.length
+    const eligibleRoutines = filteredRoutines.filter(r => {
+      const created = r.created_at ? r.created_at.split('T')[0] : todayStr
+      return created <= selectedDateStr
+    })
+    const eligibleRoutineIds = new Set(eligibleRoutines.map(r => r.id))
+    const total = eligibleRoutines.length
     if (total === 0) return { completed: 0, total: 0, percentage: 0 }
 
     const completed = completions.filter(c =>
       c.completed_date === selectedDateStr &&
-      filteredRoutines.some(r => r.id === c.routine_id)
+      eligibleRoutineIds.has(c.routine_id)
     ).length
     return {
       completed,
       total,
       percentage: Math.round((completed / total) * 100)
     }
-  }, [filteredRoutines, completions, selectedDateStr])
+  }, [filteredRoutines, completions, selectedDateStr, todayStr])
 
   const { dailyStreak, weeklyStreak } = useMemo(() => {
     try {
@@ -717,77 +723,53 @@ function App() {
   }, [filteredRoutines, completions])
 
   const last7Days = useMemo(() => {
-    const routineIdSet = new Set(filteredRoutines.map(r => r.id))
-    const completionsByDate: Record<string, number> = {}
-    completions.forEach(c => {
-      if (routineIdSet.has(c.routine_id)) {
-        completionsByDate[c.completed_date] = (completionsByDate[c.completed_date] || 0) + 1
-      }
-    })
-
     return eachDayOfInterval({
       start: subDays(selectedDate, 6),
       end: selectedDate
     }).map(date => {
       const dStr = format(date, 'yyyy-MM-dd')
-      const total = filteredRoutines.length
-      const done = completionsByDate[dStr] || 0
+      const eligibleRoutineIds = new Set(filteredRoutines
+        .filter(r => {
+          const created = r.created_at ? r.created_at.split('T')[0] : todayStr
+          return created <= dStr
+        })
+        .map(r => r.id))
+      const total = eligibleRoutineIds.size
+      const done = completions.filter(c =>
+        c.completed_date === dStr &&
+        eligibleRoutineIds.has(c.routine_id)
+      ).length
       return {
         date: dStr,
         label: format(date, 'EEE'),
         percentage: total > 0 ? (done / total) * 100 : 0
       }
     })
-  }, [filteredRoutines, completions, selectedDate])
+  }, [filteredRoutines, completions, selectedDate, todayStr])
 
   const taskBreakdown = useMemo<TaskBreakdownItem[]>(() => {
     try {
       if (filteredRoutines.length === 0) return []
 
-      // 1. Unified Habit Data (Match chart logic)
-      const routineIdToTitle: Record<string, string> = {}
-      const titleToDisplay: Record<string, string> = {}
-      const titleToCompletions: Record<string, string[]> = {}
-      const titleToEarliestCreation: Record<string, string> = {}
-
-      routines.forEach(r => {
-        const title = r.title.trim().toLowerCase()
-        routineIdToTitle[r.id] = title
-        titleToDisplay[title] = r.title
-        const created = r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd')
-        if (!titleToEarliestCreation[title] || created < titleToEarliestCreation[title]) {
-          titleToEarliestCreation[title] = created
-        }
-      })
-
+      const completionsByRoutineId = new Map<string, Set<string>>()
       completions.forEach(c => {
-        const title = routineIdToTitle[c.routine_id]
-        if (title) {
-          if (!titleToCompletions[title]) titleToCompletions[title] = []
-          titleToCompletions[title].push(c.completed_date)
+        if (!completionsByRoutineId.has(c.routine_id)) {
+          completionsByRoutineId.set(c.routine_id, new Set())
         }
+        completionsByRoutineId.get(c.routine_id)?.add(c.completed_date)
       })
 
-      // 2. Map routines in current category to their unified stats
-      const activeTitles = Array.from(new Set(filteredRoutines.map(r => r.title.trim().toLowerCase())))
+      return filteredRoutines.map(routine => {
+        const createdStr = routine.created_at ? routine.created_at.split('T')[0] : todayStr
+        const habitComps = [...(completionsByRoutineId.get(routine.id) || [])].sort()
+        let trueStartStr = createdStr
 
-      return activeTitles.map(title => {
-        const habitComps = [...(titleToCompletions[title] || [])].sort()
-        let trueStartStr = ''
-
-        if (habitComps.length > 0) {
-          // Gap-filtering logic (Match chart logic)
-          let realStartIndex = 0
-          for (let i = 0; i < habitComps.length - 1; i++) {
-            const current = parseISO(habitComps[i])
-            const next = parseISO(habitComps[i+1])
-            const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
-            if (gapDays > 60) realStartIndex = i + 1
-            else break
-          }
-          trueStartStr = habitComps[realStartIndex]
-        } else {
-          trueStartStr = titleToEarliestCreation[title] || format(new Date(), 'yyyy-MM-dd')
+        for (let i = 0; i < habitComps.length - 1; i++) {
+          const current = parseISO(habitComps[i])
+          const next = parseISO(habitComps[i + 1])
+          const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
+          if (gapDays > 60) trueStartStr = habitComps[i + 1]
+          else break
         }
 
         const start = startOfDay(parseISO(trueStartStr))
@@ -798,7 +780,8 @@ function App() {
         const validComps = habitComps.filter(d => d >= trueStartStr).length
 
         return {
-          title: titleToDisplay[title],
+          routineId: routine.id,
+          title: routine.title,
           percentage: activeDays > 0 ? Math.min(100, Math.round((validComps / activeDays) * 100)) : 0,
           startDate: format(start, 'MMM d, yyyy'),
           totalCompletions: validComps,
@@ -809,21 +792,22 @@ function App() {
       console.error('Error in taskBreakdown:', err)
       return []
     }
-  }, [filteredRoutines, completions, routines])
+  }, [filteredRoutines, completions, todayStr])
 
   const lifetimeStats = useMemo(() => {
     try {
       if (taskBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
 
-      const showTotal = !hiddenRoutines.has('Total')
+      const showTotal = !hiddenRoutines.has(TOTAL_CHART_KEY)
       const relevantBreakdown = taskBreakdown.filter(t =>
-        showTotal || !hiddenRoutines.has(t.title)
+        showTotal || !hiddenRoutines.has(t.routineId)
       )
 
       if (relevantBreakdown.length === 0) return { totalDays: 0, percentage: 0 }
 
-      const totalPercentage = relevantBreakdown.reduce((acc, task) => acc + task.percentage, 0)
-      const averagePercentage = Math.round(totalPercentage / relevantBreakdown.length)
+      const totalCompletions = relevantBreakdown.reduce((acc, task) => acc + task.totalCompletions, 0)
+      const totalActiveDays = relevantBreakdown.reduce((acc, task) => acc + task.activeDays, 0)
+      const weightedPercentage = totalActiveDays > 0 ? Math.round((totalCompletions / totalActiveDays) * 100) : 0
 
       // Calculate overall total days since the oldest relevant start date
       const creationDates = relevantBreakdown.map(t => parseISO(t.startDate))
@@ -832,7 +816,7 @@ function App() {
 
       return {
         totalDays,
-        percentage: averagePercentage
+        percentage: Math.min(100, weightedPercentage)
       }
     } catch (err) {
       console.error('Error in lifetimeStats:', err)
@@ -844,74 +828,57 @@ function App() {
     try {
       if (completions.length === 0 || filteredRoutines.length === 0) return []
 
-      const showTotal = !hiddenRoutines.has('Total')
-      const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.title))
+      const showTotal = !hiddenRoutines.has(TOTAL_CHART_KEY)
+      const visibleRoutines = filteredRoutines.filter(r => !hiddenRoutines.has(r.id))
 
       // Focus the timeline ONLY on routines that are currently visible
       const timelineRoutines = showTotal ? filteredRoutines : visibleRoutines
       if (timelineRoutines.length === 0) return []
 
-      // 1. Unified Habit Data Structure (Global context)
-      const routineIdToTitle: Record<string, string> = {}
-      const titleToDisplay: Record<string, string> = {}
-      const titleToCompletions: Record<string, string[]> = {}
-      const titleToEarliestCreation: Record<string, string> = {}
-
-      routines.forEach(r => {
-        const title = r.title.trim().toLowerCase()
-        routineIdToTitle[r.id] = title
-        titleToDisplay[title] = r.title
-        const created = r.created_at ? r.created_at.split('T')[0] : format(new Date(), 'yyyy-MM-dd')
-        if (!titleToEarliestCreation[title] || created < titleToEarliestCreation[title]) {
-          titleToEarliestCreation[title] = created
-        }
-      })
-
+      const routineIds = timelineRoutines.map(r => r.id)
+      const routineById = new Map(timelineRoutines.map(r => [r.id, r]))
+      const completionsByRoutineId = new Map<string, Set<string>>()
       completions.forEach(c => {
-        const title = routineIdToTitle[c.routine_id]
-        if (title) {
-          if (!titleToCompletions[title]) titleToCompletions[title] = []
-          titleToCompletions[title].push(c.completed_date)
+        if (routineById.has(c.routine_id)) {
+          if (!completionsByRoutineId.has(c.routine_id)) {
+            completionsByRoutineId.set(c.routine_id, new Set())
+          }
+          completionsByRoutineId.get(c.routine_id)?.add(c.completed_date)
         }
       })
 
-      // 2. Identify normalized titles for the CURRENT timeline routines
-      const timelineTitles = Array.from(new Set(timelineRoutines.map(r => r.title.trim().toLowerCase())))
-      const titleToTrueStart: Record<string, string> = {}
+      const routineIdToTrueStart: Record<string, string> = {}
 
-      timelineTitles.forEach(title => {
-        const habitComps = [...(titleToCompletions[title] || [])].sort()
+      timelineRoutines.forEach(routine => {
+        const createdStr = routine.created_at ? routine.created_at.split('T')[0] : todayStr
+        const habitComps = [...(completionsByRoutineId.get(routine.id) || [])].sort()
+        let trueStartStr = createdStr
 
-        if (habitComps.length > 0) {
-          let realStartIndex = 0
-          for (let i = 0; i < habitComps.length - 1; i++) {
-            const current = parseISO(habitComps[i])
-            const next = parseISO(habitComps[i+1])
-            const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
-            if (gapDays > 60) realStartIndex = i + 1
-            else break
-          }
-          titleToTrueStart[title] = habitComps[realStartIndex]
-        } else {
-          titleToTrueStart[title] = titleToEarliestCreation[title] || format(new Date(), 'yyyy-MM-dd')
+        for (let i = 0; i < habitComps.length - 1; i++) {
+          const current = parseISO(habitComps[i])
+          const next = parseISO(habitComps[i + 1])
+          const gapDays = Math.floor((next.getTime() - current.getTime()) / (1000 * 60 * 60 * 24))
+          if (gapDays > 60) trueStartStr = habitComps[i + 1]
+          else break
         }
+
+        routineIdToTrueStart[routine.id] = trueStartStr
       })
 
       // 3. Aggregate all relevant completions for the current view
-      const completionsByDateByTitle: Record<string, Set<string>> = {}
+      const completionsByDateByRoutineId: Record<string, Set<string>> = {}
       completions.forEach(c => {
-        const title = routineIdToTitle[c.routine_id]
-        if (title && timelineTitles.includes(title)) {
-          if (!completionsByDateByTitle[c.completed_date]) {
-            completionsByDateByTitle[c.completed_date] = new Set()
+        if (routineById.has(c.routine_id)) {
+          if (!completionsByDateByRoutineId[c.completed_date]) {
+            completionsByDateByRoutineId[c.completed_date] = new Set()
           }
-          completionsByDateByTitle[c.completed_date].add(title)
+          completionsByDateByRoutineId[c.completed_date].add(c.routine_id)
         }
       })
 
       // 4. Generate Dynamic Timeline based ONLY on visible routines
-      const timelineStartStr = timelineTitles.reduce((min, t) => {
-        const start = titleToTrueStart[t]
+      const timelineStartStr = routineIds.reduce((min, id) => {
+        const start = routineIdToTrueStart[id]
         return start < min ? start : min
       }, format(new Date(), 'yyyy-MM-dd'))
 
@@ -921,28 +888,28 @@ function App() {
 
       const data: Record<string, string | number>[] = []
       const cumulativeCounts: Record<string, number> = {}
-      timelineTitles.forEach(t => { cumulativeCounts[t] = 0 })
+      routineIds.forEach(id => { cumulativeCounts[id] = 0 })
 
       daysInterval.forEach((date) => {
         const dStr = format(date, 'yyyy-MM-dd')
         const entry: Record<string, string | number> = { name: dStr }
 
-        const doneToday = completionsByDateByTitle[dStr] || new Set()
-        doneToday.forEach(title => {
-          if (cumulativeCounts[title] !== undefined) cumulativeCounts[title]++
+        const doneToday = completionsByDateByRoutineId[dStr] || new Set()
+        doneToday.forEach(id => {
+          if (cumulativeCounts[id] !== undefined) cumulativeCounts[id]++
         })
 
         let dailyTotalPct = 0
         let activeCount = 0
 
-        timelineTitles.forEach(title => {
-          const startStr = titleToTrueStart[title]
+        routineIds.forEach(id => {
+          const startStr = routineIdToTrueStart[id]
           if (dStr >= startStr) {
             const startD = parseISO(startStr)
             const daysSinceStart = Math.floor((date.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24)) + 1
-            const rawPct = Math.min(100, (cumulativeCounts[title] / daysSinceStart) * 100)
+            const rawPct = Math.min(100, (cumulativeCounts[id] / daysSinceStart) * 100)
             const pct = Number(rawPct.toFixed(1))
-            entry[titleToDisplay[title]] = pct
+            entry[id] = pct
             dailyTotalPct += rawPct
             activeCount++
           }
@@ -950,7 +917,7 @@ function App() {
 
         if (showTotal) {
           const avgPct = activeCount > 0 ? (dailyTotalPct / activeCount) : 0
-          entry['Total'] = Number(avgPct.toFixed(1))
+          entry[TOTAL_CHART_KEY] = Number(avgPct.toFixed(1))
         }
         data.push(entry)
       })
@@ -959,14 +926,14 @@ function App() {
       console.error('Error in chart data:', err)
       return []
     }
-  }, [routines, completions, filteredRoutines, hiddenRoutines])
+  }, [completions, filteredRoutines, hiddenRoutines, todayStr])
   // Calculate dynamic Y-axis domain (shared logic with FullscreenChart)
   const yDomain = useMemo(() => {
     if (!isAutoZoom || lifetimeChartData.length === 0) return [0, 100]
     let min = 100, max = 0
     const visibleKeys = [
-      ...(!hiddenRoutines.has('Total') ? ['Total'] : []),
-      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.title)).map(r => r.title)
+      ...(!hiddenRoutines.has(TOTAL_CHART_KEY) ? [TOTAL_CHART_KEY] : []),
+      ...filteredRoutines.filter(r => !hiddenRoutines.has(r.id)).map(r => r.id)
     ]
     lifetimeChartData.forEach(entry => {
       visibleKeys.forEach(key => {
@@ -992,14 +959,20 @@ function App() {
 
     thirtyDays.forEach(d => {
       const dStr = format(d, 'yyyy-MM-dd')
+      const eligibleRoutineIds = new Set(filteredRoutines
+        .filter(r => {
+          const created = r.created_at ? r.created_at.split('T')[0] : todayStr
+          return created <= dStr
+        })
+        .map(r => r.id))
       const done = completions.filter(c =>
         c.completed_date === dStr &&
-        filteredRoutines.some(r => r.id === c.routine_id)
+        eligibleRoutineIds.has(c.routine_id)
       ).length
-      if (filteredRoutines.length > 0) {
-        totalTasks += filteredRoutines.length
+      if (eligibleRoutineIds.size > 0) {
+        totalTasks += eligibleRoutineIds.size
         completedTasks += done
-        if (done === filteredRoutines.length) perfectDays++
+        if (done === eligibleRoutineIds.size) perfectDays++
       }
     })
 
@@ -1008,7 +981,7 @@ function App() {
       avg: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
       totalExecs: completedTasks
     }
-  }, [filteredRoutines, completions, selectedDate])
+  }, [filteredRoutines, completions, selectedDate, todayStr])
 
   const remainingToday = Math.max(0, dailyStats.total - dailyStats.completed)
   const selectedDateLabel = format(selectedDate, 'EEEE, MMM d')
@@ -1533,11 +1506,11 @@ function App() {
                 <button
                   onClick={() => {
                     const next = new Set(hiddenRoutines)
-                    if (next.has('Total')) next.delete('Total')
-                    else next.add('Total')
+                    if (next.has(TOTAL_CHART_KEY)) next.delete(TOTAL_CHART_KEY)
+                    else next.add(TOTAL_CHART_KEY)
                     setHiddenRoutines(next)
                   }}
-                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has('Total') ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-gray-400 hover:border-border'}`}
+                  className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(TOTAL_CHART_KEY) ? 'bg-accent border-border text-white shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border text-gray-400 hover:border-border'}`}
                 >
                   OVERALL_TOTAL
                 </button>
@@ -1546,12 +1519,12 @@ function App() {
                     key={r.id}
                     onClick={() => {
                       const next = new Set(hiddenRoutines)
-                      if (next.has(r.title)) next.delete(r.title)
-                      else next.add(r.title)
+                      if (next.has(r.id)) next.delete(r.id)
+                      else next.add(r.id)
                       setHiddenRoutines(next)
                     }}
-                    className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.title) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'border-border bg-white text-gray-400'}`}
-                    style={{ borderLeftColor: !hiddenRoutines.has(r.title) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : undefined, borderLeftWidth: '4px' }}
+                    className={`px-2 py-1 text-[8px] uppercase font-bold border transition-all ${!hiddenRoutines.has(r.id) ? 'border-border bg-canvas text-ink shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]' : 'border-border bg-white text-gray-400'}`}
+                    style={{ borderLeftColor: !hiddenRoutines.has(r.id) ? CHART_LINE_COLORS[i % CHART_LINE_COLORS.length] : undefined, borderLeftWidth: '4px' }}
                   >
                     {r.title}
                   </button>
@@ -1599,10 +1572,11 @@ function App() {
                    cursor={{ stroke: '#14B8A6', strokeWidth: 2 }}
 	                   formatter={(val) => [`${Number(val || 0).toFixed(1)}%`, '']}
                   />
-                  {!hiddenRoutines.has('Total') && (
+                  {!hiddenRoutines.has(TOTAL_CHART_KEY) && (
                    <Area
                      type="monotone"
-                     dataKey="Total"
+                     dataKey={TOTAL_CHART_KEY}
+                     name="Total"
                      stroke="#EC4899"
                      strokeWidth={3}
                      fillOpacity={1}
@@ -1612,11 +1586,12 @@ function App() {
                      animationDuration={1000}
                    />
                   )}
-                  {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.title) && (
+                  {filteredRoutines.map((r, i) => !hiddenRoutines.has(r.id) && (
                    <Line
                      key={r.id}
                      type="monotone"
-                     dataKey={r.title}
+                     dataKey={r.id}
+                     name={r.title}
                      stroke={CHART_LINE_COLORS[i % CHART_LINE_COLORS.length]}
                      strokeWidth={2}
                      dot={false}
@@ -1635,7 +1610,7 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {taskBreakdown.filter(t => !hiddenRoutines.has(t.title)).map((task, index) => (
+              {taskBreakdown.filter(t => !hiddenRoutines.has(t.routineId)).map((task, index) => (
                 <div key={index} className="bg-white border-2 border-border p-4 space-y-3 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
