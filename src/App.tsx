@@ -1010,6 +1010,12 @@ function App() {
     }
   }, [filteredRoutines, completions, selectedDate])
 
+  const remainingToday = Math.max(0, dailyStats.total - dailyStats.completed)
+  const selectedDateLabel = format(selectedDate, 'EEEE, MMM d')
+  const topRoutine = taskBreakdown.length > 0
+    ? taskBreakdown.reduce((best, current) => current.percentage > best.percentage ? current : best, taskBreakdown[0])
+    : null
+
   if (loading) {
     return (
       <div className="min-h-screen bg-canvas flex items-center justify-center text-accent font-mono">
@@ -1323,36 +1329,154 @@ function App() {
           />
         )}
 
-        <section className="space-y-3">
-          <div className="flex justify-between items-end">
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-gray-500 font-black">{t('stats.progress')}</span>
-              <p className="text-[8px] text-gray-400 uppercase tracking-widest">{activeCategory} {t('stats.consistency')}</p>            </div>
-            <span className={`text-sm font-black tracking-tighter ${dailyStats.percentage === 100 ? "text-accent" : "text-ink"}`}>
-              {dailyStats.completed}/{dailyStats.total} <span className="text-[10px] opacity-50 ml-1">({dailyStats.percentage}%)</span>
-            </span>
-          </div>
-          <div className={`h-4 bg-white border-2 border-border rounded-none overflow-hidden p-[2px] relative group ${dailyStats.percentage === 100 ? 'ring-2 ring-accent ring-offset-2 animate-success-pop' : ''}`}>
-            <div
-              className="h-full bg-accent transition-all duration-1000 ease-out relative"
-              style={{ width: `${dailyStats.percentage}%` }}
-            >
-              {dailyStats.percentage > 0 && (
-                <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/50" />
-              )}
-            </div>
-            {dailyStats.percentage === 100 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-[7px] font-black text-white uppercase tracking-[0.4em] drop-shadow-md">MISSION_COMPLETE</span>
+        <section className="bg-white border-2 border-border shadow-[6px_6px_0px_0px_rgba(20,184,166,0.34)] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="p-5 md:p-7 space-y-6 border-b-2 lg:border-b-0 lg:border-r-2 border-border">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="space-y-2">
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-accent font-black">Today Cockpit</p>
+                  <h2 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-ink">{activeCategory}</h2>
+                  <p className="text-xs md:text-sm text-ink/55 font-bold uppercase tracking-widest">{selectedDateLabel}</p>
+                </div>
+                <div className="flex items-center gap-3 bg-canvas border-2 border-border px-4 py-3 min-w-[140px]">
+                  <Flame size={22} className="text-accent" fill="currentColor" />
+                  <div>
+                    <p className="text-2xl font-black leading-none">{dailyStreak}</p>
+                    <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">{t('streak.daily')}</p>
+                  </div>
+                </div>
               </div>
-            )}
-            {/* Background Grid Pattern */}
-            <div className="absolute inset-0 opacity-5 pointer-events-none"
-                 style={{ backgroundImage: 'linear-gradient(90deg, #241522 1px, transparent 1px)', backgroundSize: '20px 100%' }} />
+
+              <div className="space-y-3">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-ink/45 font-black">{t('stats.progress')}</p>
+                    <p className="text-xs text-ink/60 uppercase tracking-widest font-bold">
+                      {dailyStats.total === 0 ? 'Add first habit to begin' : remainingToday === 0 ? 'All clear for this date' : `${remainingToday} left to close`}
+                    </p>
+                  </div>
+                  <p className="text-3xl md:text-5xl font-black tracking-tighter text-accent">{dailyStats.percentage}%</p>
+                </div>
+                <div className={`h-5 bg-canvas border-2 border-border overflow-hidden p-[3px] relative ${dailyStats.percentage === 100 ? 'ring-2 ring-accent ring-offset-2 animate-success-pop' : ''}`}>
+                  <div className="h-full bg-accent transition-all duration-700 ease-out" style={{ width: `${dailyStats.percentage}%` }} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="border-2 border-border bg-canvas p-3">
+                  <p className="text-xl font-black text-ink">{dailyStats.completed}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">Done</p>
+                </div>
+                <div className="border-2 border-border bg-canvas p-3">
+                  <p className="text-xl font-black text-ink">{dailyStats.total}</p>
+                  <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">Total</p>
+                </div>
+                <div className="border-2 border-border bg-canvas p-3">
+                  <p className="text-xl font-black text-ink">{thirtyDayStats.avg}%</p>
+                  <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">30D Avg</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5 md:p-7 space-y-5 bg-accent-soft">
+              <div className="space-y-2">
+                <p className="text-[9px] uppercase tracking-[0.3em] text-accent font-black">Quick Add</p>
+                <p className="text-sm text-ink/65 leading-relaxed">Add the next habit to this category, then check it off from the list below.</p>
+              </div>
+              <form onSubmit={addRoutine} className="space-y-3">
+                <input
+                  ref={routineInputRef}
+                  type="text"
+                  value={newRoutineTitle}
+                  onChange={(e) => setNewRoutineTitle(e.target.value)}
+                  placeholder={t('action.new_habit', { category: activeCategory.toUpperCase() })}
+                  className="w-full input-primary text-sm font-mono bg-white"
+                />
+                <button type="submit" className="w-full btn-primary py-4">
+                  <Plus size={18} /> Add Habit
+                </button>
+              </form>
+              <div className="border-2 border-border bg-white p-4 space-y-2">
+                <p className="text-[9px] uppercase tracking-[0.24em] text-ink/45 font-black">Best Signal</p>
+                <p className="text-sm font-black uppercase tracking-tight text-ink truncate">
+                  {topRoutine ? topRoutine.title : 'Awaiting habit data'}
+                </p>
+                <p className="text-[10px] uppercase tracking-widest text-accent font-black">
+                  {topRoutine ? `${topRoutine.percentage}% lifetime consistency` : 'Start with one clear habit'}
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section className="bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
+        <section className="space-y-4">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-xs uppercase tracking-[0.3em] text-ink/60 font-black">Today Checklist</h2>
+              <p className="text-[10px] text-ink/40 uppercase mt-1">{dailyStats.completed}/{dailyStats.total} complete in {activeCategory}</p>
+            </div>
+            {dailyStats.percentage === 100 && dailyStats.total > 0 && (
+              <span className="text-[9px] uppercase tracking-widest text-accent font-black border-2 border-accent bg-accent-soft px-3 py-2">Mission Complete</span>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            {filteredRoutines.length === 0 && (
+              <EmptyState
+                icon={ListTodo}
+                title={t('status.no_habits', { category: activeCategory })}
+                subtitle="Initialize your first habit mission to begin tracking performance."
+                action={session ? {
+                  label: "INITIALIZE_FIRST_HABIT",
+                  onClick: () => routineInputRef.current?.focus()
+                } : undefined}
+              />
+            )}
+            {filteredRoutines.map(routine => {
+              const isCompleted = completions.some(
+                c => c.routine_id === routine.id && c.completed_date === selectedDateStr
+              )
+              return (
+                <RoutineItem
+                  key={routine.id}
+                  routine={routine}
+                  isCompleted={isCompleted}
+                  editingRoutineId={editingRoutineId}
+                  editingRoutineTitle={editingRoutineTitle}
+                  setEditingRoutineId={setEditingRoutineId}
+                  setEditingRoutineTitle={setEditingRoutineTitle}
+                  toggleCompletion={toggleCompletion}
+                  updateRoutineTitle={updateRoutineTitle}
+                  deleteRoutine={(id, title) => {
+                    setConfirmDelete({
+                      isOpen: true,
+                      title: t('danger.zone'),
+                      message: t('danger.delete_routine', { title: title.toUpperCase() }),
+                      onConfirm: async () => {
+                        if (session) {
+                          try {
+                            await StorageService.deleteRoutine(id)
+                          } catch (err) {
+                            console.error('Error deleting routine:', err)
+                          }
+                        }
+                        setRoutines(routines.filter(r => r.id !== id))
+                        setConfirmDelete(null)
+                      }
+                    })
+                  }}
+                />
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-500 font-bold">Last 7 Days</h2>
+            <p className="text-[8px] text-gray-400 uppercase tracking-widest">{activeCategory} {t('stats.consistency')}</p>
+          </div>
+          <div className="bg-white border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
           <div className="grid grid-cols-7 gap-2 h-16 items-end">
             {last7Days.map((day) => (
               <div key={day.date} className="flex flex-col items-center gap-2">
@@ -1368,6 +1492,7 @@ function App() {
                 <span className="text-[8px] uppercase text-ink/40 font-black tracking-widest">{day.label}</span>
               </div>
             ))}
+          </div>
           </div>
         </section>
         <section className="space-y-4">
@@ -1536,70 +1661,6 @@ function App() {
             </div>
             </section>
 
-        <section className="space-y-4">
-          <form onSubmit={addRoutine} className="flex gap-2">
-            <input
-              ref={routineInputRef}
-              type="text"
-              value={newRoutineTitle}
-              onChange={(e) => setNewRoutineTitle(e.target.value)}
-              placeholder={t('action.new_habit', { category: activeCategory.toUpperCase() })}
-              className="flex-1 input-primary text-sm font-mono shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]"
-            />
-            <button type="submit" className="btn-primary">
-              <Plus size={20} />
-            </button>
-          </form>
-
-          <div className="space-y-2">
-            {filteredRoutines.length === 0 && (
-              <EmptyState
-                icon={ListTodo}
-                title={t('status.no_habits', { category: activeCategory })}
-                subtitle="Initialize your first habit mission to begin tracking performance."
-                action={session ? {
-                  label: "INITIALIZE_FIRST_HABIT",
-                  onClick: () => routineInputRef.current?.focus()
-                } : undefined}
-              />
-            )}            {filteredRoutines.map(routine => {
-              const isCompleted = completions.some(
-                c => c.routine_id === routine.id && c.completed_date === selectedDateStr
-              )
-              return (
-                <RoutineItem
-                  key={routine.id}
-                  routine={routine}
-                  isCompleted={isCompleted}
-                  editingRoutineId={editingRoutineId}
-                  editingRoutineTitle={editingRoutineTitle}
-                  setEditingRoutineId={setEditingRoutineId}
-                  setEditingRoutineTitle={setEditingRoutineTitle}
-                  toggleCompletion={toggleCompletion}
-                  updateRoutineTitle={updateRoutineTitle}
-                  deleteRoutine={(id, title) => {
-                    setConfirmDelete({
-                      isOpen: true,
-                      title: t('danger.zone'),
-                      message: t('danger.delete_routine', { title: title.toUpperCase() }),
-                      onConfirm: async () => {
-                        if (session) {
-                          try {
-                            await StorageService.deleteRoutine(id)
-                          } catch (err) {
-                            console.error('Error deleting routine:', err)
-                          }
-                        }
-                        setRoutines(routines.filter(r => r.id !== id))
-                        setConfirmDelete(null)
-                      }
-                    })
-                  }}
-                />
-              )
-            })}
-          </div>
-        </section>
             </>
           ) : currentView === 'board' ? (
             <KanbanBoard
