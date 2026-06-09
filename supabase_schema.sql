@@ -298,17 +298,38 @@ RETURNS TEXT AS $$
   SELECT 'Q' || EXTRACT(QUARTER FROM target_date)::INT || ' ' || EXTRACT(YEAR FROM target_date)::INT;
 $$ LANGUAGE sql IMMUTABLE;
 
--- Backfill seasonal scores from existing completion history.
+-- Backfill seasonal scores from existing personal and group completion history.
+WITH season_xp AS (
+  SELECT
+    rc.user_id,
+    current_season_key(rc.completed_date) AS season_key,
+    current_season_label(rc.completed_date) AS season_label,
+    COALESCE(rc.xp_earned, 0)::INT AS xp
+  FROM routine_completions rc
+  WHERE rc.user_id IS NOT NULL
+
+  UNION ALL
+
+  SELECT
+    gtc.user_id,
+    current_season_key(gtc.completed_date) AS season_key,
+    current_season_label(gtc.completed_date) AS season_label,
+    5 AS xp
+  FROM group_task_completions gtc
+  JOIN group_tasks gt ON gt.id = gtc.task_id
+  WHERE gtc.user_id IS NOT NULL
+    AND EXISTS (
+      SELECT 1
+      FROM group_members gm
+      WHERE gm.group_id = gt.group_id
+      GROUP BY gm.group_id
+      HAVING COUNT(*) > 1
+    )
+)
 INSERT INTO leaderboard_season_scores (user_id, season_key, season_label, xp, updated_at)
-SELECT
-  rc.user_id,
-  current_season_key(rc.completed_date),
-  current_season_label(rc.completed_date),
-  SUM(COALESCE(rc.xp_earned, 0))::INT,
-  NOW()
-FROM routine_completions rc
-WHERE rc.user_id IS NOT NULL
-GROUP BY rc.user_id, current_season_key(rc.completed_date), current_season_label(rc.completed_date)
+SELECT user_id, season_key, season_label, SUM(xp)::INT, NOW()
+FROM season_xp
+GROUP BY user_id, season_key, season_label
 ON CONFLICT (user_id, season_key) DO UPDATE
 SET xp = EXCLUDED.xp,
     season_label = EXCLUDED.season_label,

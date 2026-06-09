@@ -7,6 +7,24 @@ function getCurrentSeasonKey() {
   return `${now.getFullYear()}-Q${quarter}`
 }
 
+function isRpcSignatureError(error: { code?: string; message?: string } | null) {
+  if (!error) return false
+  const message = error.message || ''
+  return error.code === 'PGRST202' || message.includes('Could not find the function') || message.includes('target_date')
+}
+
+async function updateXp(rpcName: 'increment_xp' | 'decrement_xp', userId: string, amount: number, dateStr: string) {
+  const { error } = await supabase.rpc(rpcName, { amount, user_id: userId, target_date: dateStr })
+  if (!error) return null
+
+  if (isRpcSignatureError(error)) {
+    const { error: legacyError } = await supabase.rpc(rpcName, { amount, user_id: userId })
+    return legacyError
+  }
+
+  return error
+}
+
 export const StorageService = {
   async fetchRoutines(userId: string): Promise<Routine[]> {
     const { data, error } = await supabase
@@ -119,7 +137,7 @@ export const StorageService = {
       if (error) throw error
       
       if (userId) {
-        const { error: rpcErr } = await supabase.rpc('decrement_xp', { amount: xpEarned, user_id: userId, target_date: dateStr })
+        const rpcErr = await updateXp('decrement_xp', userId, xpEarned, dateStr)
         if (rpcErr) console.error('XP_DECREMENT_FAILED:', rpcErr)
       }
       return null
@@ -131,7 +149,7 @@ export const StorageService = {
       if (error) throw error
 
       if (userId) {
-        const { error: rpcErr } = await supabase.rpc('increment_xp', { amount: xpEarned, user_id: userId, target_date: dateStr })
+        const rpcErr = await updateXp('increment_xp', userId, xpEarned, dateStr)
         if (rpcErr) console.error('XP_INCREMENT_FAILED:', rpcErr)
       }
       return data[0] as RoutineCompletion
@@ -259,6 +277,27 @@ export const StorageService = {
       allTimeXpByUser.set(userId, (allTimeXpByUser.get(userId) || 0) + xp)
     })
 
+    const { data: groupMembers, error: groupMembersError } = await supabase
+      .from('group_members')
+      .select('group_id')
+    if (groupMembersError) {
+      console.warn('LEADERBOARD_GROUP_MEMBERS_UNAVAILABLE:', groupMembersError)
+    }
+
+    const groupMemberCounts = new Map<string, number>()
+    ;(groupMembers || []).forEach((member) => {
+      const groupId = member.group_id as string | null
+      if (!groupId) return
+      groupMemberCounts.set(groupId, (groupMemberCounts.get(groupId) || 0) + 1)
+    })
+
+    const { data: groupCompletions, error: groupCompletionsError } = await supabase
+      .from('group_task_completions')
+      .select('user_id, completed_date, group_tasks(group_id)')
+    if (groupCompletionsError) {
+      console.warn('LEADERBOARD_GROUP_COMPLETIONS_UNAVAILABLE:', groupCompletionsError)
+    }
+
     if (period === 'all_time') {
       return (profiles as Profile[])
         .map((profile) => {
@@ -283,6 +322,7 @@ export const StorageService = {
 
     const seasonKey = getCurrentSeasonKey()
     const seasonXpByUser = new Map<string, number>()
+    const seasonScoreUsers = new Set<string>()
     const { data: seasonScores, error: seasonScoresError } = await supabase
       .from('leaderboard_season_scores')
       .select('user_id, xp')
@@ -293,6 +333,7 @@ export const StorageService = {
         const userId = scoreRow.user_id as string | null
         if (!userId) return
         seasonXpByUser.set(userId, Number(scoreRow.xp || 0))
+        seasonScoreUsers.add(userId)
       })
     } else {
       console.warn('LEADERBOARD_SEASON_SCORES_UNAVAILABLE:', seasonScoresError)
@@ -301,10 +342,23 @@ export const StorageService = {
     ;(allCompletions || []).forEach((completion) => {
       const userId = completion.user_id as string | null
       if (!userId) return
-      if (seasonXpByUser.has(userId)) return
+      if (seasonScoreUsers.has(userId)) return
       if (completion.completed_date < startStr || completion.completed_date > endStr) return
       const xp = Number(completion.xp_earned || 0)
       seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + xp)
+    })
+
+    ;(groupCompletions || []).forEach((completion) => {
+      const userId = completion.user_id as string | null
+      if (!userId) return
+      if (seasonScoreUsers.has(userId)) return
+      if (completion.completed_date < startStr || completion.completed_date > endStr) return
+
+      const groupTask = Array.isArray(completion.group_tasks) ? completion.group_tasks[0] : completion.group_tasks
+      const groupId = groupTask?.group_id as string | null | undefined
+      if (!groupId || (groupMemberCounts.get(groupId) || 0) <= 1) return
+
+      seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + 5)
     })
 
     return (profiles as Profile[])
@@ -633,7 +687,8 @@ export const StorageService = {
       if (task) {
         const { data: members } = await supabase.from('group_members').select('user_id').eq('group_id', task.group_id)
         if (members && members.length > 1) {
-          await supabase.rpc('decrement_xp', { amount: 5, user_id: userId, target_date: date })
+          const rpcErr = await updateXp('decrement_xp', userId, 5, date)
+          if (rpcErr) console.error('GROUP_XP_DECREMENT_FAILED:', rpcErr)
         }
       }
     } else {
@@ -648,7 +703,8 @@ export const StorageService = {
       if (task) {
         const { data: members } = await supabase.from('group_members').select('user_id').eq('group_id', task.group_id)
         if (members && members.length > 1) {
-          await supabase.rpc('increment_xp', { amount: 5, user_id: userId, target_date: date })
+          const rpcErr = await updateXp('increment_xp', userId, 5, date)
+          if (rpcErr) console.error('GROUP_XP_INCREMENT_FAILED:', rpcErr)
         }
       }
     }
