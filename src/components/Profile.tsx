@@ -80,8 +80,8 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   const completions = initialCompletions
 
   const totalXp = useMemo(() => {
-    return Math.max(profile?.lifetime_xp || 0, profile?.total_xp || 0)
-  }, [profile?.lifetime_xp, profile?.total_xp])
+    return Math.max(profile?.total_xp || 0, 0)
+  }, [profile?.total_xp])
 
   const uniqueLoggingDays = useMemo(() => {
     return new Set(

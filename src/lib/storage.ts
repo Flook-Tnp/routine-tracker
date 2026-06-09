@@ -1,10 +1,49 @@
 import { supabase } from './supabase'
 import type { Routine, RoutineCompletion, Task, TaskLog, Profile, Post, Group, Comment, Reaction, AppNotification, MemberVital, GroupTask, GroupTaskCompletion, LeaderboardEntry, LeaderboardPeriod } from '../types'
 
-function getCurrentSeasonKey() {
+type XpLedger = {
+  allTimeXpByUser: Map<string, number>
+  seasonXpByUser: Map<string, number>
+}
+
+async function fetchAllRows<T>(table: string, select: string): Promise<T[]> {
+  const { count, error: countError } = await supabase
+    .from(table)
+    .select('id', { count: 'exact', head: true })
+
+  if (countError) throw countError
+  if (!count) return []
+
+  const chunkSize = 1000
+  const chunks = Math.ceil(count / chunkSize)
+  const requests = Array.from({ length: chunks }, (_, index) =>
+    supabase
+      .from(table)
+      .select(select)
+      .range(index * chunkSize, (index + 1) * chunkSize - 1)
+  )
+
+  const results = await Promise.all(requests)
+  const rows: T[] = []
+
+  for (const result of results) {
+    if (result.error) throw result.error
+    rows.push(...((result.data || []) as T[]))
+  }
+
+  return rows
+}
+
+function getCurrentQuarterRange() {
   const now = new Date()
-  const quarter = Math.floor(now.getMonth() / 3) + 1
-  return `${now.getFullYear()}-Q${quarter}`
+  const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3
+  const start = new Date(Date.UTC(now.getFullYear(), quarterStartMonth, 1))
+  const end = new Date(Date.UTC(now.getFullYear(), quarterStartMonth + 3, 0))
+
+  return {
+    startStr: start.toISOString().split('T')[0],
+    endStr: end.toISOString().split('T')[0]
+  }
 }
 
 function isRpcSignatureError(error: { code?: string; message?: string } | null) {
@@ -60,6 +99,92 @@ async function adjustProfileXpDirectly(rpcName: 'increment_xp' | 'decrement_xp',
 }
 
 export const StorageService = {
+  async fetchXpLedger(): Promise<XpLedger> {
+    const { startStr, endStr } = getCurrentQuarterRange()
+    const allTimeXpByUser = new Map<string, number>()
+    const seasonXpByUser = new Map<string, number>()
+
+    let allCompletions: { user_id: string | null; xp_earned: number | null; completed_date: string }[] = []
+    try {
+      allCompletions = await fetchAllRows('routine_completions', 'user_id, xp_earned, completed_date')
+    } catch (error) {
+      console.warn('XP_LEDGER_COMPLETION_HISTORY_UNAVAILABLE:', error)
+    }
+
+    allCompletions.forEach((completion) => {
+      const userId = completion.user_id as string | null
+      if (!userId) return
+      const xp = Number(completion.xp_earned || 0)
+      const completedDate = completion.completed_date as string
+
+      allTimeXpByUser.set(userId, (allTimeXpByUser.get(userId) || 0) + xp)
+      if (completedDate >= startStr && completedDate <= endStr) {
+        seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + xp)
+      }
+    })
+
+    let groupMembers: { group_id: string | null }[] = []
+    try {
+      groupMembers = await fetchAllRows('group_members', 'group_id')
+    } catch (error) {
+      console.warn('XP_LEDGER_GROUP_MEMBERS_UNAVAILABLE:', error)
+    }
+
+    const groupMemberCounts = new Map<string, number>()
+    groupMembers.forEach((member) => {
+      const groupId = member.group_id as string | null
+      if (!groupId) return
+      groupMemberCounts.set(groupId, (groupMemberCounts.get(groupId) || 0) + 1)
+    })
+
+    let groupCompletions: {
+      user_id: string | null
+      completed_date: string
+      group_tasks: { group_id: string | null } | { group_id: string | null }[] | null
+    }[] = []
+    try {
+      groupCompletions = await fetchAllRows('group_task_completions', 'user_id, completed_date, group_tasks(group_id)')
+    } catch (error) {
+      console.warn('XP_LEDGER_GROUP_COMPLETIONS_UNAVAILABLE:', error)
+    }
+
+    groupCompletions.forEach((completion) => {
+      const userId = completion.user_id as string | null
+      if (!userId) return
+
+      const groupTask = Array.isArray(completion.group_tasks) ? completion.group_tasks[0] : completion.group_tasks
+      const groupId = groupTask?.group_id as string | null | undefined
+      if (!groupId || (groupMemberCounts.get(groupId) || 0) <= 1) return
+
+      const completedDate = completion.completed_date as string
+      allTimeXpByUser.set(userId, (allTimeXpByUser.get(userId) || 0) + 5)
+      if (completedDate >= startStr && completedDate <= endStr) {
+        seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + 5)
+      }
+    })
+
+    return { allTimeXpByUser, seasonXpByUser }
+  },
+
+  async reconcileProfileXp(userId: string): Promise<Profile> {
+    const profile = await this.fetchRawProfile(userId)
+    const ledger = await this.fetchXpLedger()
+    const ledgerXp = ledger.allTimeXpByUser.get(userId) || 0
+    const totalXp = Math.max(0, ledgerXp)
+    const lifetimeXp = Math.max(profile.lifetime_xp || 0, totalXp)
+
+    if ((profile.total_xp || 0) !== totalXp || (profile.lifetime_xp || 0) < lifetimeXp) {
+      await this.updateProfile(userId, {
+        total_xp: totalXp,
+        lifetime_xp: lifetimeXp,
+        updated_at: new Date().toISOString()
+      })
+      return { ...profile, total_xp: totalXp, lifetime_xp: lifetimeXp, updated_at: new Date().toISOString() }
+    }
+
+    return profile
+  },
+
   async fetchRoutines(userId: string): Promise<Routine[]> {
     const { data, error } = await supabase
       .from('routines')
@@ -173,6 +298,7 @@ export const StorageService = {
       if (userId) {
         const rpcErr = await updateXp('decrement_xp', userId, xpEarned, dateStr)
         if (rpcErr) console.error('XP_DECREMENT_FAILED:', rpcErr)
+        await this.reconcileProfileXp(userId)
       }
       return null
     } else {
@@ -185,6 +311,7 @@ export const StorageService = {
       if (userId) {
         const rpcErr = await updateXp('increment_xp', userId, xpEarned, dateStr)
         if (rpcErr) console.error('XP_INCREMENT_FAILED:', rpcErr)
+        await this.reconcileProfileXp(userId)
       }
       return data[0] as RoutineCompletion
     }
@@ -263,6 +390,18 @@ export const StorageService = {
   },
 
   async fetchProfile(userId: string): Promise<Profile> {
+    const profile = await this.fetchRawProfile(userId)
+    const ledger = await this.fetchXpLedger()
+    const totalXp = ledger.allTimeXpByUser.get(userId) || 0
+
+    return {
+      ...profile,
+      total_xp: totalXp,
+      lifetime_xp: Math.max(profile.lifetime_xp || 0, totalXp)
+    }
+  },
+
+  async fetchRawProfile(userId: string): Promise<Profile> {
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -296,48 +435,16 @@ export const StorageService = {
       .select('*')
     if (error) throw error
 
-    const { data: allCompletions, error: allCompletionsError } = await supabase
-      .from('routine_completions')
-      .select('user_id, xp_earned, completed_date')
-    if (allCompletionsError) {
-      console.warn('LEADERBOARD_COMPLETION_HISTORY_UNAVAILABLE:', allCompletionsError)
-    }
-
-    const allTimeXpByUser = new Map<string, number>()
-    ;(allCompletions || []).forEach((completion) => {
-      const userId = completion.user_id as string | null
-      if (!userId) return
-      const xp = Number(completion.xp_earned || 0)
-      allTimeXpByUser.set(userId, (allTimeXpByUser.get(userId) || 0) + xp)
-    })
-
-    const { data: groupMembers, error: groupMembersError } = await supabase
-      .from('group_members')
-      .select('group_id')
-    if (groupMembersError) {
-      console.warn('LEADERBOARD_GROUP_MEMBERS_UNAVAILABLE:', groupMembersError)
-    }
-
-    const groupMemberCounts = new Map<string, number>()
-    ;(groupMembers || []).forEach((member) => {
-      const groupId = member.group_id as string | null
-      if (!groupId) return
-      groupMemberCounts.set(groupId, (groupMemberCounts.get(groupId) || 0) + 1)
-    })
-
-    const { data: groupCompletions, error: groupCompletionsError } = await supabase
-      .from('group_task_completions')
-      .select('user_id, completed_date, group_tasks(group_id)')
-    if (groupCompletionsError) {
-      console.warn('LEADERBOARD_GROUP_COMPLETIONS_UNAVAILABLE:', groupCompletionsError)
-    }
+    const ledger = await this.fetchXpLedger()
 
     if (period === 'all_time') {
       return (profiles as Profile[])
         .map((profile) => {
-          const score = Math.max(profile.lifetime_xp || 0, profile.total_xp || 0, allTimeXpByUser.get(profile.id) || 0)
+          const score = ledger.allTimeXpByUser.get(profile.id) || 0
           return {
             ...profile,
+            total_xp: score,
+            lifetime_xp: Math.max(profile.lifetime_xp || 0, score),
             score,
             rank: 0,
             period
@@ -347,66 +454,21 @@ export const StorageService = {
         .map((entry, index) => ({ ...entry, rank: index + 1 }))
     }
 
-    const now = new Date()
-    const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3
-    const start = new Date(Date.UTC(now.getFullYear(), quarterStartMonth, 1))
-    const end = new Date(Date.UTC(now.getFullYear(), quarterStartMonth + 3, 0))
-    const startStr = start.toISOString().split('T')[0]
-    const endStr = end.toISOString().split('T')[0]
-
-    const seasonKey = getCurrentSeasonKey()
-    const seasonXpByUser = new Map<string, number>()
-    const seasonScoreUsers = new Set<string>()
-    const { data: seasonScores, error: seasonScoresError } = await supabase
-      .from('leaderboard_season_scores')
-      .select('user_id, xp')
-      .eq('season_key', seasonKey)
-
-    if (!seasonScoresError) {
-      ;(seasonScores || []).forEach((scoreRow) => {
-        const userId = scoreRow.user_id as string | null
-        if (!userId) return
-        seasonXpByUser.set(userId, Number(scoreRow.xp || 0))
-        seasonScoreUsers.add(userId)
-      })
-    } else {
-      console.warn('LEADERBOARD_SEASON_SCORES_UNAVAILABLE:', seasonScoresError)
-    }
-
-    ;(allCompletions || []).forEach((completion) => {
-      const userId = completion.user_id as string | null
-      if (!userId) return
-      if (seasonScoreUsers.has(userId)) return
-      if (completion.completed_date < startStr || completion.completed_date > endStr) return
-      const xp = Number(completion.xp_earned || 0)
-      seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + xp)
-    })
-
-    ;(groupCompletions || []).forEach((completion) => {
-      const userId = completion.user_id as string | null
-      if (!userId) return
-      if (seasonScoreUsers.has(userId)) return
-      if (completion.completed_date < startStr || completion.completed_date > endStr) return
-
-      const groupTask = Array.isArray(completion.group_tasks) ? completion.group_tasks[0] : completion.group_tasks
-      const groupId = groupTask?.group_id as string | null | undefined
-      if (!groupId || (groupMemberCounts.get(groupId) || 0) <= 1) return
-
-      seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + 5)
-    })
-
     return (profiles as Profile[])
       .map((profile) => {
-        const allTimeScore = Math.max(profile.lifetime_xp || 0, profile.total_xp || 0, allTimeXpByUser.get(profile.id) || 0)
-        const rawSeasonScore = seasonXpByUser.get(profile.id) || 0
+        const allTimeScore = ledger.allTimeXpByUser.get(profile.id) || 0
+        const rawSeasonScore = ledger.seasonXpByUser.get(profile.id) || 0
+        const score = Math.min(rawSeasonScore, allTimeScore)
         return {
           ...profile,
-          score: allTimeScore > 0 ? Math.min(rawSeasonScore, allTimeScore) : rawSeasonScore,
+          total_xp: allTimeScore,
+          lifetime_xp: Math.max(profile.lifetime_xp || 0, allTimeScore),
+          score,
           rank: 0,
           period
         }
       })
-      .sort((a, b) => (b.score - a.score) || ((allTimeXpByUser.get(b.id) || b.lifetime_xp || b.total_xp || 0) - (allTimeXpByUser.get(a.id) || a.lifetime_xp || a.total_xp || 0)))
+      .sort((a, b) => (b.score - a.score) || ((ledger.allTimeXpByUser.get(b.id) || 0) - (ledger.allTimeXpByUser.get(a.id) || 0)))
       .map((entry, index) => ({ ...entry, rank: index + 1 }))
   },
 
@@ -723,6 +785,7 @@ export const StorageService = {
         if (members && members.length > 1) {
           const rpcErr = await updateXp('decrement_xp', userId, 5, date)
           if (rpcErr) console.error('GROUP_XP_DECREMENT_FAILED:', rpcErr)
+          await this.reconcileProfileXp(userId)
         }
       }
     } else {
@@ -739,6 +802,7 @@ export const StorageService = {
         if (members && members.length > 1) {
           const rpcErr = await updateXp('increment_xp', userId, 5, date)
           if (rpcErr) console.error('GROUP_XP_INCREMENT_FAILED:', rpcErr)
+          await this.reconcileProfileXp(userId)
         }
       }
     }
@@ -754,10 +818,16 @@ export const StorageService = {
     
     if (error) throw error
     const rows = (data || []) as unknown as { profiles: Profile | Profile[] | null }[]
-    return rows.flatMap((row) => {
+    const members = rows.flatMap((row) => {
       if (!row.profiles) return []
       return Array.isArray(row.profiles) ? row.profiles : [row.profiles]
     })
+    const ledger = await this.fetchXpLedger()
+    return members.map((member) => ({
+      ...member,
+      total_xp: ledger.allTimeXpByUser.get(member.id) || 0,
+      lifetime_xp: Math.max(member.lifetime_xp || 0, ledger.allTimeXpByUser.get(member.id) || 0)
+    }))
   },
 
   async fetchMemberVitals(groupId: string, date?: string): Promise<MemberVital[]> {
@@ -765,7 +835,11 @@ export const StorageService = {
     const { data, error } = await supabase
       .rpc('get_pod_member_vitals', { target_group_id: groupId, target_date: targetDate })
     if (error) throw error
-    return data as MemberVital[]
+    const ledger = await this.fetchXpLedger()
+    return (data as MemberVital[]).map((member) => ({
+      ...member,
+      total_xp: ledger.allTimeXpByUser.get(member.id) || 0
+    }))
   },
 
   async pingUser(targetUserId: string, groupId: string): Promise<{ success: boolean; message: string; next_available?: string }> {

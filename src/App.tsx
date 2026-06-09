@@ -221,7 +221,7 @@ function App() {
       setViewedData(null) // Loading state
 
       const [targetProfile, targetRoutines, targetCompletions] = await Promise.all([
-        StorageService.fetchProfile(userId),
+        StorageService.reconcileProfileXp(userId),
         StorageService.fetchRoutines(userId),
         StorageService.fetchCompletions(userId)
       ])
@@ -312,7 +312,7 @@ function App() {
       if (currentSession?.user) {
         try {
           // Fetch data separately so one failure doesn't block the others
-          StorageService.fetchProfile(currentSession.user.id)
+          StorageService.reconcileProfileXp(currentSession.user.id)
             .then(p => mounted && setProfile(p))
             .catch(async (err) => {
               console.error('Profile fetch failed, attempting creation:', err)
@@ -643,7 +643,7 @@ function App() {
         }
 
         // Refresh profile in background without blocking
-        StorageService.fetchProfile(session.user.id).then(setProfile).catch(console.error)
+        StorageService.reconcileProfileXp(session.user.id).then(setProfile).catch(console.error)
       } catch (err: unknown) {
         console.error('Error toggling completion:', err)
         // Rollback on error
