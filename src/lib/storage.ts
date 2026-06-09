@@ -238,14 +238,30 @@ export const StorageService = {
       .select('*')
     if (error) throw error
 
+    const { data: allCompletions, error: allCompletionsError } = await supabase
+      .from('routine_completions')
+      .select('user_id, xp_earned, completed_date')
+    if (allCompletionsError) throw allCompletionsError
+
+    const allTimeXpByUser = new Map<string, number>()
+    ;(allCompletions || []).forEach((completion) => {
+      const userId = completion.user_id as string | null
+      if (!userId) return
+      const xp = Number(completion.xp_earned || 0)
+      allTimeXpByUser.set(userId, (allTimeXpByUser.get(userId) || 0) + xp)
+    })
+
     if (period === 'all_time') {
       return (profiles as Profile[])
-        .map((profile) => ({
-          ...profile,
-          score: profile.lifetime_xp || profile.total_xp || 0,
-          rank: 0,
-          period
-        }))
+        .map((profile) => {
+          const score = Math.max(profile.lifetime_xp || 0, profile.total_xp || 0, allTimeXpByUser.get(profile.id) || 0)
+          return {
+            ...profile,
+            score,
+            rank: 0,
+            period
+          }
+        })
         .sort((a, b) => b.score - a.score)
         .map((entry, index) => ({ ...entry, rank: index + 1 }))
     }
@@ -257,17 +273,11 @@ export const StorageService = {
     const startStr = start.toISOString().split('T')[0]
     const endStr = end.toISOString().split('T')[0]
 
-    const { data: completions, error: completionsError } = await supabase
-      .from('routine_completions')
-      .select('user_id, xp_earned, completed_date')
-      .gte('completed_date', startStr)
-      .lte('completed_date', endStr)
-    if (completionsError) throw completionsError
-
     const seasonXpByUser = new Map<string, number>()
-    ;(completions || []).forEach((completion) => {
+    ;(allCompletions || []).forEach((completion) => {
       const userId = completion.user_id as string | null
       if (!userId) return
+      if (completion.completed_date < startStr || completion.completed_date > endStr) return
       const xp = Number(completion.xp_earned || 0)
       seasonXpByUser.set(userId, (seasonXpByUser.get(userId) || 0) + xp)
     })
@@ -279,7 +289,7 @@ export const StorageService = {
         rank: 0,
         period
       }))
-      .sort((a, b) => (b.score - a.score) || ((b.lifetime_xp || b.total_xp || 0) - (a.lifetime_xp || a.total_xp || 0)))
+      .sort((a, b) => (b.score - a.score) || ((allTimeXpByUser.get(b.id) || b.lifetime_xp || b.total_xp || 0) - (allTimeXpByUser.get(a.id) || a.lifetime_xp || a.total_xp || 0)))
       .map((entry, index) => ({ ...entry, rank: index + 1 }))
   },
 
