@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { format, subDays, startOfDay, eachDayOfInterval } from 'date-fns'
 import { StorageService } from '../lib/storage'
 import type { Routine, Profile as ProfileType, RoutineCompletion } from '../types'
-import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors } from 'lucide-react'
+import { Zap, Camera, Edit2, Check, X, Trash2, Flame, Trophy, Scissors, Target, Award } from 'lucide-react'
 import Cropper from 'react-easy-crop'
 import type { Area } from 'react-easy-crop'
 import getCroppedImg from '../lib/image'
@@ -23,25 +23,28 @@ interface ProfileProps {
 }
 
 const STREAK_MILESTONES = [
-  { id: 'Streak_3', name: 'Spark', count: 3, icon: '✨' },
-  { id: 'Streak_7', name: 'Ignition', count: 7, icon: '🔥' },
-  { id: 'Streak_30', name: 'Flame', count: 30, icon: '🔥' },
-  { id: 'Streak_100', name: 'Bonfire', count: 100, icon: '🔥' },
-  { id: 'Streak_365', name: 'Inferno', count: 365, icon: '🔥' },
-  { id: 'Streak_730', name: 'Supernova', count: 730, icon: '💥' },
+  { id: 'Streak_3', name: 'Spark', count: 3, icon: '✦' },
+  { id: 'Streak_7', name: 'Ignition', count: 7, icon: '⚡' },
+  { id: 'Streak_30', name: 'Flame', count: 30, icon: '🜂' },
+  { id: 'Streak_100', name: 'Beacon', count: 100, icon: '◆' },
+  { id: 'Streak_365', name: 'Obelisk', count: 365, icon: '⬟' },
+  { id: 'Streak_730', name: 'Comet', count: 730, icon: '☄️' },
   { id: 'Streak_1000', name: 'Solar Flare', count: 1000, icon: '☀️' },
-  { id: 'Streak_1825', name: 'Stellar Core', count: 1825, icon: '💎' }
+  { id: 'Streak_1825', name: 'Stellar Core', count: 1825, icon: '✺' }
 ]
 
 const XP_MILESTONES = [
-  { id: 'XP_1000', name: 'Initiate', count: 1000, icon: '💎' },
-  { id: 'XP_5000', name: 'Adept', count: 5000, icon: '💎' },
-  { id: 'XP_10000', name: 'Veteran', count: 10000, icon: '💎' },
+  { id: 'XP_1000', name: 'Initiate', count: 1000, icon: '◇' },
+  { id: 'XP_5000', name: 'Adept', count: 5000, icon: '◈' },
+  { id: 'XP_10000', name: 'Veteran', count: 10000, icon: '⬢' },
   { id: 'XP_25000', name: 'Elite', count: 25000, icon: '⚔️' },
-  { id: 'XP_50000', name: 'Master', count: 50000, icon: '🏆' },
+  { id: 'XP_50000', name: 'Master', count: 50000, icon: '♛' },
   { id: 'XP_100000', name: 'Grandmaster', count: 100000, icon: '👑' },
   { id: 'XP_250000', name: 'Legend', count: 250000, icon: '🌌' }
 ]
+
+const ALL_MILESTONES = [...STREAK_MILESTONES, ...XP_MILESTONES]
+const MILESTONE_BY_ID = new Map(ALL_MILESTONES.map(m => [m.id.toLowerCase(), m]))
 
 export function Profile({ profile, routines, completions: initialCompletions, dailyStreak, weeklyStreak, onProfileUpdate, isPublic, onBack }: ProfileProps) {
   const { t } = useTranslation();
@@ -76,6 +79,10 @@ export function Profile({ profile, routines, completions: initialCompletions, da
 
   const completions = initialCompletions
 
+  const totalXp = useMemo(() => {
+    return Math.max(profile?.lifetime_xp || 0, profile?.total_xp || 0)
+  }, [profile?.lifetime_xp, profile?.total_xp])
+
   const uniqueLoggingDays = useMemo(() => {
     return new Set(
       initialCompletions
@@ -89,8 +96,15 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     if (isPublic || !profile) return
 
     const currentBadges = profile.badges || []
-    const newBadges = [...currentBadges]
-    let changed = false
+    const newBadges = currentBadges.map((badge) => {
+      const milestone = MILESTONE_BY_ID.get(badge.id.toLowerCase())
+      if (!milestone) return badge
+      return { ...badge, name: milestone.name, icon: milestone.icon }
+    })
+    let changed = newBadges.some((badge, index) => {
+      const original = currentBadges[index]
+      return badge.name !== original.name || badge.icon !== original.icon
+    })
 
     // Anti-Cheat: Count how many UNIQUE PHYSICAL DAYS the user actually opened the app and logged work.
     const completionsCount = new Set(
@@ -101,11 +115,11 @@ export function Profile({ profile, routines, completions: initialCompletions, da
 
     const milestones = [
       ...STREAK_MILESTONES.map(m => ({ ...m, check: dailyStreak >= m.count && completionsCount >= m.count })),
-      ...XP_MILESTONES.map(m => ({ ...m, check: (profile.total_xp || 0) >= m.count }))
+      ...XP_MILESTONES.map(m => ({ ...m, check: totalXp >= m.count }))
     ]
 
     milestones.forEach(m => {
-      if (m.check && !currentBadges.some(b => b.id.toLowerCase() === m.id.toLowerCase())) {
+      if (m.check && !newBadges.some(b => b.id.toLowerCase() === m.id.toLowerCase())) {
         newBadges.push({ id: m.id, name: m.name, icon: m.icon })
         changed = true
       }
@@ -119,7 +133,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         console.error('Failed to permanently award badges:', err)
       }
     }
-  }, [completions, dailyStreak, isPublic, onProfileUpdate, profile])
+  }, [completions, dailyStreak, isPublic, onProfileUpdate, profile, totalXp])
 
   // Check milestones whenever stats change
   useEffect(() => {
@@ -190,7 +204,27 @@ export function Profile({ profile, routines, completions: initialCompletions, da
     return { categoryStreaks: streaks, categoryWeeklyStreaks: wStreaks }
   }, [routines, completions])
 
-  const categoriesList = Array.from(new Set((routines || []).map(r => r.category || 'General')))
+  const categoriesList = useMemo(() => {
+    return Array.from(new Set((routines || []).map(r => r.category || 'General')))
+  }, [routines])
+
+  const categoryStats = useMemo(() => {
+    return categoriesList.map(cat => {
+      const categoryRoutines = routines.filter(r => (r.category || 'General') === cat)
+      const routineIds = new Set(categoryRoutines.map(r => r.id))
+      const categoryCompletions = completions.filter(c => routineIds.has(c.routine_id))
+      const activeDays = new Set(categoryCompletions.map(c => c.completed_date)).size
+
+      return {
+        name: cat,
+        routines: categoryRoutines.length,
+        completions: categoryCompletions.length,
+        activeDays,
+        dailyStreak: categoryStreaks[cat] || 0,
+        weeklyStreak: categoryWeeklyStreaks[cat] || 0
+      }
+    })
+  }, [categoriesList, routines, completions, categoryStreaks, categoryWeeklyStreaks])
 
   const onCropComplete = useCallback((_preventedArea: Area, croppedAreaPixels: Area) => {
     setCroppedAreaPixels(croppedAreaPixels)
@@ -204,11 +238,14 @@ export function Profile({ profile, routines, completions: initialCompletions, da
   }, [dailyStreak, uniqueLoggingDays])
 
   const xpProgress = useMemo(() => {
-    const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
     const highest = [...XP_MILESTONES].reverse().find(m => totalXp >= m.count)
     const next = XP_MILESTONES.find(m => totalXp < m.count)
     return { current: highest, next }
-  }, [profile?.lifetime_xp, profile?.total_xp])
+  }, [totalXp])
+
+  const streakGoalRemaining = streakProgress.next ? Math.max(0, streakProgress.next.count - dailyStreak) : 0
+  const xpGoalRemaining = xpProgress.next ? Math.max(0, xpProgress.next.count - totalXp) : 0
+  const playerTitle = [streakProgress.current?.name, xpProgress.current?.name].filter(Boolean).join(' / ') || 'Initiating'
 
   if (!profile) return (
     <div className="text-center py-20 space-y-6 font-mono">
@@ -378,150 +415,215 @@ export function Profile({ profile, routines, completions: initialCompletions, da
         document.body
       )}
 
-      <section className="text-center space-y-6">
-        <div className="relative inline-block">
-          <div className="p-1.5 border-2 border-accent rounded-full mb-2 overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
-            <div className="w-28 h-28 bg-canvas rounded-full flex items-center justify-center text-4xl font-black text-accent overflow-hidden">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
-              ) : (
-                profile.username?.[0]?.toUpperCase() || 'U'
-              )}
+      <section className="bg-white border-2 border-border shadow-[8px_8px_0px_0px_rgba(20,184,166,0.34)] overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="p-6 md:p-8 space-y-6 border-b-2 lg:border-b-0 lg:border-r-2 border-border">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="relative flex-shrink-0 self-center md:self-auto">
+                <div className="p-1.5 border-2 border-accent rounded-full overflow-hidden bg-white shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
+                  <div className="w-28 h-28 bg-canvas rounded-full flex items-center justify-center text-4xl font-black text-accent overflow-hidden">
+                    {profile.avatar_url ? (
+                      <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+                    ) : (
+                      profile.username?.[0]?.toUpperCase() || 'U'
+                    )}
+                  </div>
+                </div>
+                {!isPublic && (
+                  <div className="flex justify-center gap-3 absolute -bottom-3 left-1/2 -translate-x-1/2">
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploading}
+                      className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                    >
+                      <Camera size={16} className={isUploading ? 'animate-pulse' : ''} />
+                    </button>
+                    {profile.avatar_url && (
+                      <button
+                        onClick={handleAvatarDelete}
+                        disabled={isUploading}
+                        className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                        title="Delete Profile Picture"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
+
+              <div className="space-y-4 min-w-0 text-center md:text-left">
+                <div className="space-y-2">
+                  <p className="text-[9px] uppercase tracking-[0.3em] text-accent font-black">Player Identity</p>
+                  {isEditing && !isPublic ? (
+                    <div className="flex items-center justify-center md:justify-start gap-2 bg-white border-2 border-accent px-4 py-2 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newUsername}
+                        onChange={(e) => setNewUsername(e.target.value)}
+                        className="bg-transparent text-xl font-black text-ink uppercase tracking-tighter outline-none w-48 text-center md:text-left"
+                        onKeyDown={(e) => e.key === 'Enter' && handleUsernameUpdate()}
+                      />
+                      <button onClick={handleUsernameUpdate} className="text-accent hover:text-ink active:scale-90">
+                        <Check size={20} />
+                      </button>
+                      <button onClick={() => { setIsEditing(false); setNewUsername(profile.username); }} className="text-ink/40 hover:text-red-600 active:scale-90">
+                        <X size={20} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center md:justify-start gap-3 group">
+                      <h2 className="text-3xl font-black text-ink uppercase tracking-tighter md:text-5xl truncate">{profile.username || 'Anonymous_User'}</h2>
+                      {!isPublic && (
+                        <button
+                          onClick={() => {
+                            setNewUsername(profile.username)
+                            setIsEditing(true)
+                          }}
+                          className="p-2 text-ink/20 hover:text-accent transition-colors md:opacity-0 group-hover:opacity-100"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <p className="text-sm text-ink/60 uppercase tracking-widest font-black">{playerTitle}</p>
+                </div>
+
+                <div className="flex justify-center md:justify-start flex-wrap gap-2">
+                  {(profile.badges || []).slice(0, 5).map((badge) => {
+                    const milestone = MILESTONE_BY_ID.get(badge.id.toLowerCase())
+                    return (
+                    <div key={badge.id} className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-[10px] uppercase font-black text-accent flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
+                      <span className="text-sm">{milestone?.icon || badge.icon}</span>
+                      {milestone?.name || badge.name}
+                    </div>
+                    )
+                  })}
+                  {(!profile.badges || profile.badges.length === 0) && (
+                    <p className="text-[10px] text-ink/20 uppercase tracking-[0.2em] font-black">{t('profile.no_badges')}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-canvas border-2 border-border p-3">
+                <Zap size={16} className="text-accent mb-2" />
+                <p className="text-xl md:text-2xl font-black text-ink tracking-tighter">{totalXp.toLocaleString()}</p>
+                <p className="text-[8px] text-ink/45 uppercase tracking-widest font-black">{t('profile.lifetime_xp')}</p>
+              </div>
+              <div className="bg-canvas border-2 border-border p-3">
+                <Flame size={16} fill="currentColor" className="text-accent mb-2" />
+                <p className="text-xl md:text-2xl font-black text-ink tracking-tighter">{dailyStreak || 0}</p>
+                <p className="text-[8px] text-ink/45 uppercase tracking-widest font-black">{t('profile.daily_streak')}</p>
+              </div>
+              <div className="bg-canvas border-2 border-border p-3">
+                <Trophy size={16} className="text-accent mb-2" />
+                <p className="text-xl md:text-2xl font-black text-ink tracking-tighter">{weeklyStreak || 0}</p>
+                <p className="text-[8px] text-ink/45 uppercase tracking-widest font-black">{t('profile.weekly_streak')}</p>
+              </div>
             </div>
           </div>
-          {!isPublic && (
-            <div className="flex justify-center gap-3 absolute -bottom-2 left-1/2 -translate-x-1/2">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="p-2.5 bg-white border-2 border-border rounded-full text-accent hover:bg-accent hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-              >
-                <Camera size={16} className={isUploading ? 'animate-pulse' : ''} />
-              </button>
-              {profile.avatar_url && (
-                <button
-                  onClick={handleAvatarDelete}
-                  disabled={isUploading}
-                  className="p-2.5 bg-white border-2 border-border rounded-full text-red-600 hover:bg-red-600 hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] disabled:opacity-50 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                  title="Delete Profile Picture"
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-            </div>
-          )}
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="image/*"
-            className="hidden"
-          />
-        </div>
 
-        <div className="flex flex-col items-center gap-3 pt-4">
-          {isEditing && !isPublic ? (
-            <div className="flex items-center gap-2 bg-white border-2 border-accent px-4 py-2 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
-              <input
-                autoFocus
-                type="text"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                className="bg-transparent text-xl font-black text-ink uppercase tracking-tighter outline-none w-48 text-center"
-                onKeyDown={(e) => e.key === 'Enter' && handleUsernameUpdate()}
-              />
-              <button onClick={handleUsernameUpdate} className="text-accent hover:text-ink active:scale-90">
-                <Check size={20} />
-              </button>
-              <button onClick={() => { setIsEditing(false); setNewUsername(profile.username); }} className="text-ink/40 hover:text-red-600 active:scale-90">
-                <X size={20} />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 group">
-              <h2 className="text-3xl font-black text-ink uppercase tracking-tighter md:text-4xl">{profile.username || 'Anonymous_User'}</h2>
-              {!isPublic && (
-                <button
-                  onClick={() => {
-                    setNewUsername(profile.username)
-                    setIsEditing(true)
-                  }}
-                  className="p-2 text-ink/20 hover:text-accent transition-colors md:opacity-0 group-hover:opacity-100"
-                >
-                  <Edit2 size={16} />
-                </button>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex justify-center flex-wrap gap-2">
-              {profile.badges?.map((badge) => (
-                <div key={badge.id} className="px-3 py-1.5 bg-accent-soft border border-accent/20 text-[10px] uppercase font-black text-accent flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
-                  <span className="text-sm">{badge.icon}</span>
-                  {badge.name}
+          <div className="p-6 md:p-8 bg-accent-soft space-y-4">
+            <p className="text-[9px] uppercase tracking-[0.3em] text-accent font-black">Next Unlocks</p>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="bg-white border-2 border-border p-4 space-y-3 shadow-[3px_3px_0px_0px_rgba(236,72,153,0.24)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center text-2xl">{streakProgress.next?.icon || streakProgress.current?.icon || '✓'}</div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black uppercase truncate">{streakProgress.next?.name || 'All Streak Badges'}</p>
+                      <p className="text-[9px] uppercase tracking-widest text-ink/45 font-black">{streakGoalRemaining.toLocaleString()} days remaining</p>
+                    </div>
+                  </div>
+                  <Flame size={20} className="text-accent" fill="currentColor" />
                 </div>
-              ))}
-              {(!profile.badges || profile.badges.length === 0) && (
-                <p className="text-[10px] text-ink/20 uppercase tracking-[0.2em] font-black">{t('profile.no_badges')}</p>
-              )}
+                {streakProgress.next && (
+                  <div className="h-2 bg-canvas border-2 border-border overflow-hidden p-[2px]">
+                    <div className="h-full bg-accent transition-all duration-700" style={{ width: `${Math.min(100, (dailyStreak / streakProgress.next.count) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white border-2 border-border p-4 space-y-3 shadow-[3px_3px_0px_0px_rgba(236,72,153,0.24)]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 bg-canvas border-2 border-border flex items-center justify-center text-2xl">{xpProgress.next?.icon || xpProgress.current?.icon || '✓'}</div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-black uppercase truncate">{xpProgress.next?.name || 'All XP Badges'}</p>
+                      <p className="text-[9px] uppercase tracking-widest text-ink/45 font-black">{xpGoalRemaining.toLocaleString()} XP remaining</p>
+                    </div>
+                  </div>
+                  <Award size={20} className="text-accent" />
+                </div>
+                {xpProgress.next && (
+                  <div className="h-2 bg-canvas border-2 border-border overflow-hidden p-[2px]">
+                    <div className="h-full bg-accent transition-all duration-700" style={{ width: `${Math.min(100, (totalXp / xpProgress.next.count) * 100)}%` }} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
-          <Zap size={24} className="text-accent mx-auto mb-2" />
-          <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.lifetime_xp')}</p>
-          <p className="text-4xl font-black text-ink tracking-tighter">{(profile.lifetime_xp || profile.total_xp || 0).toLocaleString()}</p>
-        </div>
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
-          <Flame size={24} fill="currentColor" className="text-accent mx-auto mb-2" />
-          <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.daily_streak')}</p>
-          <p className="text-4xl font-black text-ink tracking-tighter">{dailyStreak || 0}</p>
-        </div>
-        <div className="bg-white border-2 border-border p-8 space-y-2 text-center relative group overflow-hidden shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
-          <Trophy size={24} className="text-accent mx-auto mb-2" />
-          <p className="text-[10px] text-ink/40 uppercase tracking-[0.2em] font-black">{t('profile.weekly_streak')}</p>
-          <p className="text-4xl font-black text-ink tracking-tighter">{weeklyStreak || 0}</p>
-        </div>
-      </div>
-
       <section className="space-y-4">
         <h3 className="text-[11px] uppercase tracking-[0.3em] text-ink/40 font-black border-b-2 border-border pb-3">{t('profile.categories')}</h3>
-        <div className="flex flex-wrap gap-3">
-          {categoriesList.map(cat => {
-            const isSelected = selectedCategory === cat
-            const streak = categoryStreaks[cat] || 0
-            const wStreak = categoryWeeklyStreaks[cat] || 0
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {categoryStats.map(cat => {
+            const isSelected = selectedCategory === cat.name
             return (
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(isSelected ? null : cat)}
-                className={`px-4 py-3 border-2 text-[10px] uppercase tracking-widest font-black shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] transition-all flex items-center gap-2 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
+                key={cat.name}
+                onClick={() => setSelectedCategory(isSelected ? null : cat.name)}
+                className={`text-left bg-white border-2 p-5 space-y-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] transition-all active:translate-x-[2px] active:translate-y-[2px] active:shadow-none ${
                   isSelected
-                    ? 'bg-accent border-border text-white'
-                    : 'bg-white border-border text-ink hover:bg-canvas'
+                    ? 'border-accent shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]'
+                    : 'border-border hover:border-accent'
                 }`}
               >
-                {cat}
-                {isSelected && (
-                  <div className="flex items-center">
-                    <span className="flex items-center gap-1 border-l border-white/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
-                      <Flame size={12} fill="currentColor" />
-                      {streak}
-                    </span>
-                    <span className="flex items-center gap-1 border-l border-white/20 pl-2 ml-1 animate-in slide-in-from-left-2 duration-300">
-                      <Trophy size={12} />
-                      {wStreak}
-                    </span>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-base font-black uppercase tracking-tight truncate">{cat.name}</p>
+                    <p className="text-[9px] text-ink/45 uppercase tracking-widest font-black">{cat.routines} routines</p>
                   </div>
-                )}
+                  <div className="w-10 h-10 bg-accent-soft border-2 border-accent/20 flex items-center justify-center text-accent">
+                    <Target size={18} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="bg-canvas border-2 border-border p-2">
+                    <p className="text-lg font-black">{cat.dailyStreak}</p>
+                    <p className="text-[7px] uppercase tracking-widest text-ink/40 font-black">Daily</p>
+                  </div>
+                  <div className="bg-canvas border-2 border-border p-2">
+                    <p className="text-lg font-black">{cat.weeklyStreak}</p>
+                    <p className="text-[7px] uppercase tracking-widest text-ink/40 font-black">Weekly</p>
+                  </div>
+                  <div className="bg-canvas border-2 border-border p-2">
+                    <p className="text-lg font-black">{cat.activeDays}</p>
+                    <p className="text-[7px] uppercase tracking-widest text-ink/40 font-black">Days</p>
+                  </div>
+                  <div className="bg-canvas border-2 border-border p-2">
+                    <p className="text-lg font-black">{cat.completions}</p>
+                    <p className="text-[7px] uppercase tracking-widest text-ink/40 font-black">Logs</p>
+                  </div>
+                </div>
               </button>
             )
           })}
-          {categoriesList.length === 0 && (
+          {categoryStats.length === 0 && (
             <p className="text-[10px] text-ink/20 uppercase tracking-[0.2em] font-black">{t('profile.no_categories')}</p>
           )}
         </div>
@@ -540,7 +642,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             </div>
 
             <div className="relative">
-              <div className="text-6xl mb-2 group-hover:scale-110 transition-transform duration-500">
+              <div className="w-20 h-20 bg-accent-soft border-2 border-accent/20 flex items-center justify-center text-5xl mb-2 group-hover:scale-110 transition-transform duration-500 shadow-[3px_3px_0px_0px_rgba(236,72,153,0.24)]">
                 {streakProgress.current?.icon || '⏳'}
               </div>
             </div>
@@ -578,8 +680,8 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             </div>
 
             <div className="relative">
-              <div className="text-6xl mb-2 group-hover:scale-110 transition-transform duration-500">
-                {xpProgress.current?.icon || '💎'}
+              <div className="w-20 h-20 bg-accent-soft border-2 border-accent/20 flex items-center justify-center text-5xl mb-2 group-hover:scale-110 transition-transform duration-500 shadow-[3px_3px_0px_0px_rgba(236,72,153,0.24)]">
+                {xpProgress.current?.icon || '◇'}
               </div>
             </div>
 
@@ -594,12 +696,12 @@ export function Profile({ profile, routines, completions: initialCompletions, da
               <div className="w-full space-y-2 mt-2">
                 <div className="flex justify-between text-[8px] uppercase font-black tracking-widest text-ink/40">
                   <span>Next: {xpProgress.next.name}</span>
-                  <span>{(profile?.lifetime_xp || profile?.total_xp || 0).toLocaleString()} / {xpProgress.next.count.toLocaleString()} XP</span>
+                  <span>{totalXp.toLocaleString()} / {xpProgress.next.count.toLocaleString()} XP</span>
                 </div>
                 <div className="h-1.5 w-full bg-canvas border-2 border-border/10 overflow-hidden">
                   <div
                     className="h-full bg-accent transition-all duration-1000"
-                    style={{ width: `${Math.min(100, ((profile?.lifetime_xp || profile?.total_xp || 0) / xpProgress.next.count) * 100)}%` }}
+                    style={{ width: `${Math.min(100, (totalXp / xpProgress.next.count) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -636,7 +738,6 @@ export function Profile({ profile, routines, completions: initialCompletions, da
             <div className="p-6 md:p-12 overflow-y-auto custom-scrollbar flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                 {(showTrophyRoom === 'streak' ? STREAK_MILESTONES : XP_MILESTONES).map((m) => {
-                  const totalXp = profile?.lifetime_xp || profile?.total_xp || 0
                   const isEarned = showTrophyRoom === 'streak'
                     ? (dailyStreak >= m.count && uniqueLoggingDays >= m.count)
                     : (totalXp >= m.count)
@@ -650,7 +751,7 @@ export function Profile({ profile, routines, completions: initialCompletions, da
                           : 'bg-canvas/30 border-dashed border-border/20 opacity-40'
                       }`}
                     >
-                      <div className={`text-6xl transition-transform duration-700 ${isEarned ? 'scale-110' : 'scale-90 grayscale'}`}>
+                      <div className={`w-20 h-20 border-2 flex items-center justify-center text-6xl transition-transform duration-700 ${isEarned ? 'scale-110 bg-accent-soft border-accent/20' : 'scale-90 grayscale bg-white border-border/20'}`}>
                         {m.icon}
                       </div>
 
