@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { StorageService } from '../lib/storage'
-import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil, Lock, Globe2, Copy } from 'lucide-react'
+import { Users, Plus, Trash2, ChevronLeft, Bell, Activity, Check, Flame, ShieldAlert, Pencil, Lock, Globe2, Copy, Target, UserCheck, AlertTriangle, BarChart3 } from 'lucide-react'
 import { SocialFeed } from './SocialFeed'
 import type { Group, MemberVital, GroupTask, GroupTaskCompletion } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -390,6 +390,25 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
     localStorage.getItem(podMissedYesterdayKey) !== '1'
   const canViewOwnerAccessCode = selectedPod?.visibility === 'private' && selectedPod.created_by === session?.user?.id
   const visibleOwnerAccessCode = canViewOwnerAccessCode && ownerAccessCodeGroupId === selectedPod?.id ? ownerAccessCode : null
+  const memberCount = podMembers.length
+  const checkedInMembers = useMemo(() => (
+    podMembers.filter(member => (member.group_tasks_completed || 0) > 0)
+  ), [podMembers])
+  const pendingMembers = useMemo(() => (
+    podMembers.filter(member => (member.group_tasks_completed || 0) === 0)
+  ), [podMembers])
+  const missionCompletionCount = groupCompletions.length
+  const missionTargetCount = Math.max(groupTasks.length * Math.max(memberCount, 1), 0)
+  const teamCompletionRate = missionTargetCount > 0 ? Math.round((missionCompletionCount / missionTargetCount) * 100) : 0
+  const myCompletedMissions = groupCompletions.filter(completion => completion.user_id === session?.user?.id).length
+  const sortedPodMembers = useMemo(() => (
+    [...podMembers].sort((a, b) => {
+      const aDone = (a.group_tasks_completed || 0) > 0
+      const bDone = (b.group_tasks_completed || 0) > 0
+      if (aDone !== bDone) return aDone ? 1 : -1
+      return (b.total_xp || 0) - (a.total_xp || 0)
+    })
+  ), [podMembers])
 
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-ink font-mono">{t('pods.loading')}</div>
 
@@ -534,6 +553,34 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
             </div>
           )}
 
+          {!isEditingPod && (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { label: 'Team Today', value: `${checkedInMembers.length}/${memberCount || 0}`, sub: 'members checked in', icon: UserCheck, tone: 'accent' },
+                { label: 'Missions', value: `${myCompletedMissions}/${groupTasks.length}`, sub: 'your progress', icon: Target, tone: 'sync' },
+                { label: 'Completion', value: `${teamCompletionRate}%`, sub: 'team mission rate', icon: BarChart3, tone: 'accent' },
+                { label: 'Need Ping', value: pendingMembers.length.toLocaleString(), sub: 'members waiting', icon: AlertTriangle, tone: pendingMembers.length > 0 ? 'warn' : 'sync' }
+              ].map((metric) => {
+                const Icon = metric.icon
+                const toneClass = metric.tone === 'warn' ? 'text-red-500 bg-red-50' : metric.tone === 'sync' ? 'text-sync bg-sync-soft' : 'text-accent bg-accent-soft'
+                return (
+                  <div key={metric.label} className="bg-canvas border-2 border-border p-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">{metric.label}</p>
+                        <p className="text-2xl md:text-3xl font-black tracking-tighter text-ink mt-2">{metric.value}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-ink/40 font-black mt-1">{metric.sub}</p>
+                      </div>
+                      <div className={`w-9 h-9 border-2 border-border flex items-center justify-center ${toneClass}`}>
+                        <Icon size={16} />
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
               <div className="space-y-4">
@@ -570,21 +617,33 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   <div className="grid gap-3">
                     {groupTasks.map((task) => {
                       const isDone = groupCompletions.some(c => c.task_id === task.id && c.user_id === session?.user?.id)
+                      const completedMembers = groupCompletions.filter(c => c.task_id === task.id).length
+                      const completionPercent = memberCount > 0 ? Math.min(100, Math.round((completedMembers / memberCount) * 100)) : 0
                       return (
-                        <div key={task.id} className={`flex items-center justify-between group/task p-4 md:p-5 border-2 transition-all ${isDone ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border hover:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]'}`}>
-                          <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
-                            <div className={`w-7 h-7 md:w-6 md:h-6 border-2 transition-all flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-accent border-accent' : 'border-border bg-white'}`}>
-                              {isDone && <Check size={16} className="text-white stroke-[4px]" />}
-                            </div>
-                            <span className={`text-sm md:text-xs font-black uppercase tracking-tight ${isDone ? 'text-accent opacity-50 line-through' : 'text-ink'}`}>
-                              {task.title}
-                            </span>
-                          </button>
-                          {selectedPod.created_by === session?.user?.id && (
-                            <button onClick={() => handleDeleteTask(task.id)} className="p-2 text-ink/20 hover:text-red-500 md:opacity-0 group-hover/task:opacity-100 transition-all active:scale-90">
-                              <Trash2 size={16} />
+                        <div key={task.id} className={`group/task p-4 md:p-5 border-2 transition-all space-y-4 ${isDone ? 'bg-accent-soft border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-white border-border hover:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]'}`}>
+                          <div className="flex items-center justify-between gap-4">
+                            <button onClick={() => handleToggleTask(task.id)} className="flex-1 flex items-center gap-4 text-left">
+                              <div className={`w-7 h-7 md:w-6 md:h-6 border-2 transition-all flex items-center justify-center flex-shrink-0 ${isDone ? 'bg-accent border-accent' : 'border-border bg-white'}`}>
+                                {isDone && <Check size={16} className="text-white stroke-[4px]" />}
+                              </div>
+                              <div className="min-w-0">
+                                <span className={`block text-sm md:text-xs font-black uppercase tracking-tight ${isDone ? 'text-accent opacity-60 line-through' : 'text-ink'}`}>
+                                  {task.title}
+                                </span>
+                                <span className="block text-[8px] uppercase tracking-widest text-ink/35 font-black mt-1">
+                                  {completedMembers}/{memberCount || 0} members complete
+                                </span>
+                              </div>
                             </button>
-                          )}
+                            {selectedPod.created_by === session?.user?.id && (
+                              <button onClick={() => handleDeleteTask(task.id)} className="p-2 text-ink/20 hover:text-red-500 md:opacity-0 group-hover/task:opacity-100 transition-all active:scale-90">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="h-2 bg-white border-2 border-border overflow-hidden">
+                            <div className={`h-full transition-all duration-500 ${isDone ? 'bg-accent' : 'bg-sync'}`} style={{ width: `${completionPercent}%` }} />
+                          </div>
                         </div>
                       )
                     })}
@@ -610,9 +669,11 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                 <Activity size={14} className="text-accent" /> Neural_Vitals
               </h3>
               <div className="grid grid-cols-1 gap-3">
-                {podMembers.sort((a,b) => (b.total_xp || 0) - (a.total_xp || 0)).map((member) => {
+                {sortedPodMembers.map((member) => {
                   const isMe = member.id === session?.user?.id
                   const isDone = member.group_tasks_completed > 0
+                  const missionTotal = member.group_tasks_total || groupTasks.length
+                  const lastActivity = member.last_activity_date ? new Date(member.last_activity_date).toLocaleDateString() : 'No activity yet'
                   return (
                     <div key={member.id} className={`relative bg-white border-2 ${isDone ? 'border-accent bg-accent-soft' : 'border-border'} p-4 space-y-4 group/card transition-all hover:border-accent shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)]`}>
                       <div className="flex items-center gap-3 pr-8">
@@ -623,6 +684,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                           <div className="min-w-0">
                             <p className={`text-xs font-black uppercase tracking-tighter truncate ${isMe ? 'text-ink' : 'text-ink/60 group-hover/card:text-accent transition-colors'}`}>{member.username}</p>
                             <p className="text-[8px] font-black text-accent uppercase tracking-widest mt-0.5">{member.total_xp?.toLocaleString()} XP</p>
+                            <p className="text-[7px] font-black text-ink/35 uppercase tracking-widest mt-0.5">{lastActivity}</p>
                           </div>
                         </div>
                       </div>
@@ -643,7 +705,7 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                           {isDone ? 'SYNCED' : 'OFFLINE'}
                         </div>
                         <div className="text-[8px] text-ink/40 font-bold uppercase tracking-widest">
-                          {member.group_tasks_completed}/{member.group_tasks_total || groupTasks.length} MISSIONS
+                          {member.group_tasks_completed}/{missionTotal} MISSIONS
                         </div>
                       </div>
                     </div>
@@ -734,6 +796,9 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map((group) => {
           const isMember = group.group_members?.some(m => m.user_id === session?.user?.id)
+          const groupMemberCount = group.group_members?.length || 0
+          const groupMissionCount = group.group_tasks?.length || 0
+          const groupStreak = group.current_streak || 0
           return (
             <div key={group.id} className="bg-white border-2 border-border p-6 md:p-8 space-y-6 group hover:border-accent transition-all shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[4px_4px_0px_0px_rgba(236,72,153,0.48)]">
               <div className="space-y-2">
@@ -745,9 +810,23 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
                   </span>
                 </div>
                 <p className="text-xs text-ink/60 line-clamp-2 leading-relaxed">{group.description}</p>
-                <div className="flex items-center gap-4 pt-2">
-                  <span className="text-[9px] text-ink/40 uppercase font-black tracking-widest flex items-center gap-2"><Users size={14} /> {group.group_members?.length || 0} Members</span>
-                  {group.current_streak! > 0 && <span className="text-[9px] text-accent font-black flex items-center gap-2 uppercase tracking-widest"><Flame size={14} fill="currentColor" /> {group.current_streak} Day_Streak</span>}
+                <div className="grid grid-cols-3 gap-2 pt-3">
+                  {[
+                    { label: t('pods.members'), value: groupMemberCount, icon: Users },
+                    { label: t('pods.missions'), value: groupMissionCount, icon: Target },
+                    { label: t('pods.day_streak'), value: groupStreak, icon: Flame }
+                  ].map((metric) => {
+                    const Icon = metric.icon
+                    return (
+                      <div key={metric.label} className="bg-canvas border-2 border-border p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[7px] text-ink/40 uppercase font-black tracking-widest truncate">{metric.label}</p>
+                          <Icon size={12} className="text-accent" />
+                        </div>
+                        <p className="text-lg font-black text-ink tracking-tighter">{metric.value}</p>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -774,7 +853,10 @@ export function AccountabilityPods({ session, onShareStreak, dailyStreak, onSele
 
               <div className="pt-2">
                 {isMember ? (
-                  <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-canvas text-accent border-2 border-border text-[10px] font-black uppercase hover:bg-accent hover:text-white transition-all active:scale-[0.98] tracking-[0.2em]">{t('pods.enter')}</button>
+                  <button onClick={() => onSelectPod(group)} className="w-full py-4 bg-canvas text-accent border-2 border-border text-[10px] font-black uppercase hover:bg-accent hover:text-white transition-all active:scale-[0.98] tracking-[0.2em] flex items-center justify-center gap-2">
+                    <Activity size={14} />
+                    {t('pods.enter')}
+                  </button>
                 ) : (
                   <div className="space-y-2">
                     {group.visibility === 'private' && (
