@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { StorageService } from '../lib/storage'
-import { MessageSquare, Send, Trash2, Plus, Globe, Pencil, X, Check } from 'lucide-react'
+import { MessageSquare, Send, Trash2, Plus, Globe, Pencil, X, Check, Trophy, Users, Flame, Activity, Sparkles } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { Post, Reaction } from '../types'
 import type { Session } from '@supabase/supabase-js'
@@ -30,6 +30,7 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
   const [editCommentContent, setEditCommentContent] = useState('')
   const [editContent, setEditContent] = useState('')
   const [viewingReactions, setViewingReactions] = useState<Post | null>(null)
+  const [feedFilter, setFeedFilter] = useState<'all' | 'milestones' | 'updates' | 'mine'>('all')
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -191,18 +192,92 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
     }
   }
 
+  const feedStats = useMemo(() => {
+    const activeUsers = new Set(posts.map(post => post.user_id).filter(Boolean))
+    return {
+      totalPosts: posts.length,
+      milestones: posts.filter(post => post.type === 'milestone').length,
+      activeUsers: activeUsers.size,
+      reactions: posts.reduce((sum, post) => sum + (post.reactions?.length || 0), 0),
+      comments: posts.reduce((sum, post) => sum + (post.comments?.length || 0), 0)
+    }
+  }, [posts])
+
+  const filteredPosts = useMemo(() => {
+    if (feedFilter === 'milestones') return posts.filter(post => post.type === 'milestone')
+    if (feedFilter === 'updates') return posts.filter(post => post.type !== 'milestone')
+    if (feedFilter === 'mine') return posts.filter(post => post.user_id === session?.user?.id)
+    return posts
+  }, [feedFilter, posts, session?.user?.id])
+
+  const promptChips = useMemo(() => {
+    const streakPrompt = dailyStreak > 0 ? `Locked in a ${dailyStreak}-day streak today.` : 'Checked in today and kept the system moving.'
+    return [
+      { label: 'Progress', value: 'Today I made progress on ' },
+      { label: 'Streak', value: streakPrompt },
+      { label: 'Win', value: 'Small win today: ' }
+    ]
+  }, [dailyStreak])
+
   if (loading) return <div className="text-center py-20 text-[10px] uppercase tracking-widest text-gray-400">{t('feed.loading')}</div>
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20">
       {!groupId && (
-        <section className="space-y-4">
-          <div className="flex justify-between items-end">
-            <h2 className="text-[10px] uppercase tracking-[0.3em] text-gray-400 font-bold">{t('feed.title')}</h2>
+        <section className="bg-white border-2 border-border shadow-[6px_6px_0px_0px_rgba(20,184,166,0.34)] overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px]">
+            <div className="p-6 md:p-8 space-y-5 border-b-2 lg:border-b-0 lg:border-r-2 border-border">
+              <div className="space-y-2">
+                <p className="text-[9px] uppercase tracking-[0.3em] text-accent font-black">Activity Hub</p>
+                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-ink">{t('feed.title')}</h2>
+                <p className="text-xs text-ink/55 uppercase tracking-widest font-bold">Progress, wins, and accountability signals</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { id: 'all', label: 'All' },
+                  { id: 'milestones', label: 'Milestones' },
+                  { id: 'updates', label: 'Updates' },
+                  { id: 'mine', label: 'Mine' }
+                ] as const).map(filter => (
+                  <button
+                    key={filter.id}
+                    onClick={() => setFeedFilter(filter.id)}
+                    className={`px-4 py-2 border-2 border-border text-[9px] font-black uppercase tracking-widest transition-all ${feedFilter === filter.id ? 'bg-ink text-white shadow-[3px_3px_0px_0px_rgba(20,184,166,0.34)]' : 'bg-canvas text-ink/55 hover:text-accent hover:-translate-y-0.5'}`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-0">
+              {[
+                { label: 'Posts', value: feedStats.totalPosts, icon: Activity },
+                { label: 'Milestones', value: feedStats.milestones, icon: Trophy },
+                { label: 'People', value: feedStats.activeUsers, icon: Users },
+                { label: 'Signals', value: feedStats.reactions + feedStats.comments, icon: Sparkles }
+              ].map(stat => {
+                const Icon = stat.icon
+                return (
+                  <div key={stat.label} className="p-5 border-b-2 border-r-2 border-border last:border-r-0 even:border-r-0 lg:[&:nth-child(n+3)]:border-b-0 bg-canvas">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[8px] uppercase tracking-widest text-ink/45 font-black">{stat.label}</p>
+                      <Icon size={14} className="text-accent" />
+                    </div>
+                    <p className="text-3xl font-black tracking-tighter text-ink">{stat.value.toLocaleString()}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          <div className="px-6 md:px-8 py-4 border-t-2 border-border bg-canvas flex justify-between items-center gap-3">
+            <div className="flex items-center gap-2 text-[9px] uppercase tracking-widest text-ink/45 font-black">
+              <Flame size={14} className="text-accent" />
+              <span>{dailyStreak.toLocaleString()} day streak signal</span>
+            </div>
             {session && dailyStreak > 0 && (
               <button 
                 onClick={onShareStreak}
-                className="px-3 py-1 bg-accent/10 text-accent border border-accent/30 hover:bg-accent hover:text-white transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2"
+                className="px-3 py-2 bg-accent text-white border-2 border-border hover:bg-ink transition-all text-[8px] font-black uppercase tracking-widest flex items-center gap-2 shadow-[3px_3px_0px_0px_rgba(236,72,153,0.35)]"
               >
                 <Plus size={10} />
                 {t('feed.share_streak')}
@@ -215,6 +290,18 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       <section className="space-y-4">
         {session ? (
           <form onSubmit={handleCreatePost} className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {promptChips.map(prompt => (
+                <button
+                  key={prompt.label}
+                  type="button"
+                  onClick={() => setNewPostContent(prompt.value)}
+                  className="px-3 py-1.5 bg-canvas border-2 border-border text-[8px] font-black uppercase tracking-widest text-ink/55 hover:text-accent hover:-translate-y-0.5 transition-all"
+                >
+                  {prompt.label}
+                </button>
+              ))}
+            </div>
             <textarea
               value={newPostContent}
               disabled={isPosting}
@@ -241,10 +328,11 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
       </section>
 
       <div className="space-y-6">
-        {posts.map((post) => {
+        {filteredPosts.map((post) => {
           const isMe = post.user_id === session?.user?.id
+          const isMilestone = post.type === 'milestone'
           return (
-            <div key={post.id} className="bg-white border-2 border-border p-6 space-y-4 shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[6px_6px_0px_0px_rgba(236,72,153,0.48)] transition-all">
+            <div key={post.id} className={`bg-white border-2 p-6 space-y-4 transition-all ${isMilestone ? 'border-accent shadow-[6px_6px_0px_0px_rgba(236,72,153,0.38)]' : 'border-border shadow-[4px_4px_0px_0px_rgba(20,184,166,0.34)] hover:shadow-[6px_6px_0px_0px_rgba(236,72,153,0.48)]'}`}>
             <div className="flex justify-between items-start mb-2">
               <div 
                 className={`flex items-center gap-3 group/user ${isMe ? 'cursor-default' : 'cursor-pointer'}`}
@@ -267,8 +355,9 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
 
               <div className="flex items-center gap-2">
                 {post.type === 'milestone' && (
-                  <span className="px-2 py-0.5 bg-sync text-white border-2 border-border text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)]">
-                    MILESTONE
+                  <span className="px-2 py-1 bg-accent text-white border-2 border-border text-[8px] font-black uppercase tracking-widest shadow-[2px_2px_0px_0px_rgba(20,184,166,0.34)] flex items-center gap-1">
+                    <Trophy size={10} />
+                    {t('feed.milestone')}
                   </span>
                 )}
                 {isMe && (
@@ -480,11 +569,11 @@ export function SocialFeed({ session, onShareStreak, dailyStreak, groupId, onSel
         )
       })}
 
-        {posts.length === 0 && !loading && (
+        {filteredPosts.length === 0 && !loading && (
           <EmptyState 
             icon={Globe}
-            title={t('feed.empty')}
-            subtitle="The neural network is silent. Be the first to broadcast your achievements."
+            title={feedFilter === 'all' ? t('feed.empty') : 'Nothing here yet'}
+            subtitle={feedFilter === 'all' ? 'The community is quiet. Start the next signal.' : 'Try another feed filter or post the next update.'}
             action={session && dailyStreak > 0 ? {
               label: t('feed.share_streak'),
               onClick: onShareStreak
