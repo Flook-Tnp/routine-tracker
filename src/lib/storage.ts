@@ -6,6 +6,13 @@ type XpLedger = {
   seasonXpByUser: Map<string, number>
 }
 
+let xpLedgerCache: { data: XpLedger; expiresAt: number } | null = null
+const XP_LEDGER_CACHE_MS = 15000
+
+function invalidateXpLedgerCache() {
+  xpLedgerCache = null
+}
+
 type XpLedgerRow = {
   user_id: string | null
   total_xp: number | null
@@ -105,7 +112,11 @@ async function adjustProfileXpDirectly(rpcName: 'increment_xp' | 'decrement_xp',
 }
 
 export const StorageService = {
-  async fetchXpLedger(): Promise<XpLedger> {
+  async fetchXpLedger(options: { force?: boolean } = {}): Promise<XpLedger> {
+    if (!options.force && xpLedgerCache && xpLedgerCache.expiresAt > Date.now()) {
+      return xpLedgerCache.data
+    }
+
     const targetDate = new Date().toISOString().split('T')[0]
     const { data: rpcLedger, error: rpcLedgerError } = await supabase
       .rpc('get_xp_ledger', { target_date: targetDate })
@@ -120,7 +131,9 @@ export const StorageService = {
         seasonXpByUser.set(row.user_id, Number(row.season_xp || 0))
       })
 
-      return { allTimeXpByUser, seasonXpByUser }
+      const data = { allTimeXpByUser, seasonXpByUser }
+      xpLedgerCache = { data, expiresAt: Date.now() + XP_LEDGER_CACHE_MS }
+      return data
     }
 
     console.warn('XP_LEDGER_RPC_UNAVAILABLE:', rpcLedgerError)
@@ -188,12 +201,14 @@ export const StorageService = {
       }
     })
 
-    return { allTimeXpByUser, seasonXpByUser }
+    const data = { allTimeXpByUser, seasonXpByUser }
+    xpLedgerCache = { data, expiresAt: Date.now() + XP_LEDGER_CACHE_MS }
+    return data
   },
 
   async reconcileProfileXp(userId: string): Promise<Profile> {
     const profile = await this.fetchRawProfile(userId)
-    const ledger = await this.fetchXpLedger()
+    const ledger = await this.fetchXpLedger({ force: true })
     const ledgerXp = ledger.allTimeXpByUser.get(userId) || 0
     const totalXp = Math.max(0, ledgerXp)
     const lifetimeXp = Math.max(profile.lifetime_xp || 0, totalXp)
@@ -319,6 +334,7 @@ export const StorageService = {
         .delete()
         .eq('id', existingId)
       if (error) throw error
+      invalidateXpLedgerCache()
       
       if (userId) {
         const rpcErr = await updateXp('decrement_xp', userId, xpEarned, dateStr)
@@ -332,6 +348,7 @@ export const StorageService = {
         .insert([{ routine_id: routineId, completed_date: dateStr, xp_earned: xpEarned, user_id: userId }])
         .select()
       if (error) throw error
+      invalidateXpLedgerCache()
 
       if (userId) {
         const rpcErr = await updateXp('increment_xp', userId, xpEarned, dateStr)
@@ -802,6 +819,7 @@ export const StorageService = {
 
     if (existing) {
       await supabase.from('group_task_completions').delete().eq('id', existing.id)
+      invalidateXpLedgerCache()
       
       // Decrement XP when unchecking
       const { data: task } = await supabase.from('group_tasks').select('group_id').eq('id', taskId).single()
@@ -819,6 +837,7 @@ export const StorageService = {
         user_id: userId,
         completed_date: date
       })
+      invalidateXpLedgerCache()
 
       // Bonus XP for active group participation
       const { data: task } = await supabase.from('group_tasks').select('group_id').eq('id', taskId).single()
